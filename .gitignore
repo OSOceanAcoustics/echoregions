@@ -138,3 +138,4 @@ __main__.py
 *.evl
 *.evr
 *.ecs
+*.csv
