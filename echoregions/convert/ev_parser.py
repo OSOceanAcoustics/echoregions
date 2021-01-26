@@ -52,10 +52,11 @@ class EvParserBase():
         if save_dir is None:
             save_dir = os.path.dirname(self.input_files[0])
         else:
-            if not os.path.isdir(save_dir) and os.path.splitext(save_dir)[1] == '':
-                os.mkdir(save_dir)
-            else:
-                raise ValueError(f"{save_dir} is not a valid save directory")
+            if not os.path.isdir(save_dir):
+                if os.path.splitext(save_dir)[1] == '':
+                    os.mkdir(save_dir)
+                else:
+                    raise ValueError(f"{save_dir} is not a valid save directory")
         return save_dir
 
     def parse_files(self, input_files=None):
