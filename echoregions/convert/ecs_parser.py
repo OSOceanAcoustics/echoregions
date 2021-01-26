@@ -10,7 +10,7 @@ class CalibrationParser(EvParserBase):
         self.format = 'ECS'
         self.input_files = input_files
 
-    def _parse_settings(self, fid):
+    def _parse_settings(self, fid, ignore_comments):
         """Reads lines from an open file.
         The function expects the lines to be in the format <field> = <value>.
         There may be hash marks (#) before the field and after the value.
@@ -23,7 +23,14 @@ class CalibrationParser(EvParserBase):
             if len(line) == 0:
                 break
             # Check if field is commented out
-            idx = 0 if line[0] != '#' else 1
+            if line[0] == '#':
+                if ignore_comments:
+                    continue
+                else:
+                    idx = 1
+            else:
+                idx = 0
+
             field = line[idx]
             val = line[idx + 2]
             # If no value is recorded for the field, save a nan
@@ -31,7 +38,7 @@ class CalibrationParser(EvParserBase):
             settings[field] = val
         return settings
 
-    def _parse_sourcecal(self, fid):
+    def _parse_sourcecal(self, fid, ignore_comments):
         """Parses the 'SOURCECAL SETTTINGS' section.
         Returns a dictionary with keys being the name of the sourcecal
         and values being a key value dictionary parsed by _parse_settings
@@ -41,11 +48,11 @@ class CalibrationParser(EvParserBase):
         while True:
             cal_name = self.read_line(fid, split=True)
             if len(cal_name) > 0 and cal_name[0] == 'SourceCal':
-                sourcecal['_'.join(cal_name)] = self._parse_settings(fid)
+                sourcecal['_'.join(cal_name)] = self._parse_settings(fid, ignore_comments=ignore_comments)
             else:
                 return sourcecal
 
-    def parse_files(self, input_files=None):
+    def parse_files(self, input_files=None, ignore_comments=True):
         def advance_to_section(fid, section):
             # Function for skipping lines that do not contain the variables to save
             cont = True
@@ -66,11 +73,11 @@ class CalibrationParser(EvParserBase):
             fname = os.path.splitext(os.path.basename(file))[0]
 
             advance_to_section(fid, 'FILESET SETTINGS')
-            fileset_settings = self._parse_settings(fid)
+            fileset_settings = self._parse_settings(fid, ignore_comments=ignore_comments)
             advance_to_section(fid, 'SOURCECAL SETTINGS')
-            sourcecal_settings = self._parse_sourcecal(fid)
+            sourcecal_settings = self._parse_sourcecal(fid, ignore_comments=ignore_comments)
             advance_to_section(fid, 'LOCALCAL SETTINGS')
-            localcal_settings = self._parse_settings(fid)
+            localcal_settings = self._parse_settings(fid, ignore_comments=ignore_comments)
 
             self.output_data[fname] = {
                 'fileset_settings': fileset_settings,
@@ -78,13 +85,15 @@ class CalibrationParser(EvParserBase):
                 'localcal_settings': localcal_settings,
             }
 
-    def to_csv(self, save_dir=None):
+    def to_csv(self, save_dir=None, **kwargs):
         """Convert an Echoview calibration .ecs file to a .csv file
 
         Parameters
         ----------
         save_dir : str
             directory to save the CSV file to
+        kwargs
+            keyword arguments passed into `parse_files`
         """
         def get_row_from_source(row_dict, source_dict, **kwargs):
             source_dict.update(kwargs)
@@ -94,7 +103,7 @@ class CalibrationParser(EvParserBase):
 
         # Parse ECS file if it hasn't already been done
         if not self.output_data:
-            self.parse_files()
+            self.parse_files(**kwargs)
 
         # Check if the save directory is safe
         save_dir = self._validate_path(save_dir)

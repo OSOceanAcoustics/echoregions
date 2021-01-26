@@ -77,17 +77,19 @@ class EvParserBase():
                 data_name: data
             }
 
-    def to_json(self, save_dir=None):
+    def to_json(self, save_dir=None, **kwargs):
         """Convert an Echoview 2D regions .evr file to a .json file
 
         Parameters
         ----------
         save_dir : str
             directory to save the JSON file to
+        kwargs
+            keyword arguments passed into `parse_files`
         """
         # Parse EVR file if it hasn't already been done
         if not self.output_data:
-            self.parse_files()
+            self.parse_files(**kwargs)
 
         # Check if the save directory is safe
         save_dir = self._validate_path(save_dir)
