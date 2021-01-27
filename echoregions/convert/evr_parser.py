@@ -65,9 +65,9 @@ class Region2DParser(EvParserBase):
                 y = line[idx + 2]
                 if convert_range_edges:
                     if y == '9999.9900000000' and self.max_depth is not None:
-                        y = self.max_depth
+                        y = float(self.max_depth)
                     elif y == '-9999.9900000000' and self.min_depth is not None:
-                        y = self.min_depth
+                        y = float(self.min_depth)
 
                 points[point_num] = [x, y]
             return points
