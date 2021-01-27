@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from .ev_parser import EvParserBase
 import os
 
@@ -9,7 +10,7 @@ class LineParser(EvParserBase):
         self.format = 'EVL'
         self.input_files = input_files
 
-    def _parse(self, fid):
+    def _parse(self, fid, convert_depth_value):
         # Read header containing metadata about the EVL file
         filetype, file_format_number, ev_version = self.read_line(fid, True)
         file_metadata = {
@@ -21,6 +22,9 @@ class LineParser(EvParserBase):
         n_points = int(self.read_line(fid))
         for i in range(n_points):
             date, time, depth, status = self.read_line(fid, split=True)
+            if convert_depth_value:
+                if depth == '-10000.990000':
+                    depth = np.nan
             points[i] = {
                 'x': f'D{date}T{time}',           # Format: D{CCYYMMDD}T{HHmmSSssss}
                 'y': depth,                           # Depth [m]

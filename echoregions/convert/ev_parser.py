@@ -59,18 +59,28 @@ class EvParserBase():
                     raise ValueError(f"{save_dir} is not a valid save directory")
         return save_dir
 
-    def parse_files(self, input_files=None):
+    def parse_files(self, convert_range_edges=True):
         """Base method for parsing the files in `input_files`.
-        Used for EVR and EVL parsers"""
+        Used for EVR and EVL parsers
+
+        Parameters
+        ----------
+        convert_range_edges : bool
+            Whether or not to convert -9999.99 and -9999.99 range edges to real values.
+            Set the values by assigning range values to `min_range` and `max_range`
+            or by passing a file into `set_range_edge_from_raw`. Defaults to True
+        """
         for file in self.input_files:
             fid = open(file, encoding='utf-8-sig')
             fname = os.path.splitext(os.path.basename(file))[0]
 
-            metadata, data = self._parse(fid)
+            metadata, data = self._parse(fid, convert_range_edges)
             if self.format == 'EVR':
                 data_name = 'regions'
             elif self.format == 'EVL':
                 data_name = 'points'
+            else:
+                raise ValueError("Invalid data format")
 
             self.output_data[fname] = {
                 'metadata': metadata,

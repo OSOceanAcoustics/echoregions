@@ -3,6 +3,8 @@ import json
 from collections import defaultdict
 from .ev_parser import EvParserBase
 import os
+import echopype as ep
+from .utils import parse_time
 
 
 class Region2DParser(EvParserBase):
@@ -10,8 +12,33 @@ class Region2DParser(EvParserBase):
         super().__init__()
         self.format = 'EVR'
         self.input_files = input_files
+        self._raw_range = None
+        self._min_depth = None
+        self._max_depth = None
 
-    def _parse(self, fid):
+    @property
+    def max_depth(self):
+        return self._max_depth
+
+    @property
+    def min_depth(self):
+        return self._min_depth
+
+    @max_depth.setter
+    def max_depth(self, val):
+        if self._min_depth is not None:
+            if val <= self._min_depth:
+                raise ValueError("max_depth cannot be less than min_depth")
+        self._max_depth = val
+
+    @min_depth.setter
+    def min_depth(self, val):
+        if self._max_depth is not None:
+            if val >= self._max_depth:
+                raise ValueError("min_depth cannot be greater than max_depth")
+        self._min_depth = val
+
+    def _parse(self, fid, convert_range_edges):
         """Reads an open file and returns the file metadata and region information"""
         def _region_metadata_to_dict(line):
             """Assigns a name to each value in the metadata line for each region"""
@@ -36,7 +63,13 @@ class Region2DParser(EvParserBase):
             for point_num, idx in enumerate(range(0, len(line), 3)):
                 x = f'D{line[idx]}T{line[idx + 1]}'
                 y = line[idx + 2]
-                points[point_num] = (x, y)
+                if convert_range_edges:
+                    if y == '9999.9900000000' and self.max_depth is not None:
+                        y = self.max_depth
+                    elif y == '-9999.9900000000' and self.min_depth is not None:
+                        y = self.min_depth
+
+                points[point_num] = [x, y]
             return points
 
         # Read header containing metadata about the EVR file
@@ -73,7 +106,7 @@ class Region2DParser(EvParserBase):
 
         return file_metadata, regions
 
-    def to_csv(self, save_dir=None):
+    def to_csv(self, save_dir=None, **kwargs):
         """Convert an Echoview 2D regions .evr file to a .csv file
 
         Parameters
@@ -83,9 +116,10 @@ class Region2DParser(EvParserBase):
         """
         # Parse EVR file if it hasn't already been done
         if not self.output_data:
-            self.parse_files()
+            self.parse_files(**kwargs)
         # Check if the save directory is safe
         save_dir = self._validate_path(save_dir)
+        row = []
 
         # Loop over each file. 1 EVR file is saved to 1 CSV file
         for file, data, in self.output_data.items():
@@ -113,34 +147,80 @@ class Region2DParser(EvParserBase):
             df[row.keys()].to_csv(output_file_path, index=False)
             self._output_path.append(output_file_path)
 
-    def get_points_from_region(self, file_path, region):
+    def get_points_from_region(self, region, file, convert_time=False):
         """Get points from specified region from a JSON or CSV file
         or from the parsed data.
 
         Parameters
         ----------
-        file_path : str
-            path to JSON or CSV file.
-            If None, data must be parsed
         region : int
             ID of the region to extract points from
+        file : str
+            path to JSON or CSV file or the filename of
+            the original EVR file. (Key of `self.output_data`)
+        convert_time : bool
+            whether or not to convert the EV timestamps to datetime64
 
         Returns
         -------
         points : list
             list of x, y points
         """
-        if not os.path.isfile(file_path):
-            raise ValueError(f"{file_path} is not a valid JSON or CSV file.")
-        if file_path.upper().endswith('.JSON'):
-            with open(file_path) as f:
-                data = json.load(f)
-                # Navigate the tree structure and get the points as a list of lists
-                points = list(data['regions'][str(region)]['points'].values())
-                # Convert to a list of tuples for consistency with CSV
-                return [tuple(l) for l in points]
-        elif file_path.upper().endswith('.CSV'):
-            data = pd.read_csv(file_path)
+        # Pull region points from CSV file
+        if file.upper().endswith('.CSV'):
+            if not os.path.isfile(file):
+                raise ValueError(f"{file} is not a valid CSV file.")
+            data = pd.read_csv(file)
             region = data.loc[data['region_id'] == int(region)]
             # Combine x and y points to get a list of tuples
             return list(zip(region.x, region.y))
+        # Pull region points from JSON or Parsed data (similar dict structure)
+        else:
+            # JSON file
+            if file.upper().endswith('.JSON'):
+                if not os.path.isfile(file):
+                    raise ValueError(f"{file} is not a valid JSON file.")
+                with open(file) as f:
+                    data = json.load(f)
+            # Parsed data
+            else:
+                data = self.output_data[file]
+            # Navigate the tree structure and get the points as a list of lists
+            points = list(data['regions'][str(region)]['points'].values())
+            if convert_time:
+                for p in points:
+                    p[0] = parse_time(p[0])
+            # Convert to a list of tuples for consistency with CSV
+            return [list(l) for l in points]
+
+    def set_range_edge_from_raw(self, raw=None, model='EK60'):
+        """Calculate the sonar range from a raw file using Echopype.
+        Used to replace EVR range edges -9999.99 and 9999.99 with real values
+
+        Parameters
+        ----------
+        raw : str
+            Path to raw file
+        model : str
+            The sonar model that created the raw file, defaults to `EK60`.
+            See echopype for list of supported sonar models
+        """
+        if raw is not None:
+            if raw.endswith('.raw') and os.path.isfile(raw):
+                tmp_c = ep.Convert(raw, model='EK60')
+                tmp_c.to_netcdf(save_path='./')
+
+                ed = ep.process.EchoData(tmp_c.output_file)
+                proc = ep.process.Process('EK60', ed)
+
+                # proc.get_range # Calculate range directly as opposed to with get_Sv
+                proc.get_Sv(ed)
+                self._raw_range = ed.range.isel(frequency=0, ping_time=0).load()
+
+                self.max_depth = self._raw_range.max().values
+                self.min_depth = self._raw_range.min().values
+
+                ed.close()
+                os.remove(tmp_c.output_file)
+            else:
+                raise ValueError("Invalid raw file")
