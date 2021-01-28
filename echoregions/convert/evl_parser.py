@@ -72,7 +72,7 @@ class LineParser(EvParserBase):
         Parameters
         ----------
         j : str
-            Valid JSON string or path to JSON file, defaults to True
+            Valid JSON string or path to JSON file
         convert_time : bool
             Whether to convert EV time to datetime64, defaults `True`
         convert_range_edges : bool
@@ -90,14 +90,7 @@ class LineParser(EvParserBase):
             when j is not a valid echoregions JSON file or JSON string
         """
 
-        if os.path.isfile(j):
-            with open(j, 'r') as f:
-                data_dict = json.load(f)
-        else:
-            try:
-                data_dict = json.loads(j)
-            except json.decoder.JSONDecodeError:
-                raise ValueError("Invalid JSON string")
+        data_dict = self.from_JSON(j)
 
         if convert_time:
             if 'points' not in data_dict:

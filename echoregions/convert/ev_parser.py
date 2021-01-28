@@ -59,6 +59,25 @@ class EvParserBase():
                     raise ValueError(f"{save_dir} is not a valid save directory")
         return save_dir
 
+    @staticmethod
+    def from_JSON(j):
+        """ Opens a JSON file
+
+        Parameters
+        ----------
+        j : str
+            Valid JSON string or path to JSON file
+        """
+        if os.path.isfile(j):
+            with open(j, 'r') as f:
+                data_dict = json.load(f)
+        else:
+            try:
+                data_dict = json.loads(j)
+            except json.decoder.JSONDecodeError:
+                raise ValueError("Invalid JSON string")
+        return data_dict
+
     def parse_files(self, convert_range_edges=True):
         """Base method for parsing the files in `input_files`.
         Used for EVR and EVL parsers
@@ -66,7 +85,7 @@ class EvParserBase():
         Parameters
         ----------
         convert_range_edges : bool
-            Whether or not to convert -9999.99 and -9999.99 range edges to real values.
+            Whether or not to convert -9999.99 and -9999.99 range edges to real values for EVR files.
             Set the values by assigning range values to `min_range` and `max_range`
             or by passing a file into `set_range_edge_from_raw`. Defaults to True
         """

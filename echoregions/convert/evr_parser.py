@@ -249,14 +249,7 @@ class Region2DParser(EvParserBase):
             when j is not a valid echoregions JSON file or JSON string
         """
 
-        if os.path.isfile(j):
-            with open(j, 'r') as f:
-                data_dict = json.load(f)
-        else:
-            try:
-                data_dict = json.loads(j)
-            except json.decoder.JSONDecodeError:
-                raise ValueError("Invalid JSON string")
+        data_dict = self.from_JSON(j)
 
         if convert_time:
             if 'regions' not in data_dict:
