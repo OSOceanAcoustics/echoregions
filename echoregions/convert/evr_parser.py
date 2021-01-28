@@ -155,18 +155,17 @@ class Region2DParser(EvParserBase):
 
         Parameters
         ----------
-        region : int or dict
+        region : int, str, or dict
             ID of the region to extract points from or region dictionary
         file : str
             path to JSON or CSV file
-        convert_time : bool
-            whether or not to convert the EV timestamps to datetime64
 
         Returns
         -------
         points : list
             list of x, y points
         """
+        # Pull region points from CSV file
         if file is not None and file.upper().endswith('.CSV'):
             if not os.path.isfile(file):
                 raise ValueError(f"{file} is not a valid CSV file.")
@@ -175,15 +174,26 @@ class Region2DParser(EvParserBase):
             # Combine x and y points to get a list of points
             return list(zip(region.x, region.y))
 
-        # Pull region points from CSV file
-        points = []
-        if file is None:
-            if not isinstance(region, dict) and 'points' not in region:
-                raise ValueError("Region or file not provided")
-            points = list(region['points'].values())
-        elif file.upper().endswith('.JSON'):
-            data = self.from_JSON(file)
-            points = list(data['regions'][str(region)]['points'].values())
+        # Pull region points from passed region dict
+        if isinstance(region, dict):
+            if 'points' in region:
+                points = list(region['points'].values())
+            else:
+                raise ValueError("Invalid region dictionary")
+        else:
+            region = str(region)
+            # Pull region points from JSON file
+            if file is not None and file.upper().endswith('.JSON'):
+                data = self.from_JSON(file)
+                points = list(data['regions'][region]['points'].values())
+            # Pull region points from parsed data
+            elif file in self.output_data:
+                if region in self.output_data[file]['regions']:
+                    points = list(self.output_data[file]['regions'][region]['points'].values())
+                else:
+                    raise ValueError("{region} is not a valid region of {file}")
+            else:
+                raise ValueError("Valid region or file not provided")
         return [list(l) for l in points]
 
     def swap_range_edge(self, y):

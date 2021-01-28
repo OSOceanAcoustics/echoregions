@@ -52,10 +52,10 @@ def test_convert_evr():
     evr_paths = [data_dir + 'x1.evr',
                  data_dir + 'x3.evr']
     parser = Region2DParser(evr_paths)
-    parser.set_range_edge_from_raw(data_dir + 'hake_2017/Summer2017-D20170624-T001210.raw')
+    # parser.set_range_edge_from_raw(data_dir + 'hake_2017/Summer2017-D20170624-T001210.raw')
     parser.to_json(output_json)
     parser.to_csv(output_csv)
-    points = parser.get_points_from_region(4, 'x1', convert_time=True)
+    points = parser.get_points_from_region(4, 'x1')
     points = parser.get_points_from_region(4, parser.output_path[0])
     assert points[0] == ['D20170625T1539223320', '9.2447583998']
 
