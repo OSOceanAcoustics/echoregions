@@ -95,8 +95,8 @@ class CalibrationParser(EvParserBase):
         kwargs
             keyword arguments passed into `parse_files`
         """
-        def get_row_from_source(row_dict, source_dict, **kwargs):
-            source_dict.update(kwargs)
+        def get_row_from_source(row_dict, source_dict, **kw):
+            source_dict.update(kw)
             for k, v in source_dict.items():
                 row_dict[k] = v
             return pd.Series(row_dict)
