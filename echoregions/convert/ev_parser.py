@@ -78,22 +78,31 @@ class EvParserBase():
                 raise ValueError("Invalid JSON string")
         return data_dict
 
-    def parse_files(self, convert_range_edges=True):
+    def parse_files(self, **kwargs):
         """Base method for parsing the files in `input_files`.
         Used for EVR and EVL parsers
 
         Parameters
         ----------
+        kwargs : dict
+            keyword arguments
+
+        Other Paramters
+        ---------------
         convert_range_edges : bool
             Whether or not to convert -9999.99 and -9999.99 range edges to real values for EVR files.
             Set the values by assigning range values to `min_range` and `max_range`
             or by passing a file into `set_range_edge_from_raw`. Defaults to True
+
+        replace_nan_range_value : float
+            Value to replace -10000.990000 ranges with.
+            Don't replace if `None`, defaults to `None`
         """
         for file in self.input_files:
             fid = open(file, encoding='utf-8-sig')
             fname = os.path.splitext(os.path.basename(file))[0]
 
-            metadata, data = self._parse(fid, convert_range_edges)
+            metadata, data = self._parse(fid, **kwargs)
             if self.format == 'EVR':
                 data_name = 'regions'
             elif self.format == 'EVL':

@@ -11,9 +11,8 @@ class LineParser(EvParserBase):
         super().__init__()
         self.format = 'EVL'
         self.input_files = input_files
-        self.default_depth = None       # Set to replace -10000.990000 range values which are EVL NaN values
 
-    def _parse(self, fid, convert_range_edges):
+    def _parse(self, fid, replace_nan_range_value=None):
         # Read header containing metadata about the EVL file
         filetype, file_format_number, ev_version = self.read_line(fid, True)
         file_metadata = {
@@ -25,8 +24,8 @@ class LineParser(EvParserBase):
         n_points = int(self.read_line(fid))
         for i in range(n_points):
             date, time, depth, status = self.read_line(fid, split=True)
-            if convert_range_edges and depth == '-10000.990000':
-                depth = np.nan if self.default_depth is None else self.default_depth
+            if replace_nan_range_value is not None and depth == '-10000.990000':
+                depth = replace_nan_range_value
             points[i] = {
                 'x': f'D{date}T{time}',           # Format: D{CCYYMMDD}T{HHmmSSssss}
                 'y': depth,                           # Depth [m]
@@ -66,7 +65,7 @@ class LineParser(EvParserBase):
             df.to_csv(output_file_path, index=False)
             self._output_path.append(output_file_path)
 
-    def JSON_to_dict(self, j, convert_time=True, convert_range_edges=False):
+    def JSON_to_dict(self, j, convert_time=True, replace_nan_range_value=None):
         """Convert JSON to dict
 
         Parameters
@@ -74,10 +73,10 @@ class LineParser(EvParserBase):
         j : str
             Valid JSON string or path to JSON file
         convert_time : bool
-            Whether to convert EV time to datetime64, defaults `True`
-        convert_range_edges : bool
-            Whether to convert -10000.990000 error values to real range values.
-            Min and max ranges must be set manually or by calling `set_range_edge_from_raw`
+            Whether to convert EV time to datetime64, defaults to `True`
+        replace_nan_range_value : bool
+            Value to replace -10000.990000 ranges with.
+            Don't replace if `None`
 
         Returns
         -------
@@ -92,12 +91,14 @@ class LineParser(EvParserBase):
 
         data_dict = self.from_JSON(j)
 
-        if convert_time:
+        if convert_time or replace_nan_range_value is not None:
             if 'points' not in data_dict:
                 raise ValueError("Invalid data format")
 
             for point in data_dict['points'].values():
-                point['x'] = parse_time(point['x'])
-                if convert_range_edges and point['y'] == '-10000.990000':
-                    point['y'] = np.nan if self.default_depth is None else self.default_depth
-            return data_dict
+                if convert_time:
+                    point['x'] = parse_time(point['x'])
+                if replace_nan_range_value is not None and point['y'] == '-10000.990000':
+                    point['y'] = replace_nan_range_value
+
+        return data_dict

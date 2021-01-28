@@ -38,7 +38,7 @@ class Region2DParser(EvParserBase):
                 raise ValueError("min_depth cannot be greater than max_depth")
         self._min_depth = val
 
-    def _parse(self, fid, convert_range_edges):
+    def _parse(self, fid, convert_range_edges=True):
         """Reads an open file and returns the file metadata and region information"""
         def _region_metadata_to_dict(line):
             """Assigns a name to each value in the metadata line for each region"""
@@ -251,17 +251,17 @@ class Region2DParser(EvParserBase):
 
         data_dict = self.from_JSON(j)
 
-        if convert_time:
+        if convert_time or convert_range_edges:
             if 'regions' not in data_dict:
                 raise ValueError("Invalid data format")
 
-            for rid, region in data_dict['regions'].items():
-                for p, point in region['points'].items():
-                    point = data_dict['regions'][rid]['points'][p]
-                    point[0] = parse_time(point[0])
+            for region in data_dict['regions'].values():
+                for point in region['points'].values():
+                    if convert_time:
+                        point[0] = parse_time(point[0])
                     if convert_range_edges:
                         if point[1] == '9999.9900000000' and self.max_depth is not None:
                             point[1] = float(self.max_depth)
                         elif point[1] == '-9999.9900000000' and self.min_depth is not None:
                             point[1] = float(self.min_depth)
-            return data_dict
+        return data_dict
