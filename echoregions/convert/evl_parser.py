@@ -1,7 +1,9 @@
 import pandas as pd
 import numpy as np
-from .ev_parser import EvParserBase
 import os
+import json
+from .ev_parser import EvParserBase
+from .utils import parse_time
 
 
 class LineParser(EvParserBase):
@@ -9,8 +11,9 @@ class LineParser(EvParserBase):
         super().__init__()
         self.format = 'EVL'
         self.input_files = input_files
+        self.default_depth = None       # Set to replace -10000.990000 range values which are EVL NaN values
 
-    def _parse(self, fid, convert_depth_value):
+    def _parse(self, fid, convert_range_edges):
         # Read header containing metadata about the EVL file
         filetype, file_format_number, ev_version = self.read_line(fid, True)
         file_metadata = {
@@ -22,9 +25,8 @@ class LineParser(EvParserBase):
         n_points = int(self.read_line(fid))
         for i in range(n_points):
             date, time, depth, status = self.read_line(fid, split=True)
-            if convert_depth_value:
-                if depth == '-10000.990000':
-                    depth = np.nan
+            if convert_range_edges and depth == '-10000.990000':
+                depth = np.nan if self.default_depth is None else self.default_depth
             points[i] = {
                 'x': f'D{date}T{time}',           # Format: D{CCYYMMDD}T{HHmmSSssss}
                 'y': depth,                           # Depth [m]
@@ -63,3 +65,46 @@ class LineParser(EvParserBase):
             output_file_path = os.path.join(save_dir, file) + '.csv'
             df.to_csv(output_file_path, index=False)
             self._output_path.append(output_file_path)
+
+    def JSON_to_dict(self, j, convert_time=True, convert_range_edges=False):
+        """Convert JSON to dict
+
+        Parameters
+        ----------
+        j : str
+            Valid JSON string or path to JSON file, defaults to True
+        convert_time : bool
+            Whether to convert EV time to datetime64, defaults `True`
+        convert_range_edges : bool
+            Whether to convert -10000.990000 error values to real range values.
+            Min and max ranges must be set manually or by calling `set_range_edge_from_raw`
+
+        Returns
+        -------
+        data : dict
+            dicationary from JSON data
+
+        Raises
+        ------
+        ValueError
+            when j is not a valid echoregions JSON file or JSON string
+        """
+
+        if os.path.isfile(j):
+            with open(j, 'r') as f:
+                data_dict = json.load(f)
+        else:
+            try:
+                data_dict = json.loads(j)
+            except json.decoder.JSONDecodeError:
+                raise ValueError("Invalid JSON string")
+
+        if convert_time:
+            if 'points' not in data_dict:
+                raise ValueError("Invalid data format")
+
+            for point in data_dict['points'].values():
+                point['x'] = parse_time(point['x'])
+                if convert_range_edges and point['y'] == '-10000.990000':
+                    point['y'] = np.nan if self.default_depth is None else self.default_depth
+            return data_dict

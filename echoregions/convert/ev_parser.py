@@ -111,5 +111,8 @@ class EvParserBase():
                 f.write(json.dumps(item))
             self._output_path.append(output_file_path)
 
-    def to_csv(self, save_dir=None):
+    def to_csv(self):
         """Base method for saving to a csv file"""
+
+    def JSON_to_dict(self):
+        """Base method for creation a dictionary from a JSON file"""

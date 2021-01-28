@@ -13,8 +13,8 @@ class Region2DParser(EvParserBase):
         self.format = 'EVR'
         self.input_files = input_files
         self._raw_range = None
-        self._min_depth = None
-        self._max_depth = None
+        self._min_depth = None      # Set to replace -9999.9900000000 range values which are EVR min range
+        self._max_depth = None      # Set to replace 9999.9900000000 range values which are EVR max range
 
     @property
     def max_depth(self):
@@ -207,7 +207,7 @@ class Region2DParser(EvParserBase):
         """
         if raw is not None:
             if raw.endswith('.raw') and os.path.isfile(raw):
-                tmp_c = ep.Convert(raw, model='EK60')
+                tmp_c = ep.Convert(raw, model=model)
                 tmp_c.to_netcdf(save_path='./')
 
                 ed = ep.process.EchoData(tmp_c.output_file)
@@ -224,3 +224,51 @@ class Region2DParser(EvParserBase):
                 os.remove(tmp_c.output_file)
             else:
                 raise ValueError("Invalid raw file")
+
+    def JSON_to_dict(self, j, convert_time=True, convert_range_edges=False):
+        """Convert JSON to dict
+
+        Parameters
+        ----------
+        j : str
+            Valid JSON string or path to JSON file, defaults to True
+        convert_time : bool
+            Whether to convert EV time to datetime64, defaults `True`
+        convert_range_edges : bool
+            Whether to convert -9999.99 edges to real range values.
+            Min and max ranges must be set manually or by calling `set_range_edge_from_raw`
+
+        Returns
+        -------
+        data : dict
+            dicationary from JSON data
+
+        Raises
+        ------
+        ValueError
+            when j is not a valid echoregions JSON file or JSON string
+        """
+
+        if os.path.isfile(j):
+            with open(j, 'r') as f:
+                data_dict = json.load(f)
+        else:
+            try:
+                data_dict = json.loads(j)
+            except json.decoder.JSONDecodeError:
+                raise ValueError("Invalid JSON string")
+
+        if convert_time:
+            if 'regions' not in data_dict:
+                raise ValueError("Invalid data format")
+
+            for rid, region in data_dict['regions'].items():
+                for p, point in region['points'].items():
+                    point = data_dict['regions'][rid]['points'][p]
+                    point[0] = parse_time(point[0])
+                    if convert_range_edges:
+                        if point[1] == '9999.9900000000' and self.max_depth is not None:
+                            point[1] = float(self.max_depth)
+                        elif point[1] == '-9999.9900000000' and self.min_depth is not None:
+                            point[1] = float(self.min_depth)
+            return data_dict
