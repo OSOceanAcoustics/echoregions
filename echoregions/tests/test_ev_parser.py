@@ -20,6 +20,7 @@ def test_plotting_points():
     x = np.array(evr_points[:, 0], dtype=np.datetime64)
     y = evr_points[:, 1]
     assert all(y == [r_parser.min_depth, r_parser.max_depth, r_parser.max_depth, r_parser.min_depth])
+    os.remove(r_parser.output_path)
     # Plotting example
     # import matplotlib.pyplot as plt
     # plt.plot(x, y)
@@ -36,11 +37,13 @@ def test_plotting_points():
     y = evl_points[:, 1]
     assert len(x) == 13764
     assert len(y) == 13764
+    os.remove(l_parser.output_path)
     # Plotting example
     # plt.plot(x, y)
     # plt.xticks([])
     # plt.yticks([])
     # plt.show()
+    os.rmdir(output_json)
 
 
 def test_parse_time():
