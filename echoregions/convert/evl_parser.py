@@ -63,13 +63,14 @@ class LineParser(EvParserBase):
             df.to_csv(output_file_path, index=False)
             self._output_path.append(output_file_path)
 
-    def JSON_to_dict(self, j, convert_time=True, replace_nan_range_value=None):
-        """Convert JSON to dict
+    def convert_points(self, points, convert_time=True, replace_nan_range_value=None):
+        """Convert x and y values of points from the EV format.
+        Modifies points in-place.
 
         Parameters
         ----------
-        j : str
-            Valid JSON string or path to JSON file
+        points : list
+            Dictionary containing EVL points
         convert_time : bool
             Whether to convert EV time to datetime64, defaults to `True`
         replace_nan_range_value : bool
@@ -78,25 +79,28 @@ class LineParser(EvParserBase):
 
         Returns
         -------
-        data : dict
-            dicationary from JSON data
-
-        Raises
-        ------
-        ValueError
-            when j is not a valid echoregions JSON file or JSON string
+        points : dict
+            dicationary of converted points
         """
+        for point in points.values():
+            if convert_time:
+                point['x'] = parse_time(point['x'])
+            if replace_nan_range_value is not None and float(point['y'] == -10000.99):
+                point['y'] = replace_nan_range_value
+        return points
 
-        data_dict = self.from_JSON(j)
+    @staticmethod
+    def points_dict_to_list(points):
+        """Convert a dictionary of points to a list
 
-        if convert_time or replace_nan_range_value is not None:
-            if 'points' not in data_dict:
-                raise ValueError("Invalid data format")
+        Parameters
+        ----------
+        points : dict
+            dict of points from parsing an EVL file
 
-            for point in data_dict['points'].values():
-                if convert_time:
-                    point['x'] = parse_time(point['x'])
-                if replace_nan_range_value is not None and point['y'] == '-10000.990000':
-                    point['y'] = replace_nan_range_value
-
-        return data_dict
+        Returns
+        -------
+        points : list
+            list of points in [x, y] format
+        """
+        return [[p['x'], p['y']] for p in points.values()]

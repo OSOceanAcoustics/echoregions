@@ -29,19 +29,21 @@ class Region2DParser(EvParserBase):
         if self._min_depth is not None:
             if val <= self._min_depth:
                 raise ValueError("max_depth cannot be less than min_depth")
-        self._max_depth = val
+        self._max_depth = float(val)
 
     @min_depth.setter
     def min_depth(self, val):
         if self._max_depth is not None:
             if val >= self._max_depth:
                 raise ValueError("min_depth cannot be greater than max_depth")
-        self._min_depth = val
+        self._min_depth = float(val)
 
     def _parse(self, fid, convert_range_edges=True):
         """Reads an open file and returns the file metadata and region information"""
         def _region_metadata_to_dict(line):
             """Assigns a name to each value in the metadata line for each region"""
+            top_y = self.swap_range_edge(line[9]) if convert_range_edges else line[9]
+            bottom_y = self.swap_range_edge(line[12]) if convert_range_edges else line[12]
             return {
                 'structure_version': line[0],                               # 13 currently
                 'point_count': line[1],                                     # Number of points in the region
@@ -52,9 +54,9 @@ class Region2DParser(EvParserBase):
                 # Date encoded as CCYYMMDD and times in HHmmSSssss
                 # Where CC=Century, YY=Year, MM=Month, DD=Day, HH=Hour, mm=minute, SS=second, ssss=0.1 milliseconds
                 'bounding_rectangle_left_x': f'D{line[7]}T{line[8]}',       # Time and date of bounding box left x
-                'bounding_rectangle_top_y': line[9],                       # Top of bounding box
+                'bounding_rectangle_top_y': top_y,                         # Top of bounding box
                 'bounding_rectangle_right_x': f'D{line[10]}T{line[11]}',    # Time and date of bounding box right x
-                'bounding_rectangle_bottom_y': line[12],                    # Bottom of bounding box
+                'bounding_rectangle_bottom_y': bottom_y,                    # Bottom of bounding box
             }
 
         def _points_to_dict(line):
@@ -147,17 +149,16 @@ class Region2DParser(EvParserBase):
             df[row.keys()].to_csv(output_file_path, index=False)
             self._output_path.append(output_file_path)
 
-    def get_points_from_region(self, region, file, convert_time=False):
+    def get_points_from_region(self, region, file=None):
         """Get points from specified region from a JSON or CSV file
         or from the parsed data.
 
         Parameters
         ----------
-        region : int
-            ID of the region to extract points from
+        region : int or dict
+            ID of the region to extract points from or region dictionary
         file : str
-            path to JSON or CSV file or the filename of
-            the original EVR file. (Key of `self.output_data`)
+            path to JSON or CSV file
         convert_time : bool
             whether or not to convert the EV timestamps to datetime64
 
@@ -166,34 +167,34 @@ class Region2DParser(EvParserBase):
         points : list
             list of x, y points
         """
-        # Pull region points from CSV file
-        if file.upper().endswith('.CSV'):
+        if file is not None and file.upper().endswith('.CSV'):
             if not os.path.isfile(file):
                 raise ValueError(f"{file} is not a valid CSV file.")
             data = pd.read_csv(file)
             region = data.loc[data['region_id'] == int(region)]
-            # Combine x and y points to get a list of tuples
+            # Combine x and y points to get a list of points
             return list(zip(region.x, region.y))
-        # Pull region points from JSON or Parsed data (similar dict structure)
-        else:
-            # JSON file
-            if file.upper().endswith('.JSON'):
-                if not os.path.isfile(file):
-                    raise ValueError(f"{file} is not a valid JSON file.")
-                with open(file) as f:
-                    data = json.load(f)
-            # Parsed data
-            else:
-                data = self.output_data[file]
-            # Navigate the tree structure and get the points as a list of lists
-            points = list(data['regions'][str(region)]['points'].values())
-            if convert_time:
-                for p in points:
-                    p[0] = parse_time(p[0])
-            # Convert to a list of tuples for consistency with CSV
-            return [list(l) for l in points]
 
-    def set_range_edge_from_raw(self, raw=None, model='EK60'):
+        # Pull region points from CSV file
+        points = []
+        if file is None:
+            if not isinstance(region, dict) and 'points' not in region:
+                raise ValueError("Region or file not provided")
+            points = list(region['points'].values())
+        elif file.upper().endswith('.JSON'):
+            data = self.from_JSON(file)
+            points = list(data['regions'][str(region)]['points'].values())
+        return [list(l) for l in points]
+
+    def swap_range_edge(self, y):
+        if float(y) == 9999.99 and self.max_depth is not None:
+            return self.max_depth
+        elif float(y) == -9999.99 and self.min_depth is not None:
+            return self.min_depth
+        else:
+            return y
+
+    def set_range_edge_from_raw(self, raw, model='EK60'):
         """Calculate the sonar range from a raw file using Echopype.
         Used to replace EVR range edges -9999.99 and 9999.99 with real values
 
@@ -205,33 +206,33 @@ class Region2DParser(EvParserBase):
             The sonar model that created the raw file, defaults to `EK60`.
             See echopype for list of supported sonar models
         """
-        if raw is not None:
-            if raw.endswith('.raw') and os.path.isfile(raw):
-                tmp_c = ep.Convert(raw, model=model)
-                tmp_c.to_netcdf(save_path='./')
+        if raw.endswith('.raw') and os.path.isfile(raw):
+            tmp_c = ep.Convert(raw, model=model)
+            tmp_c.to_netcdf(save_path='./')
 
-                ed = ep.process.EchoData(tmp_c.output_file)
-                proc = ep.process.Process('EK60', ed)
+            ed = ep.process.EchoData(tmp_c.output_file)
+            proc = ep.process.Process('EK60', ed)
 
-                # proc.get_range # Calculate range directly as opposed to with get_Sv
-                proc.get_Sv(ed)
-                self._raw_range = ed.range.isel(frequency=0, ping_time=0).load()
+            # proc.get_range # Calculate range directly as opposed to with get_Sv
+            proc.get_Sv(ed)
+            self._raw_range = ed.range.isel(frequency=0, ping_time=0).load()
 
-                self.max_depth = self._raw_range.max().values
-                self.min_depth = self._raw_range.min().values
+            self.max_depth = self._raw_range.max().values
+            self.min_depth = self._raw_range.min().values
 
-                ed.close()
-                os.remove(tmp_c.output_file)
-            else:
-                raise ValueError("Invalid raw file")
+            ed.close()
+            os.remove(tmp_c.output_file)
+        else:
+            raise ValueError("Invalid raw file")
 
-    def JSON_to_dict(self, j, convert_time=True, convert_range_edges=False):
-        """Convert JSON to dict
+    def convert_points(self, points, convert_time=True, convert_range_edges=False):
+        """Convert x and y values of points from the EV format.
+        Modifies points in-place.
 
         Parameters
         ----------
-        j : str
-            Valid JSON string or path to JSON file, defaults to True
+        points : list
+            point in [x, y] format or list of these
         convert_time : bool
             Whether to convert EV time to datetime64, defaults `True`
         convert_range_edges : bool
@@ -240,28 +241,18 @@ class Region2DParser(EvParserBase):
 
         Returns
         -------
-        data : dict
-            dicationary from JSON data
-
-        Raises
-        ------
-        ValueError
-            when j is not a valid echoregions JSON file or JSON string
+        points : list
+            single converted point or list of converted points
         """
+        singular = True if not isinstance(points[0], list) else False
+        if singular:
+            points = [points]
 
-        data_dict = self.from_JSON(j)
-
-        if convert_time or convert_range_edges:
-            if 'regions' not in data_dict:
-                raise ValueError("Invalid data format")
-
-            for region in data_dict['regions'].values():
-                for point in region['points'].values():
-                    if convert_time:
-                        point[0] = parse_time(point[0])
-                    if convert_range_edges:
-                        if point[1] == '9999.9900000000' and self.max_depth is not None:
-                            point[1] = float(self.max_depth)
-                        elif point[1] == '-9999.9900000000' and self.min_depth is not None:
-                            point[1] = float(self.min_depth)
-        return data_dict
+        for point in points:
+            if convert_time:
+                point[0] = parse_time(point[0])
+            if convert_range_edges:
+                point[1] = self.swap_range_edge(point[1])
+        if singular:
+            points = points[0]
+        return points
