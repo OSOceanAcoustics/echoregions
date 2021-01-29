@@ -140,3 +140,4 @@ __main__.py
 *.ecs
 *.csv
 *.json
+*.png
