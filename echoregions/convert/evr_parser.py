@@ -17,11 +17,23 @@ class Region2DParser(EvParserBase):
         self._max_depth = None      # Set to replace 9999.9900000000 range values which are EVR max range
 
     @property
+    def raw_range(self):
+        return self._raw_range
+
+    @raw_range.setter
+    def raw_range(self, val):
+        self._raw_range = val
+
+    @property
     def max_depth(self):
+        if self._max_depth is None and self.raw_range is not None:
+            self.max_depth = self._raw_range.max()
         return self._max_depth
 
     @property
     def min_depth(self):
+        if self._min_depth is None and self.raw_range is not None:
+            self.min_depth = self._raw_range.min()
         return self._min_depth
 
     @max_depth.setter
@@ -202,7 +214,7 @@ class Region2DParser(EvParserBase):
         elif float(y) == -9999.99 and self.min_depth is not None:
             return self.min_depth
         else:
-            return y
+            return float(y)
 
     def set_range_edge_from_raw(self, raw, model='EK60'):
         """Calculate the sonar range from a raw file using Echopype.
