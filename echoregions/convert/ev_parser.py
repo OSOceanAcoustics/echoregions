@@ -47,8 +47,7 @@ class EvParserBase():
 
     def _validate_path(self, save_dir=None):
         # Checks a path to see if it is a folder that exists.
-        # Does not create the folder if it doesn't
-        # TODO: replace with a general validate path
+        # Create the folder if it doesn't
         if save_dir is None:
             save_dir = os.path.dirname(self.input_files[0])
         else:
@@ -141,6 +140,3 @@ class EvParserBase():
 
     def to_csv(self):
         """Base method for saving to a csv file"""
-
-    def JSON_to_dict(self):
-        """Base method for creation a dictionary from a JSON file"""
