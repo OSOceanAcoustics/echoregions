@@ -5,10 +5,10 @@ import os
 
 
 class CalibrationParser(EvParserBase):
-    def __init__(self, input_files=None):
+    def __init__(self, input_file=None):
         super().__init__()
         self.format = 'ECS'
-        self.input_files = input_files
+        self.input_file = input_file
 
     def _parse_settings(self, fid, ignore_comments):
         """Reads lines from an open file.
@@ -52,7 +52,7 @@ class CalibrationParser(EvParserBase):
             else:
                 return sourcecal
 
-    def parse_files(self, input_files=None, ignore_comments=True):
+    def parse_file(self, ignore_comments=True):
         def advance_to_section(fid, section):
             # Function for skipping lines that do not contain the variables to save
             cont = True
@@ -64,26 +64,20 @@ class CalibrationParser(EvParserBase):
             fid.readline()          # Bottom of heading box
             fid.readline()          # Blank line
 
-        if input_files is not None:
-            self.input_files = input_files
+        fid = open(self.input_file, encoding='utf-8-sig')
 
-        self._output_path = []
-        for file in self.input_files:
-            fid = open(file, encoding='utf-8-sig')
-            fname = os.path.splitext(os.path.basename(file))[0]
+        advance_to_section(fid, 'FILESET SETTINGS')
+        fileset_settings = self._parse_settings(fid, ignore_comments=ignore_comments)
+        advance_to_section(fid, 'SOURCECAL SETTINGS')
+        sourcecal_settings = self._parse_sourcecal(fid, ignore_comments=ignore_comments)
+        advance_to_section(fid, 'LOCALCAL SETTINGS')
+        localcal_settings = self._parse_settings(fid, ignore_comments=ignore_comments)
 
-            advance_to_section(fid, 'FILESET SETTINGS')
-            fileset_settings = self._parse_settings(fid, ignore_comments=ignore_comments)
-            advance_to_section(fid, 'SOURCECAL SETTINGS')
-            sourcecal_settings = self._parse_sourcecal(fid, ignore_comments=ignore_comments)
-            advance_to_section(fid, 'LOCALCAL SETTINGS')
-            localcal_settings = self._parse_settings(fid, ignore_comments=ignore_comments)
-
-            self.output_data[fname] = {
-                'fileset_settings': fileset_settings,
-                'sourcecal_settings': sourcecal_settings,
-                'localcal_settings': localcal_settings,
-            }
+        self.output_data = {
+            'fileset_settings': fileset_settings,
+            'sourcecal_settings': sourcecal_settings,
+            'localcal_settings': localcal_settings,
+        }
 
     def to_csv(self, save_dir=None, **kwargs):
         """Convert an Echoview calibration .ecs file to a .csv file
@@ -93,7 +87,7 @@ class CalibrationParser(EvParserBase):
         save_dir : str
             directory to save the CSV file to
         kwargs
-            keyword arguments passed into `parse_files`
+            keyword arguments passed into `parse_file`
         """
         def get_row_from_source(row_dict, source_dict, **kw):
             source_dict.update(kw)
@@ -103,43 +97,42 @@ class CalibrationParser(EvParserBase):
 
         # Parse ECS file if it hasn't already been done
         if not self.output_data:
-            self.parse_files(**kwargs)
+            self.parse_file(**kwargs)
 
         # Check if the save directory is safe
         save_dir = self._validate_path(save_dir)
 
-        for file, settings in self.output_data.items():
-            df = pd.DataFrame()
-            id_keys = ['value_source', 'channel']
-            fileset_keys = list(self.output_data[file]['fileset_settings'].keys())
-            sourcecal_keys = list(list(self.output_data[file]['sourcecal_settings'].values())[0].keys())
-            localset_keys = list(self.output_data[file]['localcal_settings'].keys())
+        df = pd.DataFrame()
+        id_keys = ['value_source', 'channel']
+        fileset_keys = list(self.output_data['fileset_settings'].keys())
+        sourcecal_keys = list(list(self.output_data['sourcecal_settings'].values())[0].keys())
+        localset_keys = list(self.output_data['localcal_settings'].keys())
 
-            # Combine keys from the different sections and remove duplicates
-            row_dict = dict.fromkeys(id_keys + fileset_keys + sourcecal_keys + localset_keys, np.nan)
+        # Combine keys from the different sections and remove duplicates
+        row_dict = dict.fromkeys(id_keys + fileset_keys + sourcecal_keys + localset_keys, np.nan)
 
-            for cal, cal_settings in self.output_data[file]['sourcecal_settings'].items():
-                row_fileset = get_row_from_source(
-                    row_dict=row_dict.copy(),
-                    source_dict=self.output_data[file]['fileset_settings'],
-                    value_source='FILESET',
-                    channel=cal,
-                )
-                row_sourcecal = get_row_from_source(
-                    row_dict=row_dict.copy(),
-                    source_dict=cal_settings,
-                    value_source='SOURCECAL',
-                    channel=cal,
-                )
-                row_localset = get_row_from_source(
-                    row_dict=row_dict.copy(),
-                    source_dict=self.output_data[file]['localcal_settings'],
-                    value_source='LOCALSET',
-                    channel=cal,
-                )
-                df = df.append([row_fileset, row_sourcecal, row_localset], ignore_index=True)
+        for cal, cal_settings in self.output_data['sourcecal_settings'].items():
+            row_fileset = get_row_from_source(
+                row_dict=row_dict.copy(),
+                source_dict=self.output_data['fileset_settings'],
+                value_source='FILESET',
+                channel=cal,
+            )
+            row_sourcecal = get_row_from_source(
+                row_dict=row_dict.copy(),
+                source_dict=cal_settings,
+                value_source='SOURCECAL',
+                channel=cal,
+            )
+            row_localset = get_row_from_source(
+                row_dict=row_dict.copy(),
+                source_dict=self.output_data['localcal_settings'],
+                value_source='LOCALSET',
+                channel=cal,
+            )
+            df = df.append([row_fileset, row_sourcecal, row_localset], ignore_index=True)
 
-            # Export to csv
-            output_file_path = os.path.join(save_dir, file) + '.csv'
-            df.to_csv(output_file_path, index=False)
-            self._output_path.append(output_file_path)
+        # Export to csv
+        output_file_path = os.path.join(save_dir, self.filename) + '.csv'
+        df.to_csv(output_file_path, index=False)
+        self._output_path.append(output_file_path)

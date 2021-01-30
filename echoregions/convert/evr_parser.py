@@ -1,20 +1,18 @@
 import pandas as pd
-import json
 from collections import defaultdict
 from .ev_parser import EvParserBase
 import os
 import echopype as ep
-from .utils import parse_time
 
 
 class Region2DParser(EvParserBase):
-    def __init__(self, input_files=None):
+    def __init__(self, input_file=None):
         super().__init__()
         self.format = 'EVR'
-        self.input_files = input_files
         self._raw_range = None
         self._min_depth = None      # Set to replace -9999.9900000000 range values which are EVR min range
         self._max_depth = None      # Set to replace 9999.9900000000 range values which are EVR max range
+        self.input_file = input_file
 
     @property
     def raw_range(self):
@@ -130,36 +128,34 @@ class Region2DParser(EvParserBase):
         """
         # Parse EVR file if it hasn't already been done
         if not self.output_data:
-            self.parse_files(**kwargs)
+            self.parse_file(**kwargs)
         # Check if the save directory is safe
         save_dir = self._validate_path(save_dir)
         row = []
 
-        # Loop over each file. 1 EVR file is saved to 1 CSV file
-        for file, data, in self.output_data.items():
-            df = pd.DataFrame()
-            # Save file metadata for each point
-            metadata = pd.Series(data['metadata'])
-            # Loop over each region
-            for rid, region in data['regions'].items():
-                # Save region information for each point
-                region_metadata = pd.Series(region['metadata'])
-                region_notes = pd.Series({'notes': region['notes']})
-                detection_settings = pd.Series({'detection_settings': region['detection_settings']})
-                region_id = pd.Series({'region_id': rid})
-                # Loop over each point in each region. One row of the dataframe corresponds to one point
-                for p, point in enumerate(region['points'].values()):
-                    point = pd.Series({
-                        'point_idx': p,
-                        'x': point[0],
-                        'y': point[1],
-                    })
-                    row = pd.concat([region_id, point, metadata, region_metadata, region_notes, detection_settings])
-                    df = df.append(row, ignore_index=True)
-            # Reorder columns and export to csv
-            output_file_path = os.path.join(save_dir, file) + '.csv'
-            df[row.keys()].to_csv(output_file_path, index=False)
-            self._output_path.append(output_file_path)
+        df = pd.DataFrame()
+        # Save file metadata for each point
+        metadata = pd.Series(self.output_data['metadata'])
+        # Loop over each region
+        for rid, region in self.output_data['regions'].items():
+            # Save region information for each point
+            region_metadata = pd.Series(region['metadata'])
+            region_notes = pd.Series({'notes': region['notes']})
+            detection_settings = pd.Series({'detection_settings': region['detection_settings']})
+            region_id = pd.Series({'region_id': rid})
+            # Loop over each point in each region. One row of the dataframe corresponds to one point
+            for p, point in enumerate(region['points'].values()):
+                point = pd.Series({
+                    'point_idx': p,
+                    'x': point[0],
+                    'y': point[1],
+                })
+                row = pd.concat([region_id, point, metadata, region_metadata, region_notes, detection_settings])
+                df = df.append(row, ignore_index=True)
+        # Reorder columns and export to csv
+        output_file_path = os.path.join(save_dir, self.filename) + '.csv'
+        df[row.keys()].to_csv(output_file_path, index=False)
+        self._output_path.append(output_file_path)
 
     def get_points_from_region(self, region, file=None):
         """Get points from specified region from a JSON or CSV file
@@ -178,13 +174,19 @@ class Region2DParser(EvParserBase):
             list of x, y points
         """
         # Pull region points from CSV file
-        if file is not None and file.upper().endswith('.CSV'):
-            if not os.path.isfile(file):
-                raise ValueError(f"{file} is not a valid CSV file.")
-            data = pd.read_csv(file)
-            region = data.loc[data['region_id'] == int(region)]
-            # Combine x and y points to get a list of points
-            return list(zip(region.x, region.y))
+        if file is not None:
+            if file.upper().endswith('.CSV'):
+                if not os.path.isfile(file):
+                    raise ValueError(f"{file} is not a valid CSV file.")
+                data = pd.read_csv(file)
+                region = data.loc[data['region_id'] == int(region)]
+                # Combine x and y points to get a list of points
+                return list(zip(region.x, region.y))
+            elif file.upper().endswith('.JSON'):
+                data = self.from_JSON(file)
+                points = list(data['regions'][str(region)]['points'].values())
+            else:
+                raise ValueError(f"{file} is not a CSV or JSON file")
 
         # Pull region points from passed region dict
         if isinstance(region, dict):
@@ -192,20 +194,13 @@ class Region2DParser(EvParserBase):
                 points = list(region['points'].values())
             else:
                 raise ValueError("Invalid region dictionary")
+        # Pull region points from parsed data
         else:
             region = str(region)
-            # Pull region points from JSON file
-            if file is not None and file.upper().endswith('.JSON'):
-                data = self.from_JSON(file)
-                points = list(data['regions'][region]['points'].values())
-            # Pull region points from parsed data
-            elif file in self.output_data:
-                if region in self.output_data[file]['regions']:
-                    points = list(self.output_data[file]['regions'][region]['points'].values())
-                else:
-                    raise ValueError("{region} is not a valid region of {file}")
+            if region in self.output_data['regions']:
+                points = list(self.output_data['regions'][region]['points'].values())
             else:
-                raise ValueError("Valid region or file not provided")
+                raise ValueError("{region} is not a valid region")
         return [list(l) for l in points]
 
     def swap_range_edge(self, y):
@@ -272,7 +267,7 @@ class Region2DParser(EvParserBase):
 
         for point in points:
             if convert_time:
-                point[0] = parse_time(point[0])
+                point[0] = self.parse_time(point[0])
             if convert_range_edges:
                 point[1] = self.swap_range_edge(point[1])
         if singular:

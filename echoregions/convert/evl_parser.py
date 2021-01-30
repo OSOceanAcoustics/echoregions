@@ -1,14 +1,13 @@
 import pandas as pd
 import os
 from .ev_parser import EvParserBase
-from .utils import parse_time
 
 
 class LineParser(EvParserBase):
-    def __init__(self, input_files=None):
+    def __init__(self, input_file=None):
         super().__init__()
         self.format = 'EVL'
-        self.input_files = input_files
+        self.input_file = input_file
 
     def _parse(self, fid, replace_nan_range_value=None):
         # Read header containing metadata about the EVL file
@@ -40,28 +39,26 @@ class LineParser(EvParserBase):
             directory to save the CSV file to
         """
         if not self.output_data:
-            self.parse_files()
+            self.parse_file()
 
         # Check if the save directory is safe
         save_dir = self._validate_path(save_dir)
 
-        # Loop over each file. 1 EVL file is saved to 1 CSV file
-        for file, data, in self.output_data.items():
-            # Save a row for each point
-            df = pd.concat(
-                [pd.DataFrame([point], columns=['x', 'y', 'status']) for
-                 pid, point in data['points'].items()],
-                ignore_index=True
-            )
-            # Save file metadata for each point
-            metadata = pd.Series(data['metadata'])
-            for k, v in metadata.items():
-                df[k] = v
+        # Save a row for each point
+        df = pd.concat(
+            [pd.DataFrame([point], columns=['x', 'y', 'status']) for
+                pid, point in self.output_data['points'].items()],
+            ignore_index=True
+        )
+        # Save file metadata for each point
+        metadata = pd.Series(self.output_data['metadata'])
+        for k, v in metadata.items():
+            df[k] = v
 
-            # Reorder columns and export to csv
-            output_file_path = os.path.join(save_dir, file) + '.csv'
-            df.to_csv(output_file_path, index=False)
-            self._output_path.append(output_file_path)
+        # Reorder columns and export to csv
+        output_file_path = os.path.join(save_dir, self.filename) + '.csv'
+        df.to_csv(output_file_path, index=False)
+        self._output_path.append(output_file_path)
 
     def convert_points(self, points, convert_time=True, replace_nan_range_value=None):
         """Convert x and y values of points from the EV format.
@@ -84,7 +81,7 @@ class LineParser(EvParserBase):
         """
         for point in points.values():
             if convert_time:
-                point['x'] = parse_time(point['x'])
+                point['x'] = self.parse_time(point['x'])
             if replace_nan_range_value is not None and float(point['y'] == -10000.99):
                 point['y'] = replace_nan_range_value
         return points
