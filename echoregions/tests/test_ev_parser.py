@@ -1,6 +1,5 @@
 import os
 import numpy as np
-from ..convert import utils
 from ..convert.evr_parser import Region2DParser
 from ..convert.ecs_parser import CalibrationParser
 from ..convert.evl_parser import LineParser
@@ -20,12 +19,6 @@ def test_plotting_points():
     x = np.array(evr_points[:, 0], dtype=np.datetime64)
     y = evr_points[:, 1]
     assert all(y == [r_parser.min_depth, r_parser.max_depth, r_parser.max_depth, r_parser.min_depth])
-    # Plotting example
-    # import matplotlib.pyplot as plt
-    # plt.plot(x, y)
-    # plt.xticks([])
-    # plt.yticks([])
-    # plt.show()
 
     evl_paths = data_dir + 'x1.bottom.evl'
     l_parser = LineParser(evl_paths)
@@ -36,26 +29,25 @@ def test_plotting_points():
     y = evl_points[:, 1]
     assert len(x) == 13764
     assert len(y) == 13764
-    # Plotting example
-    # plt.plot(x, y)
-    # plt.xticks([])
-    # plt.yticks([])
-    # plt.show()
+
+    os.remove(r_parser.output_path)
+    os.remove(l_parser.output_path)
+    os.rmdir(output_json)
 
 
 def test_parse_time():
+    tmp = Region2DParser()
     timestamp = 'D20170625T1539223320'
-    assert utils.parse_time(timestamp) == np.datetime64('2017-06-25T15:39:22.3320')
+    assert tmp.parse_time(timestamp) == np.datetime64('2017-06-25T15:39:22.3320')
 
 
 def test_convert_evr():
-    evr_paths = [data_dir + 'x1.evr',
-                 data_dir + 'x3.evr']
-    parser = Region2DParser(evr_paths)
+    evr_path = data_dir + 'x1.evr'
+    parser = Region2DParser(evr_path)
     # parser.set_range_edge_from_raw(data_dir + 'hake_2017/Summer2017-D20170624-T001210.raw')
     parser.to_json(output_json)
     parser.to_csv(output_csv)
-    points = parser.get_points_from_region(4, 'x1')
+    points = parser.get_points_from_region(4)
     points = parser.get_points_from_region(4, parser.output_path[0])
     assert points[0] == ['D20170625T1539223320', '9.2447583998']
 
@@ -71,7 +63,7 @@ def test_convert_ecs():
     evr_path = data_dir + 'Summer2017_JuneCal_3freq.ecs'
 
     parser = CalibrationParser(evr_path)
-    parser.parse_files(ignore_comments=True)
+    parser.parse_file(ignore_comments=True)
     parser.to_csv(output_csv)
     parser.to_json(output_json)
 
@@ -84,10 +76,9 @@ def test_convert_ecs():
 
 
 def test_convert_evl():
-    evl_paths = [data_dir + 'x1.bottom.evl',
-                 data_dir + 'x3.bottom.evl']
-    parser = LineParser(evl_paths)
-    parser.parse_files()
+    evl_path = data_dir + 'x1.bottom.evl'
+    parser = LineParser(evl_path)
+    parser.parse_file()
     parser.to_csv(output_csv)
     parser.to_json(output_json)
 

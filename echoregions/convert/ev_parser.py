@@ -1,37 +1,45 @@
 import json
+import numpy as np
+import datetime as dt
 import os
 
+EV_DATETIME_FORMAT = 'D%Y%m%dT%H%M%S%f'
 
 class EvParserBase():
-    def __init__(self):
-        self.format = None
-        self._input_files = None
+    def __init__(self, input_file, file_format):
+        self._input_file = None
+        self._filename = None
         self.output_data = {}
         self._output_path = []
 
-    @property
-    def input_files(self):
-        if self._input_files is None:
-            raise ValueError("No input files to parse")
-        return self._input_files
+        self.format = file_format
+        self.input_file = input_file
 
-    @input_files.setter
-    def input_files(self, files):
-        if files is not None:
-            if isinstance(files, str):
-                files = [files]
-            elif not isinstance(files, list):
-                raise ValueError(f"Input files must be a string or a list. Got {type(files)} instead")
-            for f in files:
-                if not f.upper().endswith(self.format):
-                    raise ValueError(f'Input file {f} is not a {self.format} file')
-                if not os.path.isfile(f):
-                    raise ValueError(f"Input file {f} does not exist")
-            self._input_files = files
+    @property
+    def filename(self):
+        if self._filename is None or self._filename not in self.input_file:
+            self._filename = os.path.splitext(os.path.basename(self.input_file))[0]
+        return self._filename
+
+    @property
+    def input_file(self):
+        if self._input_file is None:
+            raise ValueError("No input file to parse")
+        return self._input_file
+
+    @input_file.setter
+    def input_file(self, file):
+        if file is not None:
+            if not file.upper().endswith(self.format):
+                raise ValueError(f"Input file {file} is not a {self.format} file")
+            if not os.path.isfile(file):
+                raise ValueError(f"Input file {file} does not exist")
+            self._input_file = file
 
     @property
     def output_path(self):
         if len(self._output_path) == 1:
+            self._output_path = list(set(self._output_path))
             return self._output_path[0]
         else:
             return self._output_path
@@ -47,10 +55,9 @@ class EvParserBase():
 
     def _validate_path(self, save_dir=None):
         # Checks a path to see if it is a folder that exists.
-        # Does not create the folder if it doesn't
-        # TODO: replace with a general validate path
+        # Create the folder if it doesn't
         if save_dir is None:
-            save_dir = os.path.dirname(self.input_files[0])
+            save_dir = os.path.dirname(self.input_file[0])
         else:
             if not os.path.isdir(save_dir):
                 if os.path.splitext(save_dir)[1] == '':
@@ -78,8 +85,8 @@ class EvParserBase():
                 raise ValueError("Invalid JSON string")
         return data_dict
 
-    def parse_files(self, **kwargs):
-        """Base method for parsing the files in `input_files`.
+    def parse_file(self, **kwargs):
+        """Base method for parsing the file in `input_file`.
         Used for EVR and EVL parsers
 
         Parameters
@@ -98,22 +105,20 @@ class EvParserBase():
             Value to replace -10000.990000 ranges with.
             Don't replace if `None`, defaults to `None`
         """
-        for file in self.input_files:
-            fid = open(file, encoding='utf-8-sig')
-            fname = os.path.splitext(os.path.basename(file))[0]
+        fid = open(self.input_file, encoding='utf-8-sig')
 
-            metadata, data = self._parse(fid, **kwargs)
-            if self.format == 'EVR':
-                data_name = 'regions'
-            elif self.format == 'EVL':
-                data_name = 'points'
-            else:
-                raise ValueError("Invalid data format")
+        metadata, data = self._parse(fid, **kwargs)
+        if self.format == 'EVR':
+            data_name = 'regions'
+        elif self.format == 'EVL':
+            data_name = 'points'
+        else:
+            raise ValueError("Invalid data format")
 
-            self.output_data[fname] = {
-                'metadata': metadata,
-                data_name: data
-            }
+        self.output_data = {
+            'metadata': metadata,
+            data_name: data
+        }
 
     def to_json(self, save_dir=None, **kwargs):
         """Convert an Echoview 2D regions .evr file to a .json file
@@ -123,24 +128,44 @@ class EvParserBase():
         save_dir : str
             directory to save the JSON file to
         kwargs
-            keyword arguments passed into `parse_files`
+            keyword arguments passed into `parse_file`
         """
         # Parse EVR file if it hasn't already been done
         if not self.output_data:
-            self.parse_files(**kwargs)
+            self.parse_file(**kwargs)
 
         # Check if the save directory is safe
         save_dir = self._validate_path(save_dir)
 
         # Save the entire parsed EVR dictionary as a JSON file
-        for file, item in self.output_data.items():
-            output_file_path = os.path.join(save_dir, file) + '.json'
-            with open(output_file_path, 'w') as f:
-                f.write(json.dumps(item))
-            self._output_path.append(output_file_path)
+        output_file_path = os.path.join(save_dir, self.filename) + '.json'
+        with open(output_file_path, 'w') as f:
+            f.write(json.dumps(self.output_data))
+        self._output_path.append(output_file_path)
+
+    @staticmethod
+    def parse_time(ev_time):
+        """Convert EV datetime to a numpy datetime64 object
+
+        Parameters
+        ----------
+        ev_time : str
+            EV datetime in CCYYMMDD HHmmSSssss format
+
+        Returns
+        -------
+        datetime : np.datetime64
+            converted input datetime
+
+        Raises
+        ------
+        ValueError
+            when ev_time is not a string
+        """
+        if not isinstance(ev_time, str):
+            raise ValueError("'ev_time' must be type str")
+        timestamp = np.array(dt.datetime.strptime(ev_time, EV_DATETIME_FORMAT), dtype=np.datetime64)
+        return timestamp
 
     def to_csv(self):
         """Base method for saving to a csv file"""
-
-    def JSON_to_dict(self):
-        """Base method for creation a dictionary from a JSON file"""
