@@ -6,12 +6,14 @@ import os
 EV_DATETIME_FORMAT = 'D%Y%m%dT%H%M%S%f'
 
 class EvParserBase():
-    def __init__(self):
-        self.format = None
+    def __init__(self, input_file, file_format):
         self._input_file = None
         self._filename = None
         self.output_data = {}
         self._output_path = []
+
+        self.format = file_format
+        self.input_file = input_file
 
     @property
     def filename(self):

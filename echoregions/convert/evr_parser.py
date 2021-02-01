@@ -7,12 +7,10 @@ import echopype as ep
 
 class Region2DParser(EvParserBase):
     def __init__(self, input_file=None):
-        super().__init__()
-        self.format = 'EVR'
+        super().__init__(input_file, 'EVR')
         self._raw_range = None
         self._min_depth = None      # Set to replace -9999.9900000000 range values which are EVR min range
         self._max_depth = None      # Set to replace 9999.9900000000 range values which are EVR max range
-        self.input_file = input_file
 
     @property
     def raw_range(self):

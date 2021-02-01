@@ -5,9 +5,7 @@ from .ev_parser import EvParserBase
 
 class LineParser(EvParserBase):
     def __init__(self, input_file=None):
-        super().__init__()
-        self.format = 'EVL'
-        self.input_file = input_file
+        super().__init__(input_file, 'EVL')
 
     def _parse(self, fid, replace_nan_range_value=None):
         # Read header containing metadata about the EVL file
