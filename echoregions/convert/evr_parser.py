@@ -1,8 +1,10 @@
+from ast import parse
 import pandas as pd
 from collections import defaultdict
 from .ev_parser import EvParserBase
 import os
-import echopype as ep
+from .utils import parse_time, from_JSON
+import copy
 
 
 class Region2DParser(EvParserBase):
@@ -11,59 +13,30 @@ class Region2DParser(EvParserBase):
         self._raw_range = None
         self._min_depth = None      # Set to replace -9999.9900000000 range values which are EVR min range
         self._max_depth = None      # Set to replace 9999.9900000000 range values which are EVR max range
+        self.raw_range = None
+        self.min_depth = None
+        self.max_depth = None
 
-    @property
-    def raw_range(self):
-        return self._raw_range
-
-    @raw_range.setter
-    def raw_range(self, val):
-        self._raw_range = val
-
-    @property
-    def max_depth(self):
-        if self._max_depth is None and self.raw_range is not None:
-            self.max_depth = self._raw_range.max()
-        return self._max_depth
-
-    @property
-    def min_depth(self):
-        if self._min_depth is None and self.raw_range is not None:
-            self.min_depth = self._raw_range.min()
-        return self._min_depth
-
-    @max_depth.setter
-    def max_depth(self, val):
-        if self._min_depth is not None:
-            if val <= self._min_depth:
-                raise ValueError("max_depth cannot be less than min_depth")
-        self._max_depth = float(val)
-
-    @min_depth.setter
-    def min_depth(self, val):
-        if self._max_depth is not None:
-            if val >= self._max_depth:
-                raise ValueError("min_depth cannot be greater than max_depth")
-        self._min_depth = float(val)
-
-    def _parse(self, fid, convert_range_edges=True):
+    def _parse(self, fid, convert_time, convert_range_edges):
         """Reads an open file and returns the file metadata and region information"""
         def _region_metadata_to_dict(line):
             """Assigns a name to each value in the metadata line for each region"""
             top_y = self.swap_range_edge(line[9]) if convert_range_edges else line[9]
             bottom_y = self.swap_range_edge(line[12]) if convert_range_edges else line[12]
+            left_x = parse_time(f'D{line[7]}T{line[8]}') if convert_time else f'D{line[7]}T{line[8]}'
+            right_x = parse_time(f'D{line[10]}T{line[11]}') if convert_time else f'D{line[10]}T{line[11]}'
             return {
                 'structure_version': line[0],                               # 13 currently
                 'point_count': line[1],                                     # Number of points in the region
                 'selected': line[3],                                        # Always 0
-                'creation_type': line[4],                                   # Described here: https://support.echoview.com/WebHelp/Reference/File_formats/Export_file_formats/2D_Region_definition_file_format.htm#Data_formats
+                'creation_type': line[4],                                   # How the region was created
                 'dummy': line[5],                                           # Always -1
                 'bounding_rectangle_calculated': line[6],                   # 1 if next 4 fields valid. O otherwise
                 # Date encoded as CCYYMMDD and times in HHmmSSssss
                 # Where CC=Century, YY=Year, MM=Month, DD=Day, HH=Hour, mm=minute, SS=second, ssss=0.1 milliseconds
-                'bounding_rectangle_left_x': f'D{line[7]}T{line[8]}',       # Time and date of bounding box left x
-                'bounding_rectangle_top_y': top_y,                         # Top of bounding box
-                'bounding_rectangle_right_x': f'D{line[10]}T{line[11]}',    # Time and date of bounding box right x
+                'bounding_rectangle_left_x': left_x,                        # Time and date of bounding box left x
+                'bounding_rectangle_top_y': top_y,                          # Top of bounding box
+                'bounding_rectangle_right_x': right_x,                      # Time and date of bounding box right x
                 'bounding_rectangle_bottom_y': bottom_y,                    # Bottom of bounding box
             }
 
@@ -72,6 +45,8 @@ class Region2DParser(EvParserBase):
             points = {}
             for point_num, idx in enumerate(range(0, len(line), 3)):
                 x = f'D{line[idx]}T{line[idx + 1]}'
+                if convert_time:
+                    x = parse_time(x)
                 y = line[idx + 2]
                 if convert_range_edges:
                     if y == '9999.9900000000' and self.max_depth is not None:
@@ -164,7 +139,7 @@ class Region2DParser(EvParserBase):
         region : int, str, or dict
             ID of the region to extract points from or region dictionary
         file : str
-            path to JSON or CSV file
+            path to JSON or CSV file. Use parsed data if None
 
         Returns
         -------
@@ -181,7 +156,7 @@ class Region2DParser(EvParserBase):
                 # Combine x and y points to get a list of points
                 return list(zip(region.x, region.y))
             elif file.upper().endswith('.JSON'):
-                data = self.from_JSON(file)
+                data = from_JSON(file)
                 points = list(data['regions'][str(region)]['points'].values())
             else:
                 raise ValueError(f"{file} is not a CSV or JSON file")
@@ -209,37 +184,6 @@ class Region2DParser(EvParserBase):
         else:
             return float(y)
 
-    def set_range_edge_from_raw(self, raw, model='EK60'):
-        """Calculate the sonar range from a raw file using Echopype.
-        Used to replace EVR range edges -9999.99 and 9999.99 with real values
-
-        Parameters
-        ----------
-        raw : str
-            Path to raw file
-        model : str
-            The sonar model that created the raw file, defaults to `EK60`.
-            See echopype for list of supported sonar models
-        """
-        if raw.endswith('.raw') and os.path.isfile(raw):
-            tmp_c = ep.Convert(raw, model=model)
-            tmp_c.to_netcdf(save_path='./')
-
-            ed = ep.process.EchoData(tmp_c.output_file)
-            proc = ep.process.Process('EK60', ed)
-
-            # proc.get_range # Calculate range directly as opposed to with get_Sv
-            proc.get_Sv(ed)
-            self._raw_range = ed.range.isel(frequency=0, ping_time=0).load()
-
-            self.max_depth = self._raw_range.max().values
-            self.min_depth = self._raw_range.min().values
-
-            ed.close()
-            os.remove(tmp_c.output_file)
-        else:
-            raise ValueError("Invalid raw file")
-
     def convert_points(self, points, convert_time=True, convert_range_edges=False):
         """Convert x and y values of points from the EV format.
         Modifies points in-place.
@@ -262,10 +206,12 @@ class Region2DParser(EvParserBase):
         singular = True if not isinstance(points[0], list) else False
         if singular:
             points = [points]
+        else:
+            points = copy.deepcopy(points)
 
         for point in points:
             if convert_time:
-                point[0] = self.parse_time(point[0])
+                point[0] = parse_time(point[0])
             if convert_range_edges:
                 point[1] = self.swap_range_edge(point[1])
         if singular:
