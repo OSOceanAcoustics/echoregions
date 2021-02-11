@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+from .utils import parse_time
 from .ev_parser import EvParserBase
 
 
@@ -79,7 +80,7 @@ class LineParser(EvParserBase):
         """
         for point in points.values():
             if convert_time:
-                point['x'] = self.parse_time(point['x'])
+                point['x'] = parse_time(point['x'])
             if replace_nan_range_value is not None and float(point['y'] == -10000.99):
                 point['y'] = replace_nan_range_value
         return points

@@ -4,7 +4,7 @@ import json
 import datetime as dt
 import numpy as np
 
-EK60_fname_pattern = r'(?P<survey>.+)?-?D(?P<date>\w{1,8})-T(?P<time>\w{1,6})-?(?P<postfix>\w+)?\.raw'
+EK60_fname_pattern = r'(?P<survey>.+)?-?D(?P<date>\w{1,8})-T(?P<time>\w{1,6})-?(?P<postfix>\w+)?\..+'
 
 def from_JSON(j):
         """ Opens a JSON file
