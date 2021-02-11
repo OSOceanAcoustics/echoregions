@@ -203,6 +203,9 @@ class Region2DParser(EvParserBase):
         points : list
             single converted point or list of converted points
         """
+        if isinstance(points, dict):
+            points = list(points.values())
+
         singular = True if not isinstance(points[0], list) else False
         if singular:
             points = [points]
