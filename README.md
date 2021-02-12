@@ -54,6 +54,8 @@ This does not modify anything in-place, but the entire `Regions2D.output_data` c
 
 *Keep in mind that this converted output is no longer JSON serializable, but it can still be saved as a CSV file.*
 
+## Full plotting example
+
 Below is an example of plotting a region onto an echogram produced by echopype.
 ```python
 >>> from echoregions import Regions2D
