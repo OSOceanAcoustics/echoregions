@@ -16,6 +16,8 @@ raw_file = 'Summer2017-D20170625-T195927.raw'
 raw_files = [data_dir + 'hake_nc/' + f for f in os.listdir(data_dir + 'hake_nc')]
 
 def test_region_plot():
+    # Test plotting a region on top of an echogram
+
     # Parse region file
     evr_paths = data_dir + 'x1.evr'
     regions = Region2D(evr_paths)
@@ -41,15 +43,13 @@ def test_region_plot():
     regions.plot_region(11, offset=water_level)
     plt.show()
 
-# Select an echogram from period t1, t2, frequency, depth range and plot regions
 def test_plot_multi():
-    tmp_c = ep.Convert([data_dir + f for f in raw_files], model='EK60')
-    tmp_c.to_netcdf(save_path=data_dir + 'output')
+    # Test plot all regions
     # Calibrate raw
-    ed = ep.process.EchoData(tmp_c.output_file)
+    ed = ep.process.EchoData(data_dir + 'hake_nc/Summer2017-D20170625-T195927.nc')
     proc = ep.process.Process('EK60', ed)
     proc.get_Sv(ed)
-    plat = xr.open_dataset(tmp_c.output_file[0], group='Platform')
+    plat = xr.open_dataset(data_dir + 'hake_nc/Summer2017-D20170625-T195927.nc', group='Platform')
     water_level = plat.water_level[0, 0].values
 
     ed.Sv['range'] = ed.Sv.range.isel(frequency=0, ping_time=0).load()
@@ -69,6 +69,7 @@ def test_plot_multi():
     plt.show()
 
 def test_file_select():
+    # Test file selection based on region bounds
     raw_files = os.listdir(data_dir + 'hake_raw')
 
     # Parse region file

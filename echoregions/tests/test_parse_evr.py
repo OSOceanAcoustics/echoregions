@@ -7,6 +7,7 @@ output_csv = data_dir + 'output_CSV/'
 output_json = data_dir + 'output_JSON/'
 
 def test_convert_evr():
+    # Test converting EV regions file (EVR)
     evr_path = data_dir + 'x1.evr'
     r2d = Region2D(evr_path)
     # parser.set_range_edge_from_raw(data_dir + 'hake_2017/Summer2017-D20170624-T001210.raw')
@@ -24,11 +25,12 @@ def test_convert_evr():
     os.rmdir(output_json)
 
 def test_plotting_points():
+    # Test converting points in EV format to plottable values (datetime64 and float)
     evr_paths = data_dir + 'x1.evr'
     r_parser = Region2D(evr_paths)
     r_parser.to_json(output_json)
-    r_parser.set_range_edge_from_raw(data_dir + 'Summer2017-D20170625-T161209.raw')
-    points = r_parser.get_points_from_region(r_parser.output_data['x1']['regions']['1'])
+    r_parser.set_range_edge_from_raw(data_dir + 'hake_raw/Summer2017-D20170625-T161209.raw')
+    points = r_parser.get_points_from_region(r_parser.output_data['regions']['1'])
     evr_points = np.array(r_parser.convert_points(points, convert_time=True, convert_range_edges=True))
     x = np.array(evr_points[:, 0], dtype=np.datetime64)
     y = evr_points[:, 1]
