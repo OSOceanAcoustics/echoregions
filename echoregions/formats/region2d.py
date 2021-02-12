@@ -2,8 +2,6 @@ from numpy.lib.arraysetops import isin
 from ..convert import Region2DParser, utils
 from ..plot.region_plot import Region2DPlotter
 import numpy as np
-import echopype as ep
-import os
 
 class Region2D():
     def __init__(self, input_file=None):
@@ -37,13 +35,13 @@ class Region2D():
 
     @property
     def max_depth(self):
-        if self.max_depth is None and self.raw_range is not None:
+        if self.parser.max_depth is None and self.raw_range is not None:
             self.max_depth = self.raw_range.max()
         return self.parser.max_depth
 
     @property
     def min_depth(self):
-        if self._min_depth is None and self.raw_range is not None:
+        if self.parser.min_depth is None and self.raw_range is not None:
             self.min_depth = self.raw_range.min()
         return self.parser.min_depth
 
@@ -111,37 +109,6 @@ class Region2D():
         """
         self.parser.to_json(save_dir=save_dir, convert_range_edges=convert_range_edges)
 
-    def set_range_edge_from_raw(self, raw, model='EK60'):
-        """Calculate the sonar range from a raw file using Echopype.
-        Used to replace EVR range edges -9999.99 and 9999.99 with real values
-
-        Parameters
-        ----------
-        raw : str
-            Path to raw file
-        model : str
-            The sonar model that created the raw file, defaults to `EK60`.
-            See echopype for list of supported sonar models
-        """
-        if raw.endswith('.raw') and os.path.isfile(raw):
-            tmp_c = ep.Convert(raw, model=model)
-            tmp_c.to_netcdf(save_path='./')
-
-            ed = ep.process.EchoData(tmp_c.output_file)
-            proc = ep.process.Process('EK60', ed)
-
-            # proc.get_range # Calculate range directly as opposed to with get_Sv
-            proc.get_Sv(ed)
-            self._raw_range = ed.range.isel(frequency=0, ping_time=0).load()
-
-            self.max_depth = self._raw_range.max().values
-            self.min_depth = self._raw_range.min().values
-
-            ed.close()
-            os.remove(tmp_c.output_file)
-        else:
-            raise ValueError("Invalid raw file")
-
     def get_points_from_region(self, region, file=None):
         """Get points from specified region from a JSON or CSV file
         or from the parsed data.
@@ -160,14 +127,14 @@ class Region2D():
         """
         return self.parser.get_points_from_region(region, file)
 
-    def convert_points(self, points, convert_time=True, convert_range_edges=False):
+    def convert_points(self, points, convert_time=True, convert_range_edges=True):
         """Convert x and y values of points from the EV format.
-        Modifies points in-place.
+        Returns a copy of points.
 
         Parameters
         ----------
-        points : list
-            point in [x, y] format or list of these
+        points : list, dict
+            point in [x, y] format or list/dict of these
         convert_time : bool
             Whether to convert EV time to datetime64, defaults `True`
         convert_range_edges : bool
@@ -176,12 +143,42 @@ class Region2D():
 
         Returns
         -------
-        points : list
-            single converted point or list of converted points
+        points : list or dict
+            single converted point or list/dict of converted points depending on input
         """
         return self.parser.convert_points(points, convert_time, convert_range_edges)
 
+    def set_range_edge_from_raw(self, raw, model='EK60'):
+        """Calculate the sonar range from a raw file using Echopype.
+        Used to replace EVR range edges -9999.99 and 9999.99 with real values
+
+        Parameters
+        ----------
+        raw : str
+            Path to raw file
+        model : str
+            The sonar model that created the raw file, defaults to `EK60`.
+            See echopype for list of supported sonar models.
+            Echoregions is only tested with EK60
+        """
+        self.parser.set_range_edge_from_raw(raw, model=model)
+
+    def convert_output(self, convert_time=True, convert_range_edges=True):
+        """Convert x and y values of points from the EV format.
+        Modifies Regions2d.output_data
+        """
+        self.parser.convert_output(convert_time=convert_time, convert_range_edges=convert_range_edges)
+
     def plot_region(self, region, offset=0):
+        """Plot a region from output_data
+
+        Parameters
+        ----------
+        region : str
+            region id
+        offset : float
+            range offset that region is plotted with
+        """
         self.plotter.plot_region(region, offset=offset)
 
     def select_raw(self, files, region_id=None, t1=None, t2=None):
@@ -200,6 +197,12 @@ class Region2D():
         t2 : str, numpy datetime64
             upper bound to select files from
             either EV time string or datetime64 object
+
+        Returns
+        -------
+        raw : str, list
+            raw file as a string if a single raw file is selected.
+            list of raw files if multiple are selected.
         """
         files.sort()
         filetimes = np.array([utils.parse_filetime(fname) for fname in files])
@@ -219,7 +222,8 @@ class Region2D():
         if t1 is None:
             if not all(str(r) in self.output_data['regions'] for r in region_id):
                 raise ValueError(f"Invalid region id in {region_id}")
-            regions = [self.convert_points(self.output_data['regions'][str(r)]['points']) for r in region_id]
+            regions = [self.convert_points(list(self.output_data['regions'][str(r)]['points'].values()))
+                       for r in region_id]
             t1 = []
             t2 = []
             for region in regions:
@@ -234,5 +238,9 @@ class Region2D():
         if lower_idx == -1:
             lower_idx = 0
 
-        return(files[lower_idx:upper_idx])
+        files = files[lower_idx:upper_idx]
+        if len(files) == 1:
+            return files[0]
+        else:
+            return files
 

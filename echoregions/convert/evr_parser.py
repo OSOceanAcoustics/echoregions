@@ -1,10 +1,9 @@
-from ast import parse
 import pandas as pd
 from collections import defaultdict
-from .ev_parser import EvParserBase
 import os
-from .utils import parse_time, from_JSON
 import copy
+from .ev_parser import EvParserBase
+from .utils import parse_time, from_JSON
 
 
 class Region2DParser(EvParserBase):
@@ -131,22 +130,6 @@ class Region2DParser(EvParserBase):
         self._output_path.append(output_file_path)
 
     def get_points_from_region(self, region, file=None):
-        """Get points from specified region from a JSON or CSV file
-        or from the parsed data.
-
-        Parameters
-        ----------
-        region : int, str, or dict
-            ID of the region to extract points from or region dictionary
-        file : str
-            path to JSON or CSV file. Use parsed data if None
-
-        Returns
-        -------
-        points : list
-            list of x, y points
-        """
-        # Pull region points from CSV file
         if file is not None:
             if file.upper().endswith('.CSV'):
                 if not os.path.isfile(file):
@@ -176,6 +159,35 @@ class Region2DParser(EvParserBase):
                 raise ValueError("{region} is not a valid region")
         return [list(l) for l in points]
 
+    def set_range_edge_from_raw(self, raw, model='EK60'):
+        try:
+            import echopype as ep
+        except ModuleNotFoundError as e:
+            raise ModuleNotFoundError("This function requires 'echopype' to be installed") from e
+
+        remove = False
+        if raw.endswith('.raw') and os.path.isfile(raw):
+            tmp_c = ep.Convert(raw, model=model)
+            tmp_c.to_netcdf(save_path='./')
+            raw = tmp_c.output_file
+            remove = True
+        elif not raw.endswith('.nc') and not raw.endswith('.zarr'):
+            raise ValueError("Invalid raw file")
+
+        ed = ep.process.EchoData(raw)
+        proc = ep.process.Process(model, ed)
+        # proc.get_range # Calculate range directly as opposed to with get_Sv
+        proc.get_Sv(ed)
+
+        self._raw_range = ed.range.isel(frequency=0, ping_time=0).load()
+
+        self.max_depth = self._raw_range.max().values
+        self.min_depth = self._raw_range.min().values
+
+        ed.close()
+        if remove:
+            os.remove(tmp_c.output_file)
+
     def swap_range_edge(self, y):
         if float(y) == 9999.99 and self.max_depth is not None:
             return self.max_depth
@@ -184,27 +196,26 @@ class Region2DParser(EvParserBase):
         else:
             return float(y)
 
-    def convert_points(self, points, convert_time=True, convert_range_edges=False):
-        """Convert x and y values of points from the EV format.
-        Modifies points in-place.
+    def convert_output(self, convert_time=True, convert_range_edges=True):
+        for region in self.output_data['regions'].values():
+            if convert_time:
+                region['metadata']['bounding_rectangle_left_x'] =\
+                    parse_time(region['metadata']['bounding_rectangle_left_x'])
+                region['metadata']['bounding_rectangle_right_x'] =\
+                    parse_time(region['metadata']['bounding_rectangle_left_x'])
+            if convert_range_edges:
+                region['metadata']['bounding_rectangle_top_y'] =\
+                     self.swap_range_edge(region['metadata']['bounding_rectangle_top_y'])
+                region['metadata']['bounding_rectangle_bottom_y'] =\
+                     self.swap_range_edge(region['metadata']['bounding_rectangle_bottom_y'])
+            region['points'] = self.convert_points(region['points'], convert_time, convert_range_edges)
 
-        Parameters
-        ----------
-        points : list
-            point in [x, y] format or list of these
-        convert_time : bool
-            Whether to convert EV time to datetime64, defaults `True`
-        convert_range_edges : bool
-            Whether to convert -9999.99 edges to real range values.
-            Min and max ranges must be set manually or by calling `set_range_edge_from_raw`
-
-        Returns
-        -------
-        points : list
-            single converted point or list of converted points
-        """
-        if isinstance(points, dict):
-            points = list(points.values())
+    def convert_points(self, points, convert_time=True, convert_range_edges=True):
+        def convert_single(point):
+            if convert_time:
+                point[0] = parse_time(point[0])
+            if convert_range_edges:
+                point[1] = self.swap_range_edge(point[1])
 
         singular = True if not isinstance(points[0], list) else False
         if singular:
@@ -212,11 +223,12 @@ class Region2DParser(EvParserBase):
         else:
             points = copy.deepcopy(points)
 
-        for point in points:
-            if convert_time:
-                point[0] = parse_time(point[0])
-            if convert_range_edges:
-                point[1] = self.swap_range_edge(point[1])
+        if isinstance(points, dict):
+            for point in points.values():
+                convert_single(point)
+        else:
+            for point in points:
+                convert_single(point)
         if singular:
             points = points[0]
         return points
