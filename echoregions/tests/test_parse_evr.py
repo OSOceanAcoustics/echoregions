@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from ..formats.region2d import Region2D
+from ..formats.regions2d import Regions2D
 
 data_dir = './echoregions/test_data/ek60/'
 output_csv = data_dir + 'output_CSV/'
@@ -9,7 +9,7 @@ output_json = data_dir + 'output_JSON/'
 def test_convert_evr():
     # Test converting EV regions file (EVR)
     evr_path = data_dir + 'x1.evr'
-    r2d = Region2D(evr_path)
+    r2d = Regions2D(evr_path)
     # parser.set_range_edge_from_raw(data_dir + 'hake_2017/Summer2017-D20170624-T001210.raw')
     r2d.to_json(output_json)
     r2d.to_csv(output_csv)
@@ -27,7 +27,7 @@ def test_convert_evr():
 def test_plotting_points():
     # Test converting points in EV format to plottable values (datetime64 and float)
     evr_paths = data_dir + 'x1.evr'
-    r_parser = Region2D(evr_paths)
+    r_parser = Regions2D(evr_paths)
     r_parser.to_json(output_json)
     r_parser.set_range_edge_from_raw(data_dir + 'hake_raw/Summer2017-D20170625-T161209.raw')
     points = r_parser.get_points_from_region(r_parser.output_data['regions']['1'])
@@ -38,3 +38,14 @@ def test_plotting_points():
 
     os.remove(r_parser.output_path)
     os.rmdir(output_json)
+
+def test_file_select():
+    # Test file selection based on region bounds
+    raw_files = os.listdir(data_dir + 'hake_raw')
+
+    # Parse region file
+    evr_paths = data_dir + 'x1.evr'
+    regions = Regions2D(evr_paths)
+    regions.parse_file(convert_time=True, convert_range_edges=True)
+    raw = regions.select_raw(raw_files, 11)
+    assert raw == 'Summer2017-D20170625-T195927.raw'

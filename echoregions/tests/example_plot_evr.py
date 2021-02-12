@@ -3,7 +3,7 @@ import numpy as np
 import xarray as xr
 import echopype as ep
 import matplotlib.pyplot as plt
-from ..formats import Region2D
+from ..formats import Regions2D
 from ..convert.evr_parser import Region2DParser
 from ..convert.ecs_parser import CalibrationParser
 from ..convert.evl_parser import LineParser
@@ -20,7 +20,7 @@ def test_region_plot():
 
     # Parse region file
     evr_paths = data_dir + 'x1.evr'
-    regions = Region2D(evr_paths)
+    regions = Regions2D(evr_paths)
     regions.parse_file()
     raw = regions.select_raw(raw_files, 11)
 
@@ -59,7 +59,7 @@ def test_plot_multi():
 
     # Parse region file
     evr_paths = data_dir + 'x1.evr'
-    regions = Region2D(evr_paths)
+    regions = Regions2D(evr_paths)
     regions.raw_range = ed.Sv['range']
     regions.parse_file(convert_range_edges=True)
 
@@ -67,14 +67,3 @@ def test_plot_multi():
         regions.plot_region(region, offset=water_level)
 
     plt.show()
-
-def test_file_select():
-    # Test file selection based on region bounds
-    raw_files = os.listdir(data_dir + 'hake_raw')
-
-    # Parse region file
-    evr_paths = data_dir + 'x1.evr'
-    regions = Region2D(evr_paths)
-    regions.parse_file(convert_time=True, convert_range_edges=True)
-    raw = regions.select_raw(raw_files, 11)
-    assert raw == 'Summer2017-D20170625-T195927.raw'

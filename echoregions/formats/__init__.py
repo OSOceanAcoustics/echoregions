@@ -1,1 +1,1 @@
-from .region2d import Region2D
+from .regions2d import Regions2D

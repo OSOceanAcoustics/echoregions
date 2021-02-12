@@ -3,13 +3,13 @@ import matplotlib.pyplot as plt
 from ..convert import Region2DParser
 
 class Region2DPlotter():
-    def __init__(self, Region2D):
-        self.Region2D = Region2D
+    def __init__(self, Regions2D):
+        self.Regions2D = Regions2D
 
 
     def plot_region(self, region, offset=0):
-        points = np.array(self.Region2D.convert_points(
-            self.Region2D.get_points_from_region(region),
+        points = np.array(self.Regions2D.convert_points(
+            self.Regions2D.get_points_from_region(region),
             convert_time=True,
             convert_range_edges=True
         ))
