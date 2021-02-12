@@ -3,7 +3,7 @@ from ..convert import Region2DParser, utils
 from ..plot.region_plot import Region2DPlotter
 import numpy as np
 
-class Region2D():
+class Regions2D():
     def __init__(self, input_file=None):
         self.parser = Region2DParser(input_file)
         self._plotter = None
@@ -66,6 +66,10 @@ class Region2D():
                 raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
             self._plotter = Region2DPlotter(self)
         return self._plotter
+
+    @property
+    def regions(self):
+        return list(self.output_data['regions'].keys())
 
     def parse_file(self, convert_time=False, convert_range_edges=True):
         """Parse the EVR file into a `Regions2D.output_data`
@@ -243,4 +247,3 @@ class Region2D():
             return files[0]
         else:
             return files
-
