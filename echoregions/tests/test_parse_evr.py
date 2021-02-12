@@ -38,3 +38,14 @@ def test_plotting_points():
 
     os.remove(r_parser.output_path)
     os.rmdir(output_json)
+
+def test_file_select():
+    # Test file selection based on region bounds
+    raw_files = os.listdir(data_dir + 'hake_raw')
+
+    # Parse region file
+    evr_paths = data_dir + 'x1.evr'
+    regions = Regions2D(evr_paths)
+    regions.parse_file(convert_time=True, convert_range_edges=True)
+    raw = regions.select_raw(raw_files, 11)
+    assert raw == 'Summer2017-D20170625-T195927.raw'
