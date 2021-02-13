@@ -101,7 +101,7 @@ class Regions2D():
         """
         self.parser.to_csv(save_dir=save_dir, convert_time=False, convert_range_edges=convert_range_edges)
 
-    def to_json(self, save_dir=None, convert_range_edges=True):
+    def to_json(self, save_dir=None, convert_range_edges=True, pretty=False):
         """Convert EVR to JSON
 
         Parameters
@@ -110,8 +110,10 @@ class Regions2D():
             Whether or not to convert -9999.99 and -9999.99 range edges to real values for EVR files.
             Set the values by assigning range values to `min_range` and `max_range`
             or by passing a file into `set_range_edge_from_raw`. Defaults to True
+        pretty : bool
+            Whether or not to output more human readable JSON
         """
-        self.parser.to_json(save_dir=save_dir, convert_range_edges=convert_range_edges)
+        self.parser.to_json(save_dir=save_dir, pretty=pretty, convert_range_edges=convert_range_edges)
 
     def get_points_from_region(self, region, file=None):
         """Get points from specified region from a JSON or CSV file
