@@ -5,6 +5,8 @@ from .ev_parser import EvParserBase
 
 
 class LineParser(EvParserBase):
+    """Class for parsing EV lines (EVL) files
+    """
     def __init__(self, input_file=None):
         super().__init__(input_file, 'EVL')
 

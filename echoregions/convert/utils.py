@@ -7,22 +7,22 @@ import numpy as np
 EK60_fname_pattern = r'(?P<survey>.+)?-?D(?P<date>\w{1,8})-T(?P<time>\w{1,6})-?(?P<postfix>\w+)?\..+'
 
 def from_JSON(j):
-        """ Opens a JSON file
+    """ Opens a JSON file
 
-        Parameters
-        ----------
-        j : str
-            Valid JSON string or path to JSON file
-        """
-        if os.path.isfile(j):
-            with open(j, 'r') as f:
-                data_dict = json.load(f)
-        else:
-            try:
-                data_dict = json.loads(j)
-            except json.decoder.JSONDecodeError:
-                raise ValueError("Invalid JSON string")
-        return data_dict
+    Parameters
+    ----------
+    j : str
+        Valid JSON string or path to JSON file
+    """
+    if os.path.isfile(j):
+        with open(j, 'r') as f:
+            data_dict = json.load(f)
+    else:
+        try:
+            data_dict = json.loads(j)
+        except json.decoder.JSONDecodeError:
+            raise ValueError("Invalid JSON string")
+    return data_dict
 
 def parse_time(ev_time, datetime_format='D%Y%m%dT%H%M%S%f'):
     """Convert EV datetime to a numpy datetime64 object
@@ -39,11 +39,6 @@ def parse_time(ev_time, datetime_format='D%Y%m%dT%H%M%S%f'):
     -------
     datetime : np.datetime64
         converted input datetime
-
-    Raises
-    ------
-    ValueError
-        when ev_time is not a string
     """
     if isinstance(ev_time, np.ndarray) and np.issubdtype(ev_time.dtype, np.datetime64):
         return ev_time
@@ -52,5 +47,17 @@ def parse_time(ev_time, datetime_format='D%Y%m%dT%H%M%S%f'):
     return np.array(dt.datetime.strptime(ev_time, datetime_format), dtype=np.datetime64)
 
 def parse_filetime(fname):
+    """Convert Simrad-style datetime to a numpy datetime64 object
+
+    Parameters
+    ----------
+    filename : str
+        Simrad-style filename
+
+    Returns
+    -------
+    datetime : np.datetime64
+        converted input datetime
+    """
     groups = re.match(EK60_fname_pattern, fname).groups()
     return parse_time(f"D{groups[1]}T{groups[2]}", 'D%Y%m%dT%H%M%S')
