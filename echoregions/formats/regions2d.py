@@ -7,6 +7,8 @@ class Regions2D():
     def __init__(self, input_file=None):
         self.parser = Region2DParser(input_file)
         self._plotter = None
+        self._regions = None
+        self._region_classifications = None
 
     def __iter__(self):
         return iter(self.output_data['regions'].values())
@@ -69,7 +71,15 @@ class Regions2D():
 
     @property
     def regions(self):
-        return list(self.output_data['regions'].keys())
+        if self._regions is None:
+            self._regions = self.get_regions()
+        return self._regions
+
+    @property
+    def region_classifications(self):
+        if self._region_classifications is None:
+            self._region_classifications = self.get_region_classifications()
+        return self._region_classifications
 
     def parse_file(self, convert_time=False, convert_range_edges=True):
         """Parse the EVR file into a `Regions2D.output_data`
@@ -249,3 +259,30 @@ class Regions2D():
             return files[0]
         else:
             return files
+
+    def get_regions(self):
+        """Get the ids of all regions in the EVR file
+
+        Returns
+        -------
+        regions : list
+            list of all region ids
+        """
+        if not self.output_data:
+            raise ValueError("EVR file has not been parsed. Call `parse_file` first.")
+        return list(self.output_data['regions'].keys())
+
+    def get_region_classifications(self):
+        """Get the region classification for each region in the EVR file
+
+        Returns
+        -------
+        regions classifications : dict
+            dict with keys as region id and values as the region classification
+        """
+        if not self.output_data:
+            raise ValueError("EVR file has not been parsed. Call `parse_file` first.")
+        return {
+            k: v['metadata']['region_classification']
+            for k, v in self.output_data['regions'].items()
+            }
