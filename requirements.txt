@@ -1,1 +1,3 @@
-echopype
+numpy
+pandas
+matplotlib
