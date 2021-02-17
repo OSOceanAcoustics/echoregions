@@ -118,7 +118,7 @@ class Region2DParser(EvParserBase):
             # Loop over each point in each region. One row of the dataframe corresponds to one point
             for p, point in enumerate(region['points'].values()):
                 point = pd.Series({
-                    'point_idx': p,
+                    'point_idx': str(p),
                     'x': point[0],
                     'y': point[1],
                 })
