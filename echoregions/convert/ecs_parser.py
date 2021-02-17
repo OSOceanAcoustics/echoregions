@@ -5,6 +5,8 @@ import os
 
 
 class CalibrationParser(EvParserBase):
+    """Class for parsing EV calibration (ECS) files
+    """
     def __init__(self, input_file=None):
         super().__init__(input_file, 'ECS')
 

@@ -7,6 +7,9 @@ from .utils import parse_time, from_JSON
 
 
 class Region2DParser(EvParserBase):
+    """Class for parsing EV 2D region (EVR) files.
+    Using this class directly is not recommended; use Regions2D instead.
+    """
     def __init__(self, input_file=None):
         super().__init__(input_file, 'EVR')
         self._raw_range = None
@@ -91,13 +94,6 @@ class Region2DParser(EvParserBase):
         return file_metadata, regions
 
     def to_csv(self, save_dir=None, **kwargs):
-        """Convert an Echoview 2D regions .evr file to a .csv file
-
-        Parameters
-        ----------
-        save_dir : str
-            directory to save the CSV file to
-        """
         # Parse EVR file if it hasn't already been done
         if not self.output_data:
             self.parse_file(**kwargs)
@@ -118,7 +114,7 @@ class Region2DParser(EvParserBase):
             # Loop over each point in each region. One row of the dataframe corresponds to one point
             for p, point in enumerate(region['points'].values()):
                 point = pd.Series({
-                    'point_idx': p,
+                    'point_idx': str(p),
                     'x': point[0],
                     'y': point[1],
                 })
