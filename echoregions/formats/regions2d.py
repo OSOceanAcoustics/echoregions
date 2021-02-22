@@ -7,7 +7,7 @@ class Regions2D():
     def __init__(self, input_file=None):
         self.parser = Region2DParser(input_file)
         self._plotter = None
-        self._regions = None
+        self._region_ids = None
         self._region_classifications = None
 
     def __iter__(self):
@@ -70,10 +70,10 @@ class Regions2D():
         return self._plotter
 
     @property
-    def regions(self):
-        if self._regions is None:
-            self._regions = self.get_regions()
-        return self._regions
+    def region_ids(self):
+        if self._region_ids is None:
+            self._region_ids = self.get_region_ids()
+        return self._region_ids
 
     @property
     def region_classifications(self):
@@ -260,7 +260,7 @@ class Regions2D():
         else:
             return files
 
-    def get_regions(self):
+    def get_region_ids(self):
         """Get the ids of all regions in the EVR file
 
         Returns
