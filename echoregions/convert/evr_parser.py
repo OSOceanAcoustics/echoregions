@@ -60,9 +60,10 @@ class Region2DParser(EvParserBase):
             return points
 
         # Read header containing metadata about the EVR file
-        filetype, file_format_number, echoview_version = self.read_line(fid, True)
+        file_type, file_format_number, echoview_version = self.read_line(fid, True)
         file_metadata = {
-            'filetype': filetype,
+            'file_name': os.path.splitext(os.path.basename(self.input_file))[0],
+            'file_type': file_type,
             'file_format_number': file_format_number,
             'echoview_version': echoview_version
         }
@@ -201,9 +202,9 @@ class Region2DParser(EvParserBase):
                     parse_time(region['metadata']['bounding_rectangle_left_x'])
             if convert_range_edges:
                 region['metadata']['bounding_rectangle_top_y'] =\
-                     self.swap_range_edge(region['metadata']['bounding_rectangle_top_y'])
+                    self.swap_range_edge(region['metadata']['bounding_rectangle_top_y'])
                 region['metadata']['bounding_rectangle_bottom_y'] =\
-                     self.swap_range_edge(region['metadata']['bounding_rectangle_bottom_y'])
+                    self.swap_range_edge(region['metadata']['bounding_rectangle_bottom_y'])
             region['points'] = self.convert_points(region['points'], convert_time, convert_range_edges)
 
     def convert_points(self, points, convert_time=True, convert_range_edges=True):

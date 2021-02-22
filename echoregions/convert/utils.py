@@ -6,6 +6,7 @@ import numpy as np
 
 EK60_fname_pattern = r'(?P<survey>.+)?-?D(?P<date>\w{1,8})-T(?P<time>\w{1,6})-?(?P<postfix>\w+)?\..+'
 
+
 def from_JSON(j):
     """ Opens a JSON file
 
@@ -23,6 +24,7 @@ def from_JSON(j):
         except json.decoder.JSONDecodeError:
             raise ValueError("Invalid JSON string")
     return data_dict
+
 
 def parse_time(ev_time, datetime_format='D%Y%m%dT%H%M%S%f'):
     """Convert EV datetime to a numpy datetime64 object
@@ -45,6 +47,7 @@ def parse_time(ev_time, datetime_format='D%Y%m%dT%H%M%S%f'):
     elif not isinstance(ev_time, str):
         raise ValueError("'ev_time' must be type str")
     return np.array(dt.datetime.strptime(ev_time, datetime_format), dtype=np.datetime64)
+
 
 def parse_filetime(fname):
     """Convert Simrad-style datetime to a numpy datetime64 object

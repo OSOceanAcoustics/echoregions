@@ -12,9 +12,10 @@ class LineParser(EvParserBase):
 
     def _parse(self, fid, replace_nan_range_value=None):
         # Read header containing metadata about the EVL file
-        filetype, file_format_number, ev_version = self.read_line(fid, True)
+        file_type, file_format_number, ev_version = self.read_line(fid, True)
         file_metadata = {
-            'filetype': filetype,
+            'file_name': os.path.splitext(os.path.basename(self.input_file))[0],
+            'file_type': file_type,
             'file_format_number': file_format_number,
             'echoview_version': ev_version
         }

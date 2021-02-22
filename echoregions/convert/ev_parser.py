@@ -20,8 +20,6 @@ class EvParserBase():
 
     @property
     def input_file(self):
-        if self._input_file is None:
-            raise ValueError("No input file to parse")
         return self._input_file
 
     @input_file.setter

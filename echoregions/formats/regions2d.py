@@ -1,14 +1,20 @@
-from numpy.lib.arraysetops import isin
 from ..convert import Region2DParser, utils
 from ..plot.region_plot import Region2DPlotter
 import numpy as np
 
+
 class Regions2D():
-    def __init__(self, input_file=None):
-        self.parser = Region2DParser(input_file)
+    def __init__(self, input_file=None, parse=True, convert_time=False,
+                 convert_range_edges=True, min_depth=None, max_depth=None):
         self._plotter = None
         self._region_ids = None
         self._region_classifications = None
+
+        self.parser = Region2DParser(input_file)
+        self.max_depth = max_depth
+        self.min_depth = min_depth
+        if parse:
+            self.parse_file(convert_time=convert_time, convert_range_edges=convert_range_edges)
 
     def __iter__(self):
         return iter(self.output_data['regions'].values())
@@ -52,14 +58,14 @@ class Regions2D():
         if self.min_depth is not None:
             if val <= self.min_depth:
                 raise ValueError("max_depth cannot be less than min_depth")
-        self.parser.max_depth = float(val)
+        self.parser.max_depth = float(val) if val is not None else val
 
     @min_depth.setter
     def min_depth(self, val):
         if self.max_depth is not None:
             if val >= self.max_depth:
                 raise ValueError("min_depth cannot be greater than max_depth")
-        self.parser.min_depth = float(val)
+        self.parser.min_depth = float(val) if val is not None else val
 
     @property
     def plotter(self):
@@ -285,4 +291,4 @@ class Regions2D():
         return {
             k: v['metadata']['region_classification']
             for k, v in self.output_data['regions'].items()
-            }
+        }
