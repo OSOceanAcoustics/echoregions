@@ -115,8 +115,8 @@ class Region2DParser(EvParserBase):
             for p, point in enumerate(region['points'].values()):
                 point = pd.Series({
                     'point_idx': str(p),
-                    'x': point[0],
-                    'y': point[1],
+                    'ping_time': point[0],
+                    'depth': point[1],
                 })
                 row = pd.concat([region_id, point, metadata, region_metadata, region_notes, detection_settings])
                 df = df.append(row, ignore_index=True)
