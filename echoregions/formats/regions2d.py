@@ -7,8 +7,8 @@ class Regions2D():
     def __init__(self, input_file=None, parse=True, convert_time=False,
                  convert_range_edges=True, min_depth=None, max_depth=None):
         self._plotter = None
+        self._masker = None
         self._region_ids = None
-        self._region_classifications = None
 
         self.parser = Region2DParser(input_file)
         self.max_depth = max_depth
@@ -84,12 +84,6 @@ class Regions2D():
         if self._region_ids is None:
             self._region_ids = self.get_region_ids()
         return self._region_ids
-
-    @property
-    def region_classifications(self):
-        if self._region_classifications is None:
-            self._region_classifications = self.get_region_classifications()
-        return self._region_classifications
 
     def parse_file(self, convert_time=False, convert_range_edges=True):
         """Parse the EVR file into a `Regions2D.output_data`
@@ -205,18 +199,6 @@ class Regions2D():
         """
         self.parser.convert_output(convert_time=convert_time, convert_range_edges=convert_range_edges)
 
-    def plot_region(self, region, offset=0):
-        """Plot a region from output_data
-
-        Parameters
-        ----------
-        region : str
-            region id
-        offset : float
-            range offset that region is plotted with
-        """
-        self.plotter.plot_region(region, offset=offset)
-
     def select_raw(self, files, region_id=None, t1=None, t2=None):
         """Finds raw files in the time domain that encompasses region or list of regions
 
@@ -292,7 +274,7 @@ class Regions2D():
             raise ValueError("EVR file has not been parsed. Call `parse_file` first.")
         return list(self.output_data['regions'].keys())
 
-    def get_region_classifications(self):
+    def get_region_classifications(self, grouped=False):
         """Get the region classification for each region in the EVR file
 
         Returns
@@ -306,3 +288,34 @@ class Regions2D():
             k: v['metadata']['region_classification']
             for k, v in self.output_data['regions'].items()
         }
+
+    def init_plotter(self):
+        if self._plotter is None:
+            if not self.output_data:
+                raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
+            from ..plot.region_plot import Region2DPlotter
+            self._plotter = Region2DPlotter(self)
+
+    def plot_region(self, region, offset=0):
+        """Plot a region from output_data
+
+        Parameters
+        ----------
+        region : str
+            region id
+        offset : float
+            range offset that region is plotted with
+        """
+        self.init_plotter()
+        self._plotter.plot_region(region, offset=offset)
+
+    def init_masker(self):
+        if self._masker is None:
+            if not self.output_data:
+                raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
+            from ..mask.region_mask import Region2DMasker
+            self._masker = Region2DMasker(self)
+
+    def mask_region(self, region, offset=0):
+        self.init_masker()
+        self._masker.mask_region(region, offset=offset)
