@@ -30,8 +30,12 @@ class Regions2D():
         return self.parser.output_data
 
     @property
-    def output_path(self):
-        return self.parser.output_path
+    def output_file(self):
+        return self.parser.output_file
+
+    @property
+    def input_file(self):
+        return self.parser.input_file
 
     @property
     def raw_range(self):

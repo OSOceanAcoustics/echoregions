@@ -8,7 +8,7 @@ class EvParserBase():
         self._input_file = None
         self._filename = None
         self.output_data = {}
-        self._output_path = []
+        self._output_file = []
 
         self.format = file_format
         self.input_file = input_file
@@ -33,12 +33,12 @@ class EvParserBase():
             self._input_file = file
 
     @property
-    def output_path(self):
-        if len(self._output_path) == 1:
-            self._output_path = list(set(self._output_path))
-            return self._output_path[0]
+    def output_file(self):
+        if len(self._output_file) == 1:
+            self._output_file = list(set(self._output_file))
+            return self._output_file[0]
         else:
-            return self._output_path
+            return self._output_file
 
     @staticmethod
     def read_line(open_file, split=False):
@@ -91,7 +91,7 @@ class EvParserBase():
         # Save the entire parsed EVR dictionary as a JSON file
         with open(save_path, 'w') as f:
             f.write(json.dumps(self.output_data, indent=indent))
-        self._output_path.append(str(save_path))
+        self._output_file.append(str(save_path))
 
     def to_csv(self):
         """Base method for saving to a csv file"""

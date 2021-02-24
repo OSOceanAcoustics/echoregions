@@ -135,4 +135,4 @@ class CalibrationParser(EvParserBase):
 
         # Export to csv
         df.to_csv(save_path, index=False)
-        self._output_path.append(save_path)
+        self._output_file.append(save_path)

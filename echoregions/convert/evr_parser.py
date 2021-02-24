@@ -130,7 +130,7 @@ class Region2DParser(EvParserBase):
         save_path = validate_path(save_path=save_path, input_file=self.input_file, ext='.csv')
         # Export to csv
         self.to_dataframe().to_csv(save_path, index=False)
-        self._output_path.append(save_path)
+        self._output_file.append(save_path)
 
     def get_points_from_region(self, region, file=None):
         if file is not None:

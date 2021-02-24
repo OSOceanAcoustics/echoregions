@@ -59,7 +59,7 @@ class LineParser(EvParserBase):
 
         # Reorder columns and export to csv
         df.to_csv(save_path, index=False)
-        self._output_path.append(save_path)
+        self._output_file.append(save_path)
 
     def convert_points(self, points, convert_time=True, replace_nan_range_value=None):
         """Convert x and y values of points from the EV format.

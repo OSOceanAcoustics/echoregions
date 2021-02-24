@@ -27,7 +27,7 @@ def test_plotting_points():
     assert len(x) == 13764
     assert len(y) == 13764
 
-    os.remove(l_parser.output_path)
+    os.remove(l_parser.output_file)
     os.rmdir(output_json)
 
 
@@ -40,7 +40,7 @@ def test_convert_ecs():
     parser.to_csv(output_csv)
     parser.to_json(output_json)
 
-    for path in parser.output_path:
+    for path in parser.output_file:
         assert os.path.exists(path)
         os.remove(path)
 
@@ -56,7 +56,7 @@ def test_convert_evl():
     parser.to_csv(output_csv)
     parser.to_json(output_json)
 
-    for path in parser.output_path:
+    for path in parser.output_file:
         assert os.path.exists(path)
         os.remove(path)
 
