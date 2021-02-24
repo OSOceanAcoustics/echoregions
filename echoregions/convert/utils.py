@@ -3,6 +3,7 @@ import os
 import json
 import datetime as dt
 import numpy as np
+from pathlib import Path
 
 EK60_fname_pattern = r'(?P<survey>.+)?-?D(?P<date>\w{1,8})-T(?P<time>\w{1,6})-?(?P<postfix>\w+)?\..+'
 
@@ -24,6 +25,40 @@ def from_JSON(j):
         except json.decoder.JSONDecodeError:
             raise ValueError("Invalid JSON string")
     return data_dict
+
+
+def validate_path(save_path=None, input_file=None, ext='.json'):
+    # Check if save_path is specified.
+    # If not try to create one with the input_file and ext
+
+    if save_path is None:
+        if input_file is None:
+            raise ValueError("No paths given")
+        elif ext is None:
+            raise ValueError("No extension given")
+        else:
+            input_file = Path(input_file)
+            save_path = input_file.parent / (input_file.stem + ext)
+    # If save path is specified, check if folders need to be made
+    else:
+        save_path = Path(save_path)
+        # If save path is a directory, use name of input file
+        if save_path.suffix == '':
+            if input_file is None:
+                raise ValueError("No filename given")
+            else:
+                input_file = Path(input_file)
+                save_path = save_path / (input_file.stem + ext)
+
+    # Check if extension of save path matches desired file format
+    if save_path.suffix.lower() != ext.lower():
+        raise ValueError(f"{save_path} is not a {ext} file")
+
+    # Create directories if they do not exist
+    if not save_path.parent.is_dir():
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+
+    return str(save_path)
 
 
 def parse_time(ev_time, datetime_format='D%Y%m%dT%H%M%S%f'):

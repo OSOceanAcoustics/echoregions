@@ -13,7 +13,7 @@ Regions2D
       ~Regions2D.max_depth
       ~Regions2D.min_depth
       ~Regions2D.output_data
-      ~Regions2D.output_path
+      ~Regions2D.output_file
       ~Regions2D.plotter
       ~Regions2D.raw_range
       ~Regions2D.region_classifications
@@ -40,7 +40,7 @@ Regions2D
    .. autoattribute:: max_depth
    .. autoattribute:: min_depth
    .. autoattribute:: output_data
-   .. autoattribute:: output_path
+   .. autoattribute:: output_file
    .. autoattribute:: plotter
    .. autoattribute:: raw_range
    .. autoattribute:: region_classifications

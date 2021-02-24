@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-from .utils import parse_time
+from .utils import parse_time, validate_path
 from .ev_parser import EvParserBase
 
 
@@ -32,19 +32,19 @@ class LineParser(EvParserBase):
             }
         return file_metadata, points
 
-    def to_csv(self, save_dir=None):
+    def to_csv(self, save_path=None):
         """Convert an Echoview lines .evl file to a .csv file
 
         Parameters
         ----------
-        save_dir : str
-            directory to save the CSV file to
+        save_path : str
+            path to save the CSV file to
         """
         if not self.output_data:
             self.parse_file()
 
         # Check if the save directory is safe
-        save_dir = self._validate_path(save_dir)
+        save_path = validate_path(save_path=save_path, input_file=self.input_file, ext='.csv')
 
         # Save a row for each point
         df = pd.concat(
@@ -58,9 +58,8 @@ class LineParser(EvParserBase):
             df[k] = v
 
         # Reorder columns and export to csv
-        output_file_path = os.path.join(save_dir, self.filename) + '.csv'
-        df.to_csv(output_file_path, index=False)
-        self._output_path.append(output_file_path)
+        df.to_csv(save_path, index=False)
+        self._output_file.append(save_path)
 
     def convert_points(self, points, convert_time=True, replace_nan_range_value=None):
         """Convert x and y values of points from the EV format.
