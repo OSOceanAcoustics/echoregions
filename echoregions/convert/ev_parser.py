@@ -53,6 +53,8 @@ class EvParserBase():
         """Base method for parsing the file in `input_file`.
         Used for EVR and EVL parsers
         """
+        if self.input_file is None:
+            return
         fid = open(self.input_file, encoding='utf-8-sig')
 
         metadata, data = self._parse(fid, **kwargs)
