@@ -6,6 +6,7 @@ data_dir = './echoregions/test_data/ek60/'
 output_csv = data_dir + 'output_CSV/'
 output_json = data_dir + 'output_JSON/'
 
+
 def test_convert_evr():
     # Test converting EV regions file (EVR)
     evr_path = data_dir + 'x1.evr'
@@ -14,15 +15,16 @@ def test_convert_evr():
     r2d.to_json(output_json)
     r2d.to_csv(output_csv)
     points = r2d.get_points_from_region(4)
-    points = r2d.get_points_from_region(4, r2d.output_path[0])
+    points = r2d.get_points_from_region(4, r2d.output_file[0])
     assert points[0] == ['D20170625T1539223320', '9.2447583998']
 
-    for path in r2d.output_path:
+    for path in r2d.output_file:
         assert os.path.exists(path)
         os.remove(path)
 
     os.rmdir(output_csv)
     os.rmdir(output_json)
+
 
 def test_plotting_points():
     # Test converting points in EV format to plottable values (datetime64 and float)
@@ -36,8 +38,9 @@ def test_plotting_points():
     y = evr_points[:, 1]
     assert all(y == [r_parser.min_depth, r_parser.max_depth, r_parser.max_depth, r_parser.min_depth])
 
-    os.remove(r_parser.output_path)
+    os.remove(r_parser.output_file)
     os.rmdir(output_json)
+
 
 def test_file_select():
     # Test file selection based on region bounds

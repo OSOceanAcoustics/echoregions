@@ -1,14 +1,20 @@
-from numpy.lib.arraysetops import isin
 from ..convert import Region2DParser, utils
 from ..plot.region_plot import Region2DPlotter
 import numpy as np
 
+
 class Regions2D():
-    def __init__(self, input_file=None):
-        self.parser = Region2DParser(input_file)
+    def __init__(self, input_file=None, parse=True, convert_time=False,
+                 convert_range_edges=True, min_depth=None, max_depth=None):
         self._plotter = None
-        self._regions = None
-        self._region_classifications = None
+        self._masker = None
+        self._region_ids = None
+
+        self.parser = Region2DParser(input_file)
+        self.max_depth = max_depth
+        self.min_depth = min_depth
+        if parse:
+            self.parse_file(convert_time=convert_time, convert_range_edges=convert_range_edges)
 
     def __iter__(self):
         return iter(self.output_data['regions'].values())
@@ -24,8 +30,12 @@ class Regions2D():
         return self.parser.output_data
 
     @property
-    def output_path(self):
-        return self.parser.output_path
+    def output_file(self):
+        return self.parser.output_file
+
+    @property
+    def input_file(self):
+        return self.parser.input_file
 
     @property
     def raw_range(self):
@@ -52,14 +62,14 @@ class Regions2D():
         if self.min_depth is not None:
             if val <= self.min_depth:
                 raise ValueError("max_depth cannot be less than min_depth")
-        self.parser.max_depth = float(val)
+        self.parser.max_depth = float(val) if val is not None else val
 
     @min_depth.setter
     def min_depth(self, val):
         if self.max_depth is not None:
             if val >= self.max_depth:
                 raise ValueError("min_depth cannot be greater than max_depth")
-        self.parser.min_depth = float(val)
+        self.parser.min_depth = float(val) if val is not None else val
 
     @property
     def plotter(self):
@@ -70,16 +80,10 @@ class Regions2D():
         return self._plotter
 
     @property
-    def regions(self):
-        if self._regions is None:
-            self._regions = self.get_regions()
-        return self._regions
-
-    @property
-    def region_classifications(self):
-        if self._region_classifications is None:
-            self._region_classifications = self.get_region_classifications()
-        return self._region_classifications
+    def region_ids(self):
+        if self._region_ids is None:
+            self._region_ids = self.get_region_ids()
+        return self._region_ids
 
     def parse_file(self, convert_time=False, convert_range_edges=True):
         """Parse the EVR file into a `Regions2D.output_data`
@@ -96,11 +100,13 @@ class Regions2D():
         """
         self.parser.parse_file(convert_time=convert_time, convert_range_edges=convert_range_edges)
 
-    def to_csv(self, save_dir=None, convert_time=False, convert_range_edges=True):
-        """Convert EVR to CSV
+    def to_csv(self, save_path=None, convert_time=False, convert_range_edges=True):
+        """Convert an EVR file to a CSV
 
         Parameters
         ----------
+        save_path : str
+            Path to save csv file to
         convert_time : bool
             Whether or not to convert times in the EV datetime format to numpy datetime64.
             Default to `False`.
@@ -109,13 +115,21 @@ class Regions2D():
             Set the values by assigning range values to `min_range` and `max_range`
             or by passing a file into `set_range_edge_from_raw`. Defaults to True
         """
-        self.parser.to_csv(save_dir=save_dir, convert_time=False, convert_range_edges=convert_range_edges)
+        self.parser.to_csv(save_path=save_path, convert_time=convert_time, convert_range_edges=convert_range_edges)
 
-    def to_json(self, save_dir=None, convert_range_edges=True, pretty=False):
+    def to_dataframe(self, convert_time=False, convert_range_edges=True):
+        """Organize EVR data into a Pandas DataFrame.
+        See `Regions2D.to_csv` for arguments
+        """
+        return self.parser.to_dataframe(convert_time=convert_time, convert_range_edges=convert_range_edges)
+
+    def to_json(self, save_path=None, convert_range_edges=True, pretty=False):
         """Convert EVR to JSON
 
         Parameters
         ----------
+        save_path : str
+            Path to save csv file to
         convert_range_edges : bool
             Whether or not to convert -9999.99 and -9999.99 range edges to real values for EVR files.
             Set the values by assigning range values to `min_range` and `max_range`
@@ -123,7 +137,7 @@ class Regions2D():
         pretty : bool
             Whether or not to output more human readable JSON
         """
-        self.parser.to_json(save_dir=save_dir, pretty=pretty, convert_range_edges=convert_range_edges)
+        self.parser.to_json(save_path=save_path, pretty=pretty, convert_range_edges=convert_range_edges)
 
     def get_points_from_region(self, region, file=None):
         """Get points from specified region from a JSON or CSV file
@@ -181,21 +195,9 @@ class Regions2D():
 
     def convert_output(self, convert_time=True, convert_range_edges=True):
         """Convert x and y values of points from the EV format.
-        Modifies Regions2d.output_data
+        Modifies Regions2d.output_data. See convert_points for arguments.f
         """
         self.parser.convert_output(convert_time=convert_time, convert_range_edges=convert_range_edges)
-
-    def plot_region(self, region, offset=0):
-        """Plot a region from output_data
-
-        Parameters
-        ----------
-        region : str
-            region id
-        offset : float
-            range offset that region is plotted with
-        """
-        self.plotter.plot_region(region, offset=offset)
 
     def select_raw(self, files, region_id=None, t1=None, t2=None):
         """Finds raw files in the time domain that encompasses region or list of regions
@@ -260,7 +262,7 @@ class Regions2D():
         else:
             return files
 
-    def get_regions(self):
+    def get_region_ids(self):
         """Get the ids of all regions in the EVR file
 
         Returns
@@ -272,7 +274,7 @@ class Regions2D():
             raise ValueError("EVR file has not been parsed. Call `parse_file` first.")
         return list(self.output_data['regions'].keys())
 
-    def get_region_classifications(self):
+    def get_region_classifications(self, grouped=False):
         """Get the region classification for each region in the EVR file
 
         Returns
@@ -285,4 +287,35 @@ class Regions2D():
         return {
             k: v['metadata']['region_classification']
             for k, v in self.output_data['regions'].items()
-            }
+        }
+
+    def init_plotter(self):
+        if self._plotter is None:
+            if not self.output_data:
+                raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
+            from ..plot.region_plot import Region2DPlotter
+            self._plotter = Region2DPlotter(self)
+
+    def plot_region(self, region, offset=0):
+        """Plot a region from output_data
+
+        Parameters
+        ----------
+        region : str
+            region id
+        offset : float
+            range offset that region is plotted with
+        """
+        self.init_plotter()
+        self._plotter.plot_region(region, offset=offset)
+
+    def init_masker(self):
+        if self._masker is None:
+            if not self.output_data:
+                raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
+            from ..mask.region_mask import Region2DMasker
+            self._masker = Region2DMasker(self)
+
+    def mask_region(self, region, offset=0):
+        self.init_masker()
+        self._masker.mask_region(region, offset=offset)

@@ -3,7 +3,7 @@ from collections import defaultdict
 import os
 import copy
 from .ev_parser import EvParserBase
-from .utils import parse_time, from_JSON
+from .utils import parse_time, from_JSON, validate_path
 
 
 class Region2DParser(EvParserBase):
@@ -60,9 +60,10 @@ class Region2DParser(EvParserBase):
             return points
 
         # Read header containing metadata about the EVR file
-        filetype, file_format_number, echoview_version = self.read_line(fid, True)
+        file_type, file_format_number, echoview_version = self.read_line(fid, True)
         file_metadata = {
-            'filetype': filetype,
+            'file_name': os.path.splitext(os.path.basename(self.input_file))[0],
+            'file_type': file_type,
             'file_format_number': file_format_number,
             'echoview_version': echoview_version
         }
@@ -93,17 +94,15 @@ class Region2DParser(EvParserBase):
 
         return file_metadata, regions
 
-    def to_csv(self, save_dir=None, **kwargs):
+    def to_dataframe(self, **kwargs):
         # Parse EVR file if it hasn't already been done
         if not self.output_data:
             self.parse_file(**kwargs)
-        # Check if the save directory is safe
-        save_dir = self._validate_path(save_dir)
-        row = []
 
         df = pd.DataFrame()
         # Save file metadata for each point
         metadata = pd.Series(self.output_data['metadata'])
+        row = []
         # Loop over each region
         for rid, region in self.output_data['regions'].items():
             # Save region information for each point
@@ -115,15 +114,23 @@ class Region2DParser(EvParserBase):
             for p, point in enumerate(region['points'].values()):
                 point = pd.Series({
                     'point_idx': str(p),
-                    'x': point[0],
-                    'y': point[1],
+                    'ping_time': point[0],
+                    'depth': point[1],
                 })
                 row = pd.concat([region_id, point, metadata, region_metadata, region_notes, detection_settings])
                 df = df.append(row, ignore_index=True)
-        # Reorder columns and export to csv
-        output_file_path = os.path.join(save_dir, self.filename) + '.csv'
-        df[row.keys()].to_csv(output_file_path, index=False)
-        self._output_path.append(output_file_path)
+        # Reorder columns
+        return df[row.keys()]
+
+    def to_csv(self, save_path=None, **kwargs):
+        # Parse EVR file if it hasn't already been done
+        if not self.output_data:
+            self.parse_file(**kwargs)
+        # Check if the save directory is safe
+        save_path = validate_path(save_path=save_path, input_file=self.input_file, ext='.csv')
+        # Export to csv
+        self.to_dataframe().to_csv(save_path, index=False)
+        self._output_file.append(save_path)
 
     def get_points_from_region(self, region, file=None):
         if file is not None:
@@ -201,9 +208,9 @@ class Region2DParser(EvParserBase):
                     parse_time(region['metadata']['bounding_rectangle_left_x'])
             if convert_range_edges:
                 region['metadata']['bounding_rectangle_top_y'] =\
-                     self.swap_range_edge(region['metadata']['bounding_rectangle_top_y'])
+                    self.swap_range_edge(region['metadata']['bounding_rectangle_top_y'])
                 region['metadata']['bounding_rectangle_bottom_y'] =\
-                     self.swap_range_edge(region['metadata']['bounding_rectangle_bottom_y'])
+                    self.swap_range_edge(region['metadata']['bounding_rectangle_bottom_y'])
             region['points'] = self.convert_points(region['points'], convert_time, convert_range_edges)
 
     def convert_points(self, points, convert_time=True, convert_range_edges=True):

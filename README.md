@@ -28,7 +28,7 @@ Save the EVR file as a JSON or CSV file.
 >>> r2d.to_json()
 
 >>> # Save to CSV inside a folder called 'output'
->>> r2d.to_csv(save_dir='output')
+>>> r2d.to_csv(save_path='output')
 ```
 Or call `parse_file` to store the regions data to `Regions2D.output_data` without saving a file to your disk.
 

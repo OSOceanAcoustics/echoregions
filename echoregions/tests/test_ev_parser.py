@@ -14,6 +14,7 @@ def test_parse_time():
     timestamp = 'D20170625T1539223320'
     assert parse_time(timestamp) == np.datetime64('2017-06-25T15:39:22.3320')
 
+
 def test_plotting_points():
     # Test converting points in EV format to plottable values (datetime64 and float)
     evl_paths = data_dir + 'x1.bottom.evl'
@@ -26,8 +27,9 @@ def test_plotting_points():
     assert len(x) == 13764
     assert len(y) == 13764
 
-    os.remove(l_parser.output_path)
+    os.remove(l_parser.output_file)
     os.rmdir(output_json)
+
 
 def test_convert_ecs():
     # Test converting an EV calibration file (ECS)
@@ -38,7 +40,7 @@ def test_convert_ecs():
     parser.to_csv(output_csv)
     parser.to_json(output_json)
 
-    for path in parser.output_path:
+    for path in parser.output_file:
         assert os.path.exists(path)
         os.remove(path)
 
@@ -54,7 +56,7 @@ def test_convert_evl():
     parser.to_csv(output_csv)
     parser.to_json(output_json)
 
-    for path in parser.output_path:
+    for path in parser.output_file:
         assert os.path.exists(path)
         os.remove(path)
 
