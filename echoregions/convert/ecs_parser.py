@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from .ev_parser import EvParserBase
 import os
+from .utils import validate_path
 
 
 class CalibrationParser(EvParserBase):
@@ -79,13 +80,13 @@ class CalibrationParser(EvParserBase):
             'localcal_settings': localcal_settings,
         }
 
-    def to_csv(self, save_dir=None, **kwargs):
+    def to_csv(self, save_path=None, **kwargs):
         """Convert an Echoview calibration .ecs file to a .csv file
 
         Parameters
         ----------
-        save_dir : str
-            directory to save the CSV file to
+        save_path : str
+            path to save the CSV file to
         kwargs
             keyword arguments passed into `parse_file`
         """
@@ -100,7 +101,7 @@ class CalibrationParser(EvParserBase):
             self.parse_file(**kwargs)
 
         # Check if the save directory is safe
-        save_dir = self._validate_path(save_dir)
+        save_path = validate_path(save_path=save_path, input_file=self.input_file, ext='.csv')
 
         df = pd.DataFrame()
         id_keys = ['value_source', 'channel']
@@ -133,6 +134,5 @@ class CalibrationParser(EvParserBase):
             df = df.append([row_fileset, row_sourcecal, row_localset], ignore_index=True)
 
         # Export to csv
-        output_file_path = os.path.join(save_dir, self.filename) + '.csv'
-        df.to_csv(output_file_path, index=False)
-        self._output_path.append(output_file_path)
+        df.to_csv(save_path, index=False)
+        self._output_path.append(save_path)

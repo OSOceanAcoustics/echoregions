@@ -102,11 +102,13 @@ class Regions2D():
         """
         self.parser.parse_file(convert_time=convert_time, convert_range_edges=convert_range_edges)
 
-    def to_csv(self, save_dir=None, convert_time=False, convert_range_edges=True):
-        """Convert EVR to CSV
+    def to_csv(self, save_path=None, convert_time=False, convert_range_edges=True):
+        """Convert an EVR file to a CSV
 
         Parameters
         ----------
+        save_path : str
+            Path to save csv file to
         convert_time : bool
             Whether or not to convert times in the EV datetime format to numpy datetime64.
             Default to `False`.
@@ -115,13 +117,21 @@ class Regions2D():
             Set the values by assigning range values to `min_range` and `max_range`
             or by passing a file into `set_range_edge_from_raw`. Defaults to True
         """
-        self.parser.to_csv(save_dir=save_dir, convert_time=False, convert_range_edges=convert_range_edges)
+        self.parser.to_csv(save_path=save_path, convert_time=convert_time, convert_range_edges=convert_range_edges)
 
-    def to_json(self, save_dir=None, convert_range_edges=True, pretty=False):
+    def to_dataframe(self, convert_time=False, convert_range_edges=True):
+        """Organize EVR data into a Pandas DataFrame.
+        See `Regions2D.to_csv` for arguments
+        """
+        return self.parser.to_dataframe(convert_time=convert_time, convert_range_edges=convert_range_edges)
+
+    def to_json(self, save_path=None, convert_range_edges=True, pretty=False):
         """Convert EVR to JSON
 
         Parameters
         ----------
+        save_path : str
+            Path to save csv file to
         convert_range_edges : bool
             Whether or not to convert -9999.99 and -9999.99 range edges to real values for EVR files.
             Set the values by assigning range values to `min_range` and `max_range`
@@ -129,7 +139,7 @@ class Regions2D():
         pretty : bool
             Whether or not to output more human readable JSON
         """
-        self.parser.to_json(save_dir=save_dir, pretty=pretty, convert_range_edges=convert_range_edges)
+        self.parser.to_json(save_path=save_path, pretty=pretty, convert_range_edges=convert_range_edges)
 
     def get_points_from_region(self, region, file=None):
         """Get points from specified region from a JSON or CSV file
@@ -187,7 +197,7 @@ class Regions2D():
 
     def convert_output(self, convert_time=True, convert_range_edges=True):
         """Convert x and y values of points from the EV format.
-        Modifies Regions2d.output_data
+        Modifies Regions2d.output_data. See convert_points for arguments.f
         """
         self.parser.convert_output(convert_time=convert_time, convert_range_edges=convert_range_edges)
 
