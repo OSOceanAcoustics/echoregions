@@ -132,36 +132,6 @@ class Region2DParser(EvParserBase):
         self.to_dataframe().to_csv(save_path, index=False)
         self._output_file.append(save_path)
 
-    def get_points_from_region(self, region, file=None):
-        if file is not None:
-            if file.upper().endswith('.CSV'):
-                if not os.path.isfile(file):
-                    raise ValueError(f"{file} is not a valid CSV file.")
-                data = pd.read_csv(file)
-                region = data.loc[data['region_id'] == int(region)]
-                # Combine x and y points to get a list of points
-                return list(zip(region.x, region.y))
-            elif file.upper().endswith('.JSON'):
-                data = from_JSON(file)
-                points = list(data['regions'][str(region)]['points'].values())
-            else:
-                raise ValueError(f"{file} is not a CSV or JSON file")
-
-        # Pull region points from passed region dict
-        if isinstance(region, dict):
-            if 'points' in region:
-                points = list(region['points'].values())
-            else:
-                raise ValueError("Invalid region dictionary")
-        # Pull region points from parsed data
-        else:
-            region = str(region)
-            if region in self.output_data['regions']:
-                points = list(self.output_data['regions'][region]['points'].values())
-            else:
-                raise ValueError("{region} is not a valid region")
-        return [list(l) for l in points]
-
     def set_range_edge_from_raw(self, raw, model='EK60'):
         try:
             import echopype as ep

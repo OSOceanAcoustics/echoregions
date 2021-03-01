@@ -155,7 +155,7 @@ class Regions2D():
         points : list
             list of x, y points
         """
-        return self.parser.get_points_from_region(region, file)
+        return self.plotter.get_points_from_region(region, file)
 
     def convert_points(self, points, convert_time=True, convert_range_edges=True):
         """Convert x and y values of points from the EV format.
