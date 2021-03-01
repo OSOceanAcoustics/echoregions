@@ -13,6 +13,7 @@ class Region2DPlotter():
             convert_time=True,
             convert_range_edges=True
         ))
+        points = self.close_region(points)
 
         x = np.array(points[:, 0], dtype=np.datetime64)
         y = [p - offset for p in points[:, 1]]
@@ -49,3 +50,11 @@ class Region2DPlotter():
             else:
                 raise ValueError("{region} is not a valid region")
         return [list(l) for l in points]
+
+    def close_region(self, points):
+        is_array = True if isinstance(points, np.ndarray) else False
+        points = list(points)
+        points.append(points[0])
+        if is_array:
+            points = np.array(points)
+        return points

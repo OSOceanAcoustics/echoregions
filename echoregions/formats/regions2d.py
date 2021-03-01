@@ -157,6 +157,21 @@ class Regions2D():
         """
         return self.plotter.get_points_from_region(region, file)
 
+    def close_region(self, points):
+        """Closes a region by appending the first point to the end
+
+        Parameters
+        ----------
+        points : list or np.ndarray
+            List of points
+
+        Returns
+        -------
+        points : list or np.ndarray
+            List of points for closed region or numpy array depending on input type
+        """
+        return self.plotter.close_region(points)
+
     def convert_points(self, points, convert_time=True, convert_range_edges=True):
         """Convert x and y values of points from the EV format.
         Returns a copy of points.
@@ -297,14 +312,23 @@ class Regions2D():
             self._plotter = Region2DPlotter(self)
 
     def plot_region(self, region, offset=0):
-        """Plot a region from output_data
+        """Plot a region from output_data.
+        Automatically convert time and range_edges.
 
         Parameters
-        ----------
+        ---------
         region : str
-            region id
+            region_id to plot
+
         offset : float
-            range offset that region is plotted with
+            depth offset of region points in meters
+
+        Returns
+        -------
+        x : np.ndarray
+            x points used by the matplotlib plot function
+        y : np.ndarray
+            y points used by the matplotlib plot function
         """
         self.init_plotter()
         self._plotter.plot_region(region, offset=offset)
