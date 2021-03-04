@@ -4,6 +4,7 @@ import json
 import datetime as dt
 import numpy as np
 from pathlib import Path
+import matplotlib
 
 EK60_fname_pattern = r'(?P<survey>.+)?-?D(?P<date>\w{1,8})-T(?P<time>\w{1,6})-?(?P<postfix>\w+)?\..+'
 
@@ -61,7 +62,7 @@ def validate_path(save_path=None, input_file=None, ext='.json'):
     return str(save_path)
 
 
-def parse_time(ev_time, datetime_format='D%Y%m%dT%H%M%S%f'):
+def parse_time(ev_time, datetime_format='D%Y%m%dT%H%M%S%f', unix=False):
     """Convert EV datetime to a numpy datetime64 object
 
     Parameters
@@ -71,17 +72,22 @@ def parse_time(ev_time, datetime_format='D%Y%m%dT%H%M%S%f'):
     datetime_format : str
         Format of datestring to be used with datetime strptime
         in CCYYMMDD HHmmSSssss format
+    unix : bool
+        Whether or not to output the time in the unix time format
 
     Returns
     -------
-    datetime : np.datetime64
+    datetime : np.datetime64 or float
         converted input datetime
     """
     if isinstance(ev_time, np.ndarray) and np.issubdtype(ev_time.dtype, np.datetime64):
         return ev_time
     elif not isinstance(ev_time, str):
         raise ValueError("'ev_time' must be type str")
-    return np.array(dt.datetime.strptime(ev_time, datetime_format), dtype=np.datetime64)
+    t = np.array(dt.datetime.strptime(ev_time, datetime_format), dtype=np.datetime64)
+    if unix:
+        t = matplotlib.dates.date2num(t)
+    return t
 
 
 def parse_filetime(fname):
