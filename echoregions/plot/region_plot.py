@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
+import os
+from ..convert.utils import from_JSON
 import matplotlib.pyplot as plt
+
 
 # TODO add in first point to last in order to close the shape
 class Region2DPlotter():
@@ -49,7 +52,7 @@ class Region2DPlotter():
                 points = list(self.Regions2D.output_data['regions'][region]['points'].values())
             else:
                 raise ValueError("{region} is not a valid region")
-        return [list(l) for l in points]
+        return [list(p) for p in points]
 
     def close_region(self, points):
         is_array = True if isinstance(points, np.ndarray) else False
