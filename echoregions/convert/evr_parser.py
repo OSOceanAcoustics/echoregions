@@ -183,12 +183,12 @@ class Region2DParser(EvParserBase):
                     self.swap_range_edge(region['metadata']['bounding_rectangle_bottom_y'])
             region['points'] = self.convert_points(region['points'], convert_time, convert_range_edges)
 
-    def convert_points(self, points, convert_time=True, convert_range_edges=True):
+    def convert_points(self, points, convert_time=True, convert_range_edges=True, offset=0, unix=False):
         def convert_single(point):
             if convert_time:
-                point[0] = parse_time(point[0])
+                point[0] = parse_time(point[0], unix=unix)
             if convert_range_edges:
-                point[1] = self.swap_range_edge(point[1])
+                point[1] = self.swap_range_edge(point[1]) + offset
 
         singular = True if not isinstance(points[0], list) else False
         if singular:

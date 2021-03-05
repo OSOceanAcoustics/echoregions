@@ -172,7 +172,7 @@ class Regions2D():
         """
         return self.plotter.close_region(points)
 
-    def convert_points(self, points, convert_time=True, convert_range_edges=True):
+    def convert_points(self, points, convert_time=True, convert_range_edges=True, offset=0, unix=False):
         """Convert x and y values of points from the EV format.
         Returns a copy of points.
 
@@ -185,13 +185,24 @@ class Regions2D():
         convert_range_edges : bool
             Whether to convert -9999.99 edges to real range values.
             Min and max ranges must be set manually or by calling `set_range_edge_from_raw`
+        offset : float
+            depth offset in meters
+        unix : bool
+            unix : bool
+            Whether or not to output the time in the unix time format
 
         Returns
         -------
         points : list or dict
             single converted point or list/dict of converted points depending on input
         """
-        return self.parser.convert_points(points, convert_time, convert_range_edges)
+        return self.parser.convert_points(
+            points,
+            convert_time=convert_time,
+            convert_range_edges=convert_range_edges,
+            offset=offset,
+            unix=unix
+        )
 
     def set_range_edge_from_raw(self, raw, model='EK60'):
         """Calculate the sonar range from a raw file using Echopype.
@@ -304,7 +315,7 @@ class Regions2D():
             for k, v in self.output_data['regions'].items()
         }
 
-    def init_plotter(self):
+    def _init_plotter(self):
         if self._plotter is None:
             if not self.output_data:
                 raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
@@ -330,16 +341,18 @@ class Regions2D():
         y : np.ndarray
             y points used by the matplotlib plot function
         """
-        self.init_plotter()
+        self._init_plotter()
         self._plotter.plot_region(region, offset=offset)
 
-    def init_masker(self):
+    def _init_masker(self):
         if self._masker is None:
             if not self.output_data:
                 raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
             from ..mask.region_mask import Region2DMasker
             self._masker = Region2DMasker(self)
 
-    def mask_region(self, region, offset=0):
-        self.init_masker()
-        self._masker.mask_region(region, offset=offset)
+    def mask_region(self, ds, region, offset=0):
+        """Mask an xarray dataset
+        """
+        self._init_masker()
+        return self._masker.mask_region(ds, region, offset=offset)

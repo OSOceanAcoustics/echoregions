@@ -14,7 +14,8 @@ class Region2DPlotter():
         points = np.array(self.Regions2D.convert_points(
             self.get_points_from_region(region),
             convert_time=True,
-            convert_range_edges=True
+            convert_range_edges=True,
+            offset=offset
         ))
         points = self.close_region(points)
 
