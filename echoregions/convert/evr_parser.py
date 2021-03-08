@@ -3,7 +3,7 @@ from collections import defaultdict
 import os
 import copy
 from .ev_parser import EvParserBase
-from .utils import parse_time, from_JSON, validate_path
+from .utils import parse_time, validate_path
 
 
 class Region2DParser(EvParserBase):
@@ -79,10 +79,10 @@ class Region2DParser(EvParserBase):
             regions[rid]['metadata'] = _region_metadata_to_dict(region_metadata)
             # Add notes to region data
             n_note_lines = int(self.read_line(fid))
-            regions[rid]['notes'] = [self.read_line(fid) for l in range(n_note_lines)]
+            regions[rid]['notes'] = [self.read_line(fid) for line in range(n_note_lines)]
             # Add detection settings to region data
             n_detection_setting_lines = int(self.read_line(fid))
-            regions[rid]['detection_settings'] = [self.read_line(fid) for l in range(n_detection_setting_lines)]
+            regions[rid]['detection_settings'] = [self.read_line(fid) for line in range(n_detection_setting_lines)]
             # Add classification to region data
             regions[rid]['metadata']['region_classification'] = self.read_line(fid)
             # Add point x and y

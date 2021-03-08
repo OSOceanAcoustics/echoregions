@@ -1,5 +1,6 @@
 from ..convert import Region2DParser, utils
 from ..plot.region_plot import Region2DPlotter
+from pathlib import Path
 import numpy as np
 
 
@@ -249,7 +250,7 @@ class Regions2D():
             list of raw files if multiple are selected.
         """
         files.sort()
-        filetimes = np.array([utils.parse_filetime(fname) for fname in files])
+        filetimes = np.array([utils.parse_filetime(Path(fname).name) for fname in files])
 
         if region_id is not None:
             if not isinstance(region_id, list):
@@ -266,12 +267,12 @@ class Regions2D():
         if t1 is None:
             if not all(str(r) in self.output_data['regions'] for r in region_id):
                 raise ValueError(f"Invalid region id in {region_id}")
-            regions = [self.convert_points(list(self.output_data['regions'][str(r)]['points'].values()))
-                       for r in region_id]
+            regions = np.array([self.convert_points(list(self.output_data['regions'][str(r)]['points'].values()))
+                                for r in region_id])
             t1 = []
             t2 = []
             for region in regions:
-                points = [p[0] for p in region]
+                points = region[:, 0].astype(np.datetime64)
                 t1.append(min(points))
                 t2.append(max(points))
             t1 = min(t1)
