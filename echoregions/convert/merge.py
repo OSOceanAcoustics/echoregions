@@ -31,7 +31,7 @@ def merge(objects, reindex_ids=False):
                            for r in regions.region_ids]
     # Attach region information to region ids
     merged = dict(zip(merged_idx, merged_data))
-    # Create new Regons2D object
+    # Create new Regions2D object
     merged_obj = Regions2D()
     # Populate metadata
     merged_obj.output_data['metadata'] = objects[0].output_data['metadata']

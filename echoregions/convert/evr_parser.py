@@ -3,7 +3,7 @@ from collections import defaultdict
 import os
 import copy
 from .ev_parser import EvParserBase
-from .utils import parse_time, from_JSON, validate_path
+from .utils import parse_time, validate_path
 
 
 class Region2DParser(EvParserBase):
@@ -79,10 +79,10 @@ class Region2DParser(EvParserBase):
             regions[rid]['metadata'] = _region_metadata_to_dict(region_metadata)
             # Add notes to region data
             n_note_lines = int(self.read_line(fid))
-            regions[rid]['notes'] = [self.read_line(fid) for l in range(n_note_lines)]
+            regions[rid]['notes'] = [self.read_line(fid) for line in range(n_note_lines)]
             # Add detection settings to region data
             n_detection_setting_lines = int(self.read_line(fid))
-            regions[rid]['detection_settings'] = [self.read_line(fid) for l in range(n_detection_setting_lines)]
+            regions[rid]['detection_settings'] = [self.read_line(fid) for line in range(n_detection_setting_lines)]
             # Add classification to region data
             regions[rid]['metadata']['region_classification'] = self.read_line(fid)
             # Add point x and y
@@ -131,36 +131,6 @@ class Region2DParser(EvParserBase):
         # Export to csv
         self.to_dataframe().to_csv(save_path, index=False)
         self._output_file.append(save_path)
-
-    def get_points_from_region(self, region, file=None):
-        if file is not None:
-            if file.upper().endswith('.CSV'):
-                if not os.path.isfile(file):
-                    raise ValueError(f"{file} is not a valid CSV file.")
-                data = pd.read_csv(file)
-                region = data.loc[data['region_id'] == int(region)]
-                # Combine x and y points to get a list of points
-                return list(zip(region.x, region.y))
-            elif file.upper().endswith('.JSON'):
-                data = from_JSON(file)
-                points = list(data['regions'][str(region)]['points'].values())
-            else:
-                raise ValueError(f"{file} is not a CSV or JSON file")
-
-        # Pull region points from passed region dict
-        if isinstance(region, dict):
-            if 'points' in region:
-                points = list(region['points'].values())
-            else:
-                raise ValueError("Invalid region dictionary")
-        # Pull region points from parsed data
-        else:
-            region = str(region)
-            if region in self.output_data['regions']:
-                points = list(self.output_data['regions'][region]['points'].values())
-            else:
-                raise ValueError("{region} is not a valid region")
-        return [list(l) for l in points]
 
     def set_range_edge_from_raw(self, raw, model='EK60'):
         try:
@@ -213,12 +183,12 @@ class Region2DParser(EvParserBase):
                     self.swap_range_edge(region['metadata']['bounding_rectangle_bottom_y'])
             region['points'] = self.convert_points(region['points'], convert_time, convert_range_edges)
 
-    def convert_points(self, points, convert_time=True, convert_range_edges=True):
+    def convert_points(self, points, convert_time=True, convert_range_edges=True, offset=0, unix=False):
         def convert_single(point):
             if convert_time:
-                point[0] = parse_time(point[0])
+                point[0] = parse_time(point[0], unix=unix)
             if convert_range_edges:
-                point[1] = self.swap_range_edge(point[1])
+                point[1] = self.swap_range_edge(point[1]) + offset
 
         singular = True if not isinstance(points[0], list) else False
         if singular:

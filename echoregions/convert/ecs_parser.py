@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from .ev_parser import EvParserBase
-import os
 from .utils import validate_path
 
 

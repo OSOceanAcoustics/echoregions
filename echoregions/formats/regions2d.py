@@ -1,5 +1,6 @@
 from ..convert import Region2DParser, utils
 from ..plot.region_plot import Region2DPlotter
+from pathlib import Path
 import numpy as np
 
 
@@ -155,9 +156,24 @@ class Regions2D():
         points : list
             list of x, y points
         """
-        return self.parser.get_points_from_region(region, file)
+        return self.plotter.get_points_from_region(region, file)
 
-    def convert_points(self, points, convert_time=True, convert_range_edges=True):
+    def close_region(self, points):
+        """Closes a region by appending the first point to the end
+
+        Parameters
+        ----------
+        points : list or np.ndarray
+            List of points
+
+        Returns
+        -------
+        points : list or np.ndarray
+            List of points for closed region or numpy array depending on input type
+        """
+        return self.plotter.close_region(points)
+
+    def convert_points(self, points, convert_time=True, convert_range_edges=True, offset=0, unix=False):
         """Convert x and y values of points from the EV format.
         Returns a copy of points.
 
@@ -170,13 +186,24 @@ class Regions2D():
         convert_range_edges : bool
             Whether to convert -9999.99 edges to real range values.
             Min and max ranges must be set manually or by calling `set_range_edge_from_raw`
+        offset : float
+            depth offset in meters
+        unix : bool
+            unix : bool
+            Whether or not to output the time in the unix time format
 
         Returns
         -------
         points : list or dict
             single converted point or list/dict of converted points depending on input
         """
-        return self.parser.convert_points(points, convert_time, convert_range_edges)
+        return self.parser.convert_points(
+            points,
+            convert_time=convert_time,
+            convert_range_edges=convert_range_edges,
+            offset=offset,
+            unix=unix
+        )
 
     def set_range_edge_from_raw(self, raw, model='EK60'):
         """Calculate the sonar range from a raw file using Echopype.
@@ -223,7 +250,7 @@ class Regions2D():
             list of raw files if multiple are selected.
         """
         files.sort()
-        filetimes = np.array([utils.parse_filetime(fname) for fname in files])
+        filetimes = np.array([utils.parse_filetime(Path(fname).name) for fname in files])
 
         if region_id is not None:
             if not isinstance(region_id, list):
@@ -240,12 +267,12 @@ class Regions2D():
         if t1 is None:
             if not all(str(r) in self.output_data['regions'] for r in region_id):
                 raise ValueError(f"Invalid region id in {region_id}")
-            regions = [self.convert_points(list(self.output_data['regions'][str(r)]['points'].values()))
-                       for r in region_id]
+            regions = np.array([self.convert_points(list(self.output_data['regions'][str(r)]['points'].values()))
+                                for r in region_id])
             t1 = []
             t2 = []
             for region in regions:
-                points = [p[0] for p in region]
+                points = region[:, 0].astype(np.datetime64)
                 t1.append(min(points))
                 t2.append(max(points))
             t1 = min(t1)
@@ -289,7 +316,7 @@ class Regions2D():
             for k, v in self.output_data['regions'].items()
         }
 
-    def init_plotter(self):
+    def _init_plotter(self):
         if self._plotter is None:
             if not self.output_data:
                 raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
@@ -297,25 +324,36 @@ class Regions2D():
             self._plotter = Region2DPlotter(self)
 
     def plot_region(self, region, offset=0):
-        """Plot a region from output_data
+        """Plot a region from output_data.
+        Automatically convert time and range_edges.
 
         Parameters
-        ----------
+        ---------
         region : str
-            region id
+            region_id to plot
+
         offset : float
-            range offset that region is plotted with
+            depth offset of region points in meters
+
+        Returns
+        -------
+        x : np.ndarray
+            x points used by the matplotlib plot function
+        y : np.ndarray
+            y points used by the matplotlib plot function
         """
-        self.init_plotter()
+        self._init_plotter()
         self._plotter.plot_region(region, offset=offset)
 
-    def init_masker(self):
+    def _init_masker(self):
         if self._masker is None:
             if not self.output_data:
                 raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
             from ..mask.region_mask import Region2DMasker
             self._masker = Region2DMasker(self)
 
-    def mask_region(self, region, offset=0):
-        self.init_masker()
-        self._masker.mask_region(region, offset=offset)
+    def mask_region(self, ds, region, offset=0):
+        """Mask an xarray dataset
+        """
+        self._init_masker()
+        return self._masker.mask_region(ds, region, offset=offset)
