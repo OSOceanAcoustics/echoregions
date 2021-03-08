@@ -15,6 +15,7 @@ output_json = data_dir + 'output_JSON/'
 raw_file = 'Summer2017-D20170625-T195927.raw'
 raw_files = [data_dir + 'hake_nc/' + f for f in os.listdir(data_dir + 'hake_nc')]
 
+
 def test_region_plot():
     # Test plotting a region on top of an echogram
 
@@ -40,8 +41,9 @@ def test_region_plot():
     # Plot region
     regions.raw_range = ed.Sv['range']
     regions.convert_output()
-    regions.plot_region(11, offset=water_level)
+    regions.plot_region(11, offset=-water_level)
     plt.show()
+
 
 def test_plot_multi():
     # Test plot all regions
