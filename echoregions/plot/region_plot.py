@@ -5,8 +5,8 @@ from ..convert.utils import from_JSON
 import matplotlib.pyplot as plt
 
 
-# TODO add in first point to last in order to close the shape
 class Region2DPlotter():
+    """Class for plotting Regions. Should Only be used by Regions2D"""
     def __init__(self, Regions2D):
         self.Regions2D = Regions2D
 
@@ -20,7 +20,7 @@ class Region2DPlotter():
         points = self.close_region(points)
 
         x = np.array(points[:, 0], dtype=np.datetime64)
-        y = [p - offset for p in points[:, 1]]
+        y = points[:, 1]
         plt.plot_date(x, y, marker='o', linestyle='dashed', color='r')
 
         return x, y
