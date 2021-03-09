@@ -317,6 +317,7 @@ class Regions2D():
         }
 
     def _init_plotter(self):
+        """Initialize the object used to plot regions"""
         if self._plotter is None:
             if not self.output_data:
                 raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
@@ -333,7 +334,7 @@ class Regions2D():
             region_id to plot
 
         offset : float
-            depth offset of region points in meters
+            A depth offset in meters added to the range of the points used for masking
 
         Returns
         -------
@@ -346,14 +347,33 @@ class Regions2D():
         self._plotter.plot_region(region, offset=offset)
 
     def _init_masker(self):
+        """Initialize the object used to mask regions"""
         if self._masker is None:
             if not self.output_data:
                 raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
             from ..mask.region_mask import Region2DMasker
             self._masker = Region2DMasker(self)
 
-    def mask_region(self, ds, region, offset=0):
+    def mask_region(self, ds, region, data_var='Sv', offset=0):
         """Mask an xarray dataset
+
+        Parameters
+        ----------
+        ds : Xarray Dataset
+            calibrated data (Sv or Sp) with range
+
+        region : str
+            ID of region to mask the dataset with
+
+        data_var : str
+            The data variable in the Dataset to mask
+
+        offset : float
+            A depth offset in meters added to the range of the points used for masking
+
+        Returns
+        -------
+        A dataset with the data_var masked by the specified region
         """
         self._init_masker()
         return self._masker.mask_region(ds, region, offset=offset)

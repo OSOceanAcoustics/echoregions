@@ -77,5 +77,5 @@ def test_mask():
     files = glob.glob('echoregions/test_data/ek60/regions/*.evr')
     r2d = Regions2D(files[0])
     masked = r2d.mask_region(ed.Sv, '11', offset=-water_level)
-    masked.plot(yincrease=False)
+    masked.Sv.isel(frequency=0).plot(yincrease=False)
     plt.show()
