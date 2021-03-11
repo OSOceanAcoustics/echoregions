@@ -19,12 +19,15 @@ class Region2DParser(EvParserBase):
         self.min_depth = None
         self.max_depth = None
 
-    def _parse(self, fid, convert_time=False, convert_range_edges=False):
+    def _parse(self, fid, convert_time=False, convert_range_edges=False, offset=0):
         """Reads an open file and returns the file metadata and region information"""
         def _region_metadata_to_dict(line):
             """Assigns a name to each value in the metadata line for each region"""
             top_y = self.swap_range_edge(line[9]) if convert_range_edges else line[9]
             bottom_y = self.swap_range_edge(line[12]) if convert_range_edges else line[12]
+            top_y = float(top_y) + offset
+            bottom_y = float(bottom_y) + offset
+
             left_x = parse_time(f'D{line[7]}T{line[8]}') if convert_time else f'D{line[7]}T{line[8]}'
             right_x = parse_time(f'D{line[10]}T{line[11]}') if convert_time else f'D{line[10]}T{line[11]}'
             return {

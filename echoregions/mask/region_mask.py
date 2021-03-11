@@ -4,7 +4,7 @@ import regionmask
 import matplotlib
 
 
-class Region2DMasker():
+class Regions2DMasker():
     """Class for masking Regions. Should Only be used by Regions2D"""
     def __init__(self, Regions2D):
         self.Regions2D = Regions2D

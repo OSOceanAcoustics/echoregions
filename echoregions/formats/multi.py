@@ -67,13 +67,13 @@ class MultiRegions2D():
         return self._output_data
 
     def to_dataframe(self):
-        """Concatenates the data of all Region2D files and returns a pandas DataFrame
+        """Concatenates the data of all Regions2D files and returns a pandas DataFrame
         """
         df = pd.concat([r.to_dataframe() for r in self.files])
         return df
 
     def to_csv(self, save_path=None):
-        """Save multiple Region2D objects to a single CSV file.
+        """Save multiple Regions2D objects to a single CSV file.
 
         Parameters
         ----------
@@ -86,16 +86,15 @@ class MultiRegions2D():
         self._output_file.append(save_path)
 
     def to_json(self, save_path=None, pretty=False):
-        """Save multiple Region2D objects to a single CSV file.
+        """Save multiple Regions2D objects to a single CSV file.
 
         Parameters
         ----------
         save_path : str
             If save_path is not provided, the file will be saved with the filename of
             the first EVR file at the same location as the EVR file.
-        pretty : bool
-            Whether or not to format JSON to be more human readable.
-            Defaults to `False`
+        pretty : bool, default False
+            Output more human readable JSON.
         """
         save_path = validate_path(save_path=save_path, input_file=self.files[0].input_file, ext='.json')
         indent = 4 if pretty else None

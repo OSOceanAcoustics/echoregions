@@ -5,12 +5,25 @@ from ..convert.utils import from_JSON
 import matplotlib.pyplot as plt
 
 
-class Region2DPlotter():
-    """Class for plotting Regions. Should Only be used by Regions2D"""
+class Regions2DPlotter():
+    """Class for plotting Regions. Should only be used by `Regions2D`"""
     def __init__(self, Regions2D):
         self.Regions2D = Regions2D
 
     def plot_region(self, region, offset=0):
+        """Plot a region.
+
+        Parameters
+        ----------
+        region : str
+            id of region to be plotted
+        offset : float
+            meters to offset the region depth by
+
+        Returns
+        -------
+        numpy arrays for the x and y points plotted
+        """
         points = np.array(self.Regions2D.convert_points(
             self.get_points_from_region(region),
             convert_time=True,
@@ -26,6 +39,19 @@ class Region2DPlotter():
         return x, y
 
     def get_points_from_region(self, region, file=None):
+        """Get a list of points from a given region.
+
+        Parameters
+        ----------
+        region : str
+            id of region to be plotted
+        file : float
+            CSV or JSON file. If `None`, use `output_data`
+
+        Returns
+        -------
+        list of points from the given region
+        """
         if file is not None:
             if file.upper().endswith('.CSV'):
                 if not os.path.isfile(file):
@@ -56,6 +82,17 @@ class Region2DPlotter():
         return [list(p) for p in points]
 
     def close_region(self, points):
+        """Close a region by appending the first point to end of the list of points.
+
+        Parameters
+        ----------
+        points : list
+            list of points
+
+        Returns
+        -------
+        list of points where the first point is appended to the end
+        """
         is_array = True if isinstance(points, np.ndarray) else False
         points = list(points)
         points.append(points[0])

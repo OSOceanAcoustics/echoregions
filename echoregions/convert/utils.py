@@ -72,12 +72,12 @@ def parse_time(ev_time, datetime_format='D%Y%m%dT%H%M%S%f', unix=False):
     datetime_format : str
         Format of datestring to be used with datetime strptime
         in CCYYMMDD HHmmSSssss format
-    unix : bool
-        Whether or not to output the time in the unix time format
+    unix : bool, default False
+        Output the time in the unix time format
 
     Returns
     -------
-    datetime : np.datetime64 or float
+    np.datetime64 or float
         converted input datetime
     """
     if isinstance(ev_time, np.ndarray) and np.issubdtype(ev_time.dtype, np.datetime64):
