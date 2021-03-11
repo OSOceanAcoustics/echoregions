@@ -37,33 +37,40 @@ class LineParser(EvParserBase):
         )
         return file_metadata, points
 
-    def to_csv(self, save_path=None):
+    def to_dataframe(self, **kwargs):
+        """Create a pandas DataFrame from an Echoview lines file.
+
+        Parameters
+        ----------
+        kwargs : keyword arguments
+            Additional arguments passed to `Lines.parse_file`
+        """
+        if not self.output_data:
+            self.parse_file(**kwargs)
+
+        # Save a row for each point
+        df = pd.DataFrame(self.output_data['points'])
+        # Save file metadata for each point
+        df = df.assign(**self.output_data['metadata'])
+        order = list(self.output_data['metadata'].keys()) + list(self.output_data['points'][0].keys())
+        return df[order].rename({"x": "ping_time", "y": "depth"}, axis=1)
+
+    def to_csv(self, save_path=None, **kwargs):
         """Convert an Echoview lines .evl file to a .csv file
 
         Parameters
         ----------
         save_path : str
             path to save the CSV file to
+        kwargs : keyword arguments
+            Additional arguments passed to `Lines.parse_file`
         """
         if not self.output_data:
-            self.parse_file()
-
+            self.parse_file(**kwargs)
         # Check if the save directory is safe
         save_path = validate_path(save_path=save_path, input_file=self.input_file, ext='.csv')
-
-        # Save a row for each point
-        df = pd.concat(
-            [pd.DataFrame([point], columns=['x', 'y', 'status']) for
-                pid, point in self.output_data['points'].items()],
-            ignore_index=True
-        )
-        # Save file metadata for each point
-        metadata = pd.Series(self.output_data['metadata'])
-        for k, v in metadata.items():
-            df[k] = v
-
         # Reorder columns and export to csv
-        df.to_csv(save_path, index=False)
+        self.to_dataframe().to_csv(save_path, index=False)
         self._output_file.append(save_path)
 
     def convert_points(self, points, convert_time=True, replace_nan_range_value=None, offset=0):

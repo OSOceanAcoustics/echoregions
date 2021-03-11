@@ -120,7 +120,7 @@ class Region2DParser(EvParserBase):
                     'ping_time': point[0],
                     'depth': point[1],
                 })
-                row = pd.concat([region_id, point, metadata, region_metadata, region_notes, detection_settings])
+                row = pd.concat([metadata, region_id, point, region_metadata, region_notes, detection_settings])
                 df = df.append(row, ignore_index=True)
         # Reorder columns
         return df[row.keys()]
