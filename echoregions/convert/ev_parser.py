@@ -49,8 +49,11 @@ class EvParserBase():
         else:
             return open_file.readline().strip()
 
+    def _parse(fid, **kwargs):
+        """Base method for parsing files"""
+
     def parse_file(self, **kwargs):
-        """Base method for parsing the file in `input_file`.
+        """Base method for parsing the file in `input_file` and constructing `output_data`
         Used for EVR and EVL parsers
         """
         if self.input_file is None:
@@ -77,8 +80,8 @@ class EvParserBase():
         ----------
         save_path : str
             path to save the JSON file to
-        pretty : bool
-            Whether to output more human readable JSON
+        pretty : bool, default False
+            Output more human readable JSON
         kwargs
             keyword arguments passed into `parse_file`
         """

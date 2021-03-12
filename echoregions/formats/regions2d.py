@@ -1,21 +1,22 @@
-from ..convert import Region2DParser, utils
-from ..plot.region_plot import Region2DPlotter
+from ..convert import utils
+from ..convert.evr_parser import Region2DParser
 from pathlib import Path
 import numpy as np
 
 
 class Regions2D():
     def __init__(self, input_file=None, parse=True, convert_time=False,
-                 convert_range_edges=True, min_depth=None, max_depth=None):
+                 convert_range_edges=True, offset=0, min_depth=None, max_depth=None, raw_range=None):
+        self._parser = Region2DParser(input_file)
         self._plotter = None
         self._masker = None
         self._region_ids = None
 
-        self.parser = Region2DParser(input_file)
+        self.raw_range = raw_range
         self.max_depth = max_depth
         self.min_depth = min_depth
         if parse:
-            self.parse_file(convert_time=convert_time, convert_range_edges=convert_range_edges)
+            self.parse_file(convert_time=convert_time, convert_range_edges=convert_range_edges, offset=offset)
 
     def __iter__(self):
         return iter(self.output_data['regions'].values())
@@ -28,117 +29,120 @@ class Regions2D():
 
     @property
     def output_data(self):
-        return self.parser.output_data
+        """Dictionary containing region data and metadata for the EVR file"""
+        return self._parser.output_data
 
     @property
     def output_file(self):
-        return self.parser.output_file
+        """Path(s) to the list of files saved.
+        String if a single file. LIst of strings if multiple.
+        """
+        return self._parser.output_file
 
     @property
     def input_file(self):
-        return self.parser.input_file
+        """String path to the EVR file"""
+        return self._parser.input_file
 
     @property
     def raw_range(self):
-        return self.parser.raw_range
+        """Get the range vector that provides the min_depth and max_depth"""
+        return self._parser.raw_range
 
     @raw_range.setter
     def raw_range(self, val):
-        self.parser.raw_range = val
+        """Set the range vector that provides the min_depth and max_depth"""
+        self._parser.raw_range = val
+        self.max_depth
+        self.min_depth
 
     @property
     def max_depth(self):
-        if self.parser.max_depth is None and self.raw_range is not None:
+        """Get the depth value that the 9999.99 edge will be set to"""
+        if self._parser.max_depth is None and self.raw_range is not None:
             self.max_depth = self.raw_range.max()
-        return self.parser.max_depth
+        return self._parser.max_depth
 
     @property
     def min_depth(self):
-        if self.parser.min_depth is None and self.raw_range is not None:
+        """Get the depth value that the -9999.99 edge will be set to"""
+        if self._parser.min_depth is None and self.raw_range is not None:
             self.min_depth = self.raw_range.min()
-        return self.parser.min_depth
+        return self._parser.min_depth
 
     @max_depth.setter
     def max_depth(self, val):
-        if self.min_depth is not None:
-            if val <= self.min_depth:
+        """Set the depth value that the 9999.99 edge will be set to"""
+        if self._parser.min_depth is not None:
+            if val <= self._parser.min_depth:
                 raise ValueError("max_depth cannot be less than min_depth")
-        self.parser.max_depth = float(val) if val is not None else val
+        self._parser.max_depth = float(val) if val is not None else val
 
     @min_depth.setter
     def min_depth(self, val):
-        if self.max_depth is not None:
-            if val >= self.max_depth:
+        """Set the depth value that the -9999.99 edge will be set to"""
+        if self._parser.max_depth is not None:
+            if val >= self._parser.max_depth:
                 raise ValueError("min_depth cannot be greater than max_depth")
-        self.parser.min_depth = float(val) if val is not None else val
-
-    @property
-    def plotter(self):
-        if self._plotter is None:
-            if not self.output_data:
-                raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
-            self._plotter = Region2DPlotter(self)
-        return self._plotter
+        self._parser.min_depth = float(val) if val is not None else val
 
     @property
     def region_ids(self):
+        """Get region ids available"""
         if self._region_ids is None:
             self._region_ids = self.get_region_ids()
         return self._region_ids
 
-    def parse_file(self, convert_time=False, convert_range_edges=True):
-        """Parse the EVR file into a `Regions2D.output_data`
+    def parse_file(self, convert_time=False, convert_range_edges=True, offset=0):
+        """Parse the EVR file into `Regions2D.output_data`
 
         Parameters
         ----------
-        convert_time : bool
-            Whether or not to convert times in the EV datetime format to numpy datetime64.
-            Numpy datetime64 objects cannot be saved to JSON. Default to `False`.
-        convert_range_edges : bool
-            Whether or not to convert -9999.99 and -9999.99 range edges to real values for EVR files.
-            Set the values by assigning range values to `min_range` and `max_range`
-            or by passing a file into `set_range_edge_from_raw`. Defaults to `True`
+        convert_time : bool, default False
+           Convert times in the EV datetime format to numpy datetime64.
+            Numpy datetime64 objects cannot be saved to JSON.
+        convert_range_edges : bool, default True
+            Convert -9999.99 and -9999.99 depth edges to real values for EVR files.
+            Set the values by assigning range values to `min_depth` and `max_depth`
+            or by passing a file into `set_range_edge_from_raw`.
+        offset : float, default 0
+            Depth offset in meters
         """
-        self.parser.parse_file(convert_time=convert_time, convert_range_edges=convert_range_edges)
+        self._parser.parse_file(convert_time=convert_time, convert_range_edges=convert_range_edges, offset=offset)
 
-    def to_csv(self, save_path=None, convert_time=False, convert_range_edges=True):
-        """Convert an EVR file to a CSV
+    def to_csv(self, save_path=None, **kwargs):
+        """Convert an EVR file to a CSV file
 
         Parameters
         ----------
         save_path : str
             Path to save csv file to
-        convert_time : bool
-            Whether or not to convert times in the EV datetime format to numpy datetime64.
-            Default to `False`.
-        convert_range_edges : bool
-            Whether or not to convert -9999.99 and -9999.99 range edges to real values for EVR files.
-            Set the values by assigning range values to `min_range` and `max_range`
-            or by passing a file into `set_range_edge_from_raw`. Defaults to True
+        convert_time : bool, default False
+          Convert times in the EV datetime format to numpy datetime64.
+        kwargs : keyword arguments
+            Additional arguments passed to `Regions2D.parse_file`
         """
-        self.parser.to_csv(save_path=save_path, convert_time=convert_time, convert_range_edges=convert_range_edges)
+        self._parser.to_csv(save_path=save_path, **kwargs)
 
-    def to_dataframe(self, convert_time=False, convert_range_edges=True):
+    def to_dataframe(self, **kwargs):
         """Organize EVR data into a Pandas DataFrame.
         See `Regions2D.to_csv` for arguments
         """
-        return self.parser.to_dataframe(convert_time=convert_time, convert_range_edges=convert_range_edges)
+        return self._parser.to_dataframe(**kwargs)
 
-    def to_json(self, save_path=None, convert_range_edges=True, pretty=False):
-        """Convert EVR to JSON
+    def to_json(self, save_path=None, **kwargs):
+        """Convert EVR to a JSON file
 
         Parameters
         ----------
         save_path : str
             Path to save csv file to
-        convert_range_edges : bool
-            Whether or not to convert -9999.99 and -9999.99 range edges to real values for EVR files.
-            Set the values by assigning range values to `min_range` and `max_range`
-            or by passing a file into `set_range_edge_from_raw`. Defaults to True
-        pretty : bool
-            Whether or not to output more human readable JSON
+        pretty : bool, default False
+            Output more human readable JSON
+        kwargs : keyword arguments
+            Additional arguments passed to `Regions2D.parse_file`
         """
-        self.parser.to_json(save_path=save_path, pretty=pretty, convert_range_edges=convert_range_edges)
+        self._parser.to_json(save_path=save_path, **kwargs)
 
     def get_points_from_region(self, region, file=None):
         """Get points from specified region from a JSON or CSV file
@@ -156,7 +160,8 @@ class Regions2D():
         points : list
             list of x, y points
         """
-        return self.plotter.get_points_from_region(region, file)
+        self._init_plotter()
+        return self._plotter.get_points_from_region(region, file)
 
     def close_region(self, points):
         """Closes a region by appending the first point to the end
@@ -171,7 +176,8 @@ class Regions2D():
         points : list or np.ndarray
             List of points for closed region or numpy array depending on input type
         """
-        return self.plotter.close_region(points)
+        self._init_plotter()
+        return self._plotter.close_region(points)
 
     def convert_points(self, points, convert_time=True, convert_range_edges=True, offset=0, unix=False):
         """Convert x and y values of points from the EV format.
@@ -180,24 +186,23 @@ class Regions2D():
         Parameters
         ----------
         points : list, dict
-            point in [x, y] format or list/dict of these
-        convert_time : bool
-            Whether to convert EV time to datetime64, defaults `True`
-        convert_range_edges : bool
-            Whether to convert -9999.99 edges to real range values.
+            Point in [x, y] format or list/dict of these
+        convert_time : bool, default True
+            Convert EV time to datetime64.
+        convert_range_edges : bool, default True
+            Convert -9999.99 edges to real range values.
             Min and max ranges must be set manually or by calling `set_range_edge_from_raw`
-        offset : float
-            depth offset in meters
-        unix : bool
-            unix : bool
-            Whether or not to output the time in the unix time format
+        offset : float, default 0
+            Depth offset in meters
+        unix : bool, default False
+            Output the time in the unix time format
 
         Returns
         -------
-        points : list or dict
+        list or dict
             single converted point or list/dict of converted points depending on input
         """
-        return self.parser.convert_points(
+        return self._parser.convert_points(
             points,
             convert_time=convert_time,
             convert_range_edges=convert_range_edges,
@@ -207,7 +212,7 @@ class Regions2D():
 
     def set_range_edge_from_raw(self, raw, model='EK60'):
         """Calculate the sonar range from a raw file using Echopype.
-        Used to replace EVR range edges -9999.99 and 9999.99 with real values
+        Used to replace EVR depth edges -9999.99 and 9999.99 with real values
 
         Parameters
         ----------
@@ -218,13 +223,13 @@ class Regions2D():
             See echopype for list of supported sonar models.
             Echoregions is only tested with EK60
         """
-        self.parser.set_range_edge_from_raw(raw, model=model)
+        self._parser.set_range_edge_from_raw(raw, model=model)
 
     def convert_output(self, convert_time=True, convert_range_edges=True):
         """Convert x and y values of points from the EV format.
         Modifies Regions2d.output_data. See convert_points for arguments.f
         """
-        self.parser.convert_output(convert_time=convert_time, convert_range_edges=convert_range_edges)
+        self._parser.convert_output(convert_time=convert_time, convert_range_edges=convert_range_edges)
 
     def select_raw(self, files, region_id=None, t1=None, t2=None):
         """Finds raw files in the time domain that encompasses region or list of regions
@@ -317,11 +322,12 @@ class Regions2D():
         }
 
     def _init_plotter(self):
+        """Initialize the object used to plot regions"""
         if self._plotter is None:
             if not self.output_data:
                 raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
-            from ..plot.region_plot import Region2DPlotter
-            self._plotter = Region2DPlotter(self)
+            from ..plot.region_plot import Regions2DPlotter
+            self._plotter = Regions2DPlotter(self)
 
     def plot_region(self, region, offset=0):
         """Plot a region from output_data.
@@ -333,7 +339,7 @@ class Regions2D():
             region_id to plot
 
         offset : float
-            depth offset of region points in meters
+            A depth offset in meters added to the range of the points used for masking
 
         Returns
         -------
@@ -346,14 +352,33 @@ class Regions2D():
         self._plotter.plot_region(region, offset=offset)
 
     def _init_masker(self):
+        """Initialize the object used to mask regions"""
         if self._masker is None:
             if not self.output_data:
                 raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
-            from ..mask.region_mask import Region2DMasker
-            self._masker = Region2DMasker(self)
+            from ..mask.region_mask import Regions2DMasker
+            self._masker = Regions2DMasker(self)
 
-    def mask_region(self, ds, region, offset=0):
+    def mask_region(self, ds, region, data_var='Sv', offset=0):
         """Mask an xarray dataset
+
+        Parameters
+        ----------
+        ds : Xarray Dataset
+            calibrated data (Sv or Sp) with range
+
+        region : str
+            ID of region to mask the dataset with
+
+        data_var : str
+            The data variable in the Dataset to mask
+
+        offset : float
+            A depth offset in meters added to the range of the points used for masking
+
+        Returns
+        -------
+        A dataset with the data_var masked by the specified region
         """
         self._init_masker()
         return self._masker.mask_region(ds, region, offset=offset)

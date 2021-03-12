@@ -21,6 +21,13 @@ To begin parsing and plotting EVR files with EchoRegions, create a Regions2D obj
 >>> r2d = Regions2D('echoregions/test_data/ek60/x1.evr')
 ```
 
+or simply call `read_csv` on the EVL file to get a Regions2D object.
+
+```python
+>>> import echoregions
+>>> r2d = echoregions.read_evr('echoregions/test_data/ek60/x1.evr')
+```
+
 Save the EVR file as a JSON or CSV file.
 
 ```python
@@ -79,7 +86,7 @@ This does not modify anything in-place, but the entire `Regions2D.output_data` c
 
 Below is an example of plotting a region onto an echogram produced by echopype.
 ```python
->>> from echoregions import Regions2D
+>>> import echoregions
 >>> import matplotlib.pyplot as plt
 >>> import xarray as xr
 >>> import os
@@ -87,8 +94,7 @@ Below is an example of plotting a region onto an echogram produced by echopype.
 >>
 >>> # Parse region file
 >>> data_dir = 'echoregions/test_data/ek60/'
->>> r2d = Regions2D(data_dir + 'x1.evr')
->>> r2d.parse_file()
+>>> r2d = echoregions.read_evr(data_dir + 'x1.evr')
 >>>
 >>> # Retrieve netcdf files produced by echopype
 >>> raw_files = os.listdir('echoregions/test_data/ek60/hake_nc')
