@@ -1,6 +1,5 @@
 import pandas as pd
 import os
-import copy
 from .utils import parse_time, validate_path
 from .ev_parser import EvParserBase
 
@@ -29,12 +28,13 @@ class LineParser(EvParserBase):
                 'y': float(depth) + offset,       # Depth [m]
                 'status': status                  # 0 = none, 1 = unverified, 2 = bad, 3 = good
             })
-        points = self.convert_points(
-            points,
-            convert_time=convert_time,
-            replace_nan_range_value=replace_nan_range_value,
-            offset=offset
-        )
+        if convert_time or replace_nan_range_value is not None:
+            points = self.convert_points(
+                points,
+                convert_time=convert_time,
+                replace_nan_range_value=replace_nan_range_value,
+                offset=offset
+            )
         return file_metadata, points
 
     def to_dataframe(self, **kwargs):
@@ -95,17 +95,22 @@ class LineParser(EvParserBase):
             Converted points with type depending on input
         """
         def convert_single(point):
-            if convert_time:
-                point['x'] = parse_time(point['x'])
-            if replace_nan_range_value is not None and float(point['y']) == -10000.99:
-                point['y'] = replace_nan_range_value + offset
-            return point
+            converted_point = [0, 0]
+            converted_point[0] = parse_time(point[x_label]) if convert_time else point[x_label]
+            if replace_nan_range_value is not None and float(point[y_label]) == -10000.99:
+                converted_point[1] = float(replace_nan_range_value) + offset
+            else:
+                converted_point[1] = float(point[y_label]) + offset
+            return converted_point
 
         singular = True if isinstance(points, dict) and 'x' in points else False
         if singular:
             points = [points]
 
-        converted_points = [convert_single(point) for point in copy.deepcopy(points)]
+        # Change point indexing label if point is a dict or list
+        x_label = 'x' if isinstance(points[0], dict) else 0
+        y_label = 'y' if isinstance(points[0], dict) else 1
+        converted_points = [convert_single(point) for point in points]
         if singular:
             converted_points = converted_points[0]
         return converted_points

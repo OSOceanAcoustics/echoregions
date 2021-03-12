@@ -12,12 +12,9 @@ class Region2DParser(EvParserBase):
     """
     def __init__(self, input_file=None):
         super().__init__(input_file, 'EVR')
-        self._raw_range = None
-        self._min_depth = None      # Set to replace -9999.9900000000 range values which are EVR min range
-        self._max_depth = None      # Set to replace 9999.9900000000 range values which are EVR max range
         self.raw_range = None
-        self.min_depth = None
-        self.max_depth = None
+        self.min_depth = None   # Set to replace -9999.9900000000 range values which are EVR min range
+        self.max_depth = None   # Set to replace 9999.9900000000 range values which are EVR max range
 
     def _parse(self, fid, convert_time=False, convert_range_edges=False, offset=0):
         """Reads an open file and returns the file metadata and region information"""
@@ -155,10 +152,10 @@ class Region2DParser(EvParserBase):
         # proc.get_range # Calculate range directly as opposed to with get_Sv
         proc.get_Sv(ed)
 
-        self._raw_range = ed.range.isel(frequency=0, ping_time=0).load()
+        self.raw_range = ed.range.isel(frequency=0, ping_time=0).load()
 
-        self.max_depth = self._raw_range.max().values
-        self.min_depth = self._raw_range.min().values
+        self.max_depth = self.raw_range.max().values
+        self.min_depth = self.raw_range.min().values
 
         ed.close()
         if remove:

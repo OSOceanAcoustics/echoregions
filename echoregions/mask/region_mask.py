@@ -22,8 +22,10 @@ class Regions2DMasker():
         # Convert ping_time to unix_time since the masking does not work on datetime objects
         ds = ds.assign_coords(unix_time=('ping_time', matplotlib.dates.date2num(ds.coords['ping_time'].values)))
         # Select range in one dimension
-        ds['range'] = ds.range.isel(frequency=0, ping_time=0)
-        ds = ds.swap_dims({'range_bin': 'range'})
+        if ds['range'].ndim == 3:
+            ds['range'] = ds.range.isel(frequency=0, ping_time=0)
+        if 'range_bin' in ds.dims:
+            ds = ds.swap_dims({'range_bin': 'range'})
         # Initialize mask object
         M = regionmask.Regions([points])
         masked_da = []

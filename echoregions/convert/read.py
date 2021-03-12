@@ -54,7 +54,7 @@ def read_evr(
 def read_evl(
     filepath,
     convert_time=False,
-    replace_nan_range_value=True,
+    replace_nan_range_value=None,
     offset=0,
 ) -> "Lines":
     """Read an EVL file into a Lines object.
