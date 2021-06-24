@@ -4,8 +4,6 @@ from ..formats.lines import Lines
 
 def read_evr(
     filepath,
-    convert_time=False,
-    convert_range_edges=True,
     offset=0,
     min_depth=None,
     max_depth=None,
@@ -17,14 +15,6 @@ def read_evr(
     ----------
     filepath : str, Path object
         A valid path to an EVR file
-    convert_time : bool, default False
-        Convert time from EV format to numpy datetime64.
-        Converting the time will cause the data to no longer be JSON serializable.
-    convert_range_edges : bool, default True
-        Convert -9999.99 and -9999.99 depth edges to real values.
-        Set the values by assigning range values to `min_depth` and `max_depth`
-        or by passing a file into `set_range_edge_from_raw`,
-        or by setting `raw_range` to a range vector.
     offset : float, default 0
         Depth offset in meters
     min_depth : float, default ``None``
@@ -42,8 +32,6 @@ def read_evr(
     return Regions2D(
         input_file=str(filepath),
         parse=True,
-        convert_time=convert_time,
-        convert_range_edges=convert_range_edges,
         offset=offset,
         min_depth=min_depth,
         max_depth=max_depth,

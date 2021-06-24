@@ -60,18 +60,7 @@ class EvParserBase():
             return
         fid = open(self.input_file, encoding='utf-8-sig')
 
-        metadata, data = self._parse(fid, **kwargs)
-        if self.format == 'EVR':
-            data_name = 'regions'
-        elif self.format == 'EVL':
-            data_name = 'points'
-        else:
-            raise ValueError("Invalid data format")
-
-        self.output_data = {
-            'metadata': metadata,
-            data_name: data
-        }
+        self.output_data = self._parse(fid, **kwargs)
 
     def to_json(self, save_path=None, pretty=False, **kwargs):
         """Convert an Echoview 2D regions .evr file to a .json file

@@ -3,6 +3,7 @@ import os
 import json
 import datetime as dt
 import numpy as np
+import pandas as pd
 from pathlib import Path
 import matplotlib
 
@@ -62,13 +63,13 @@ def validate_path(save_path=None, input_file=None, ext='.json'):
     return str(save_path)
 
 
-def parse_time(ev_time, datetime_format='D%Y%m%dT%H%M%S%f', unix=False):
+def parse_time(ev_time, datetime_format='%Y%m%d %H%M%S%f', unix=False):
     """Convert EV datetime to a numpy datetime64 object
 
     Parameters
     ----------
-    ev_time : str
-        EV datetime string
+    ev_time : str, list
+        EV datetime string or list of these
     datetime_format : str
         Format of datestring to be used with datetime strptime
         in CCYYMMDD HHmmSSssss format
@@ -80,13 +81,13 @@ def parse_time(ev_time, datetime_format='D%Y%m%dT%H%M%S%f', unix=False):
     np.datetime64 or float
         converted input datetime
     """
-    if isinstance(ev_time, np.ndarray) and np.issubdtype(ev_time.dtype, np.datetime64):
+    if isinstance(ev_time, np.ndarray) and np.issubdtype(ev_time.dtype, 'datetime64[ms]'):
         return ev_time
-    elif not isinstance(ev_time, str):
+    elif not isinstance(ev_time, str) and not isinstance(ev_time, list):
         raise ValueError("'ev_time' must be type str")
-    t = np.array(dt.datetime.strptime(ev_time, datetime_format), dtype=np.datetime64)
+    t = pd.to_datetime(ev_time, format=datetime_format)
     if unix:
-        t = matplotlib.dates.date2num(t)
+        t = (t - pd.Timestamp('1970-01-01')) / pd.Timedelta('1s')
     return t
 
 
