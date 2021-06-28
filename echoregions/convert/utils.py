@@ -84,19 +84,19 @@ def parse_time(ev_time, datetime_format='%Y%m%d %H%M%S%f', unix=False):
     if isinstance(ev_time, np.ndarray) and np.issubdtype(ev_time.dtype, 'datetime64[ms]'):
         return ev_time
     elif not isinstance(ev_time, str) and not isinstance(ev_time, list):
-        raise ValueError("'ev_time' must be type str")
+        raise ValueError("'ev_time' must be type str or list")
     t = pd.to_datetime(ev_time, format=datetime_format)
     if unix:
         t = (t - pd.Timestamp('1970-01-01')) / pd.Timedelta('1s')
     return t
 
 
-def parse_filetime(fname):
+def parse_filetime(filenames):
     """Convert Simrad-style datetime to a numpy datetime64 object
 
     Parameters
     ----------
-    filename : str
+    filenames : str, list
         Simrad-style filename
 
     Returns
@@ -104,5 +104,13 @@ def parse_filetime(fname):
     datetime : np.datetime64
         converted input datetime
     """
-    groups = re.match(EK60_fname_pattern, fname).groups()
-    return parse_time(f"D{groups[1]}T{groups[2]}", 'D%Y%m%dT%H%M%S')
+    if isinstance(filenames, list):
+        f_list = []
+        for f in filenames:
+            groups = re.match(EK60_fname_pattern, f).groups()
+            f_list.append(f"{groups[1]} {groups[2]}")
+    elif isinstance(filenames, str):
+        f_list = [filenames]
+    else:
+        raise ValueError("'filenames' must be type str or list")
+    return parse_time(f_list, '%Y%m%d %H%M%S')

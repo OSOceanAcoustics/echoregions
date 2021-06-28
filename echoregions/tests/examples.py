@@ -50,7 +50,7 @@ def test_region_plot():
     ed.Sv.Sv.isel(frequency=0).plot(x='ping_time', vmax=-40, vmin=-100, yincrease=False)
 
     # Plot region
-    regions.raw_range = ed.Sv['range']
+    regions.depth = ed.Sv['range']
     regions.convert_output()
     regions.plot_region(11, offset=-water_level)
     plt.show()
@@ -59,15 +59,16 @@ def test_region_plot():
 def test_plot_multi():
     # Test ploting all regions of an EVR file
     # Parse region file
-    ed, water_level = get_sv()
+    # ed, water_level = get_sv()
 
     evr_paths = data_dir / 'x1.evr'
     regions = Regions2D(str(evr_paths))
-    regions.raw_range = ed.Sv['range']
-    regions.parse_file(convert_range_edges=True)
+    regions.to_dataframe()
+    # regions.depth = ed.Sv['range']
+    # regions.parse_file(convert_depth_edges=True)
 
     for region in regions:
-        regions.plot_region(region, offset=water_level)
+        regions.plot_region(region)
 
     plt.show()
 

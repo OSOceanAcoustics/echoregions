@@ -7,7 +7,7 @@ def read_evr(
     offset=0,
     min_depth=None,
     max_depth=None,
-    raw_range=None
+    depth=None
 ) -> "Regions2D":
     """Read an EVR file into a Regions2D object.
 
@@ -21,7 +21,7 @@ def read_evr(
         Depth value in meters to set -9999.99 depth edges to.
     max_depth : float, default ``None``
         Depth value in meters to set 9999.99 depth edges to.
-    raw_range : array, default ``None``
+    depth : array, default ``None``
         Array of range values assumed to be monotonically increasing
 
     Returns
@@ -35,7 +35,7 @@ def read_evr(
         offset=offset,
         min_depth=min_depth,
         max_depth=max_depth,
-        raw_range=raw_range
+        depth=depth
     )
 
 

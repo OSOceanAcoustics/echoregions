@@ -14,7 +14,7 @@ class Regions2DMasker():
         points = np.array(self.Regions2D.convert_points(
             self.Regions2D.get_points_from_region(region),
             convert_time=True,
-            convert_range_edges=True,
+            convert_depth_edges=True,
             offset=offset,
             unix=True
         ))

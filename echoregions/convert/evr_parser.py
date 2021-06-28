@@ -11,7 +11,7 @@ class Regions2DParser(EvParserBase):
     """
     def __init__(self, input_file=None):
         super().__init__(input_file, 'EVR')
-        self.raw_range = None
+        self.depth = None
         self.min_depth = None   # Set to replace -9999.9900000000 depth values which are EVR min range
         self.max_depth = None   # Set to replace 9999.9900000000 depth values which are EVR max range
         self.offset = 0         # Set to apply depth offset (meters)
@@ -20,15 +20,15 @@ class Regions2DParser(EvParserBase):
         """Reads an open file and returns the file metadata and region information"""
         def _region_metadata_to_dict(line):
             """Assigns a name to each value in the metadata line for each region"""
-            top_y = self.swap_depth_edge(line[9])
-            bottom_y = self.swap_depth_edge(line[12])
+            top = self.swap_depth_edge(line[9])
+            bottom = self.swap_depth_edge(line[12])
             bound_calculated = int(line[6])
             if bound_calculated:
-                left_x = parse_time(f'{line[7]} {line[8]}', unix=False)
-                right_x = parse_time(f'{line[10]} {line[11]}', unix=False)
+                left = parse_time(f'{line[7]} {line[8]}', unix=False)
+                right = parse_time(f'{line[10]} {line[11]}', unix=False)
             else:
-                left_x = f'D{line[7]} {line[8]}'
-                right_x = f'D{line[10]} {line[11]}'
+                left = f'D{line[7]} {line[8]}'
+                right = f'D{line[10]} {line[11]}'
 
             return {
                 'region_id': int(line[2]),
@@ -40,10 +40,10 @@ class Regions2DParser(EvParserBase):
                 'bounding_rectangle_calculated': bound_calculated,          # 1 if next 4 fields valid. O otherwise
                 # Date encoded as CCYYMMDD and times in HHmmSSssss
                 # Where CC=Century, YY=Year, MM=Month, DD=Day, HH=Hour, mm=minute, SS=second, ssss=0.1 milliseconds
-                'bounding_rectangle_left_x': left_x,                        # Time and date of bounding box left x
-                'bounding_rectangle_right_x': right_x,                      # Time and date of bounding box right x
-                'bounding_rectangle_top_y': top_y,                          # Top of bounding box
-                'bounding_rectangle_bottom_y': bottom_y,                    # Bottom of bounding box
+                'bounding_rectangle_left': left,                        # Time and date of bounding box left x
+                'bounding_rectangle_right': right,                      # Time and date of bounding box right x
+                'bounding_rectangle_top': top,                          # Top of bounding box
+                'bounding_rectangle_bottom': bottom,                    # Bottom of bounding box
             }
 
         def _points_to_list(line):
@@ -95,35 +95,6 @@ class Regions2DParser(EvParserBase):
             df = df.append(row, ignore_index=True)
 
         return df[row.keys()].convert_dtypes()
-
-    def set_range_edge_from_raw(self, raw, model='EK60'):
-        try:
-            import echopype as ep
-        except ModuleNotFoundError as e:
-            raise ModuleNotFoundError("This function requires 'echopype' to be installed") from e
-
-        remove = False
-        if raw.endswith('.raw') and os.path.isfile(raw):
-            tmp_c = ep.Convert(raw, model=model)
-            tmp_c.to_netcdf(save_path='./')
-            raw = tmp_c.output_file
-            remove = True
-        elif not raw.endswith('.nc') and not raw.endswith('.zarr'):
-            raise ValueError("Invalid raw file")
-
-        ed = ep.process.EchoData(raw)
-        proc = ep.process.Process(model, ed)
-        # proc.get_range # Calculate range directly as opposed to with get_Sv
-        proc.get_Sv(ed)
-
-        self.raw_range = ed.range.isel(frequency=0, ping_time=0).load()
-
-        self.max_depth = self.raw_range.max().values
-        self.min_depth = self.raw_range.min().values
-
-        ed.close()
-        if remove:
-            os.remove(tmp_c.output_file)
 
     def swap_depth_edge(self, depth):
         """Replace 9999.99 and -9999.99 edge values with user specified min and max values.

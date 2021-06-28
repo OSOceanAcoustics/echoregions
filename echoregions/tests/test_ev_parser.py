@@ -20,9 +20,9 @@ def test_plotting_points():
     evl_paths = data_dir + 'x1.bottom.evl'
     l_parser = LineParser(evl_paths)
     l_parser.to_json(output_json)
-    evl = l_parser.convert_points(l_parser.output_data['points'])
+    evl = l_parser.convert_points(l_parser.data['points'])
     evl_points = np.array(l_parser.points_dict_to_list(evl))
-    x = np.array(evl_points[:, 0], dtype=np.datetime64)
+    x = np.array(evl_points[:, 0], dtype='datetime64[ms]')
     y = evl_points[:, 1]
     assert len(x) == 13764
     assert len(y) == 13764
