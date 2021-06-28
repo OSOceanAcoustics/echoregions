@@ -21,23 +21,23 @@ def merge(objects, reindex_ids=False):
     merged_idx = []
     merged_data = []
     for regions in objects:
-        if not regions.output_data:
+        if not regions.data:
             raise ValueError("EVR file has not been parsed. Call `parse_file` first.")
-        merged_data += regions.output_data['regions'].values()
+        merged_data += regions.data['regions'].values()
         if reindex_ids:
-            merged_idx += list(range(len(regions.output_data['regions'])))
+            merged_idx += list(range(len(regions.data['regions'])))
         else:
-            merged_idx += [f"{regions.output_data['metadata']['file_name']}_{r}"
+            merged_idx += [f"{regions.data['metadata']['file_name']}_{r}"
                            for r in regions.region_ids]
     # Attach region information to region ids
     merged = dict(zip(merged_idx, merged_data))
     # Create new Regions2D object
     merged_obj = Regions2D()
     # Populate metadata
-    merged_obj.output_data['metadata'] = objects[0].output_data['metadata']
+    merged_obj.data['metadata'] = objects[0].data['metadata']
     # Combine metadata of all Regions2D objects
-    for field in objects[0].output_data['metadata'].keys():
-        merged_obj.output_data['metadata'][field] = [o.output_data['metadata'][field] for o in objects]
+    for field in objects[0].data['metadata'].keys():
+        merged_obj.data['metadata'][field] = [o.data['metadata'][field] for o in objects]
     # Set region data
-    merged_obj.output_data['regions'] = merged
+    merged_obj.data['regions'] = merged
     return merged_obj

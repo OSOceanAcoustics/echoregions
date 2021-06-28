@@ -45,14 +45,14 @@ class LineParser(EvParserBase):
         kwargs : keyword arguments
             Additional arguments passed to `Lines.parse_file`
         """
-        if not self.output_data:
+        if not self.data:
             self.parse_file(**kwargs)
 
         # Save a row for each point
-        df = pd.DataFrame(self.output_data['points'])
+        df = pd.DataFrame(self.data['points'])
         # Save file metadata for each point
-        df = df.assign(**self.output_data['metadata'])
-        order = list(self.output_data['metadata'].keys()) + list(self.output_data['points'][0].keys())
+        df = df.assign(**self.data['metadata'])
+        order = list(self.data['metadata'].keys()) + list(self.data['points'][0].keys())
         return df[order].rename({"x": "ping_time", "y": "depth"}, axis=1)
 
     def to_csv(self, save_path=None, **kwargs):
@@ -65,7 +65,7 @@ class LineParser(EvParserBase):
         kwargs : keyword arguments
             Additional arguments passed to `Lines.parse_file`
         """
-        if not self.output_data:
+        if not self.data:
             self.parse_file(**kwargs)
         # Check if the save directory is safe
         save_path = validate_path(save_path=save_path, input_file=self.input_file, ext='.csv')

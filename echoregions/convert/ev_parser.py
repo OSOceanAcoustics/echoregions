@@ -7,7 +7,7 @@ class EvParserBase():
     def __init__(self, input_file, file_format):
         self._input_file = None
         self._filename = None
-        self.output_data = {}
+        self.data = None
         self._output_file = []
 
         self.format = file_format
@@ -53,14 +53,14 @@ class EvParserBase():
         """Base method for parsing files"""
 
     def parse_file(self, **kwargs):
-        """Base method for parsing the file in `input_file` and constructing `output_data`
+        """Base method for parsing the file in `input_file` and constructing `data`
         Used for EVR and EVL parsers
         """
         if self.input_file is None:
             return
         fid = open(self.input_file, encoding='utf-8-sig')
 
-        self.output_data = self._parse(fid, **kwargs)
+        self.data = self._parse(fid, **kwargs)
 
     def to_json(self, save_path=None, pretty=False, **kwargs):
         """Convert an Echoview 2D regions .evr file to a .json file
@@ -75,7 +75,7 @@ class EvParserBase():
             keyword arguments passed into `parse_file`
         """
         # Parse EVR file if it hasn't already been done
-        if not self.output_data:
+        if not self.data:
             self.parse_file(**kwargs)
 
         # Check if the save directory is safe
@@ -84,7 +84,7 @@ class EvParserBase():
 
         # Save the entire parsed EVR dictionary as a JSON file
         with open(save_path, 'w') as f:
-            f.write(json.dumps(self.output_data, indent=indent))
+            f.write(json.dumps(self.data, indent=indent))
         self._output_file.append(str(save_path))
 
     def to_csv(self):

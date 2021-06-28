@@ -37,7 +37,7 @@ Save the EVR file as a JSON or CSV file.
 >>> # Save to CSV inside a folder called 'output'
 >>> r2d.to_csv(save_path='output')
 ```
-Or call `parse_file` to store the regions data to `Regions2D.output_data` without saving a file to your disk.
+Or call `parse_file` to store the regions data to `Regions2D.data` without saving a file to your disk.
 
 Regions2D offers functions to help you work with points.
 
@@ -74,7 +74,7 @@ Convert these timestamps into a form that can be plotted (numpy datetime64) with
 [array('2017-06-25T20:02:06.805900', dtype='datetime64[us]'), 106.7105306497]]
 ```
 
-This does not modify anything in-place, but the entire `Regions2D.output_data` can be converted in-place with:
+This does not modify anything in-place, but the entire `Regions2D.data` can be converted in-place with:
 
 ```python
 >>> r2d.convert_output()

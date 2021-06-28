@@ -11,7 +11,7 @@ Lines
    .. autosummary::
 
       ~Lines.input_file
-      ~Lines.output_data
+      ~Lines.data
       ~Lines.output_file
       ~Lines.points
 

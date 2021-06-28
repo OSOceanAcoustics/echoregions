@@ -11,7 +11,7 @@ MultiRegions2D
    .. autosummary::
 
       ~MultiRegions2D.files
-      ~MultiRegions2D.output_data
+      ~MultiRegions2D.data
       ~MultiRegions2D.output_file
 
    .. rubric:: Methods Summary

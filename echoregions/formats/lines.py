@@ -26,9 +26,9 @@ class Lines():
         return self.points[idx]
 
     @property
-    def output_data(self):
+    def data(self):
         """Dictionary containing the data parsed from the EVL file"""
-        return self._parser.output_data
+        return self._parser.data
 
     @property
     def output_file(self):
@@ -46,14 +46,14 @@ class Lines():
     def points(self):
         """List of points in the form `(time, depth)`"""
         if self._points is None:
-            if not self.output_data:
+            if not self.data:
                 raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
             else:
-                self._points = np.array([(point['x'], point['y']) for point in self.output_data['points']])
+                self._points = np.array([(point['x'], point['y']) for point in self.data['points']])
         return self._points
 
     def parse_file(self, convert_time=False, replace_nan_range_value=None, offset=0):
-        """Parse the EVL file into `Lines.output_data`
+        """Parse the EVL file into `Lines.data`
 
         Parameters
         ----------
@@ -134,7 +134,7 @@ class Lines():
     def _init_plotter(self):
         """Initialize the object used to plot lines"""
         if self._plotter is None:
-            if not self.output_data:
+            if not self.data:
                 raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
             from ..plot.line_plot import LinesPlotter
             self._plotter = LinesPlotter(self)
