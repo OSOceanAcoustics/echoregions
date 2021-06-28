@@ -1,21 +1,21 @@
-Region2DParser
+Regions2DParser
 ==============
 
 .. currentmodule:: echoregions.convert
 
-.. autoclass:: Region2DParser
+.. autoclass:: Regions2DParser
    :show-inheritance:
 
    .. rubric:: Methods Summary
 
    .. autosummary::
 
-      ~Region2DParser.convert_output
-      ~Region2DParser.convert_points
-      ~Region2DParser.get_points_from_region
-      ~Region2DParser.set_range_edge_from_raw
-      ~Region2DParser.swap_range_edge
-      ~Region2DParser.to_csv
+      ~Regions2DParser.convert_output
+      ~Regions2DParser.convert_points
+      ~Regions2DParser.get_points_from_region
+      ~Regions2DParser.set_range_edge_from_raw
+      ~Regions2DParser.swap_range_edge
+      ~Regions2DParser.to_csv
 
    .. rubric:: Methods Documentation
 

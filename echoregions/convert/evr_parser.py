@@ -5,7 +5,7 @@ from .ev_parser import EvParserBase
 from .utils import parse_time
 
 
-class Region2DParser(EvParserBase):
+class Regions2DParser(EvParserBase):
     """Class for parsing EV 2D region (EVR) files.
     Using this class directly is not recommended; use Regions2D instead.
     """
@@ -31,7 +31,7 @@ class Region2DParser(EvParserBase):
                 right_x = f'D{line[10]} {line[11]}'
 
             return {
-                'region_id': line[2],
+                'region_id': int(line[2]),
                 'structure_version': line[0],                               # 13 currently
                 'point_count': line[1],                                     # Number of points in the region
                 'selected': line[3],                                        # Always 0
