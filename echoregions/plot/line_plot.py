@@ -24,9 +24,8 @@ class LinesPlotter():
                 max_ping_time = calibrated_dataset.ping_time.max().values
             if max_depth is None:
                 max_depth = calibrated_dataset.range.max().values
-        points = np.array(self.Lines.convert_points(self.Lines.points))
-        x = np.array(points[:, 0], dtype=np.datetime64)
-        y = np.array(points[:, 1], dtype=float)
+        x = self.Lines.data.ping_time
+        y = self.Lines.data.depth
 
         # Apply ping_time upper and lower bounds
         if min_ping_time is not None or max_ping_time is not None:

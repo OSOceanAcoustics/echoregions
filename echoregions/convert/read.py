@@ -41,8 +41,7 @@ def read_evr(
 
 def read_evl(
     filepath,
-    convert_time=False,
-    replace_nan_range_value=None,
+    nan_depth_value=None,
     offset=0,
 ) -> "Lines":
     """Read an EVL file into a Lines object.
@@ -51,10 +50,7 @@ def read_evl(
     ----------
     filepath : str, Path object
         A valid path to an EVL file
-    convert_time : bool, default False
-        Convert time from EV format to numpy datetime64.
-        Converting the time will cause the data to no longer be JSON serializable.
-    replace_nan_range_value : float, default ``None``
+    nan_depth_value : float, default ``None``
         Depth in meters to replace -10000.990000 ranges with.
     offset : float, default 0
         Depth offset in meters
@@ -67,7 +63,6 @@ def read_evl(
     return Lines(
         input_file=str(filepath),
         parse=True,
-        convert_time=convert_time,
-        replace_nan_range_value=replace_nan_range_value,
+        nan_depth_value=nan_depth_value,
         offset=offset,
     )
