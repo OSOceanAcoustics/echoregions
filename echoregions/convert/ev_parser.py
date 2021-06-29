@@ -7,7 +7,6 @@ class EvParserBase():
     def __init__(self, input_file, file_format):
         self._input_file = None
         self._filename = None
-        self.data = None
         self._output_file = []
 
         self.format = file_format
@@ -60,22 +59,41 @@ class EvParserBase():
             return
         fid = open(self.input_file, encoding='utf-8-sig')
 
-        self.data = self._parse(fid, **kwargs)
+        return self._parse(fid, **kwargs)
 
-    def to_json(self, save_path=None, pretty=False, **kwargs):
-        """Convert an Echoview 2D regions .evr file to a .json file
+    def to_csv(self, data, save_path=None, **kwargs):
+        """Save a Dataframe to a .csv file
+
+        Parameters
+        ----------
+        data : DataFrame
+            Lines DataFrame to save to a CSV
+        save_path : str
+            path to save the CSV file to
+        kwargs : keyword arguments
+            Additional arguments passed to `Lines.parse_file`
+        """
+        # Check if the save directory is safe
+        save_path = validate_path(save_path=save_path, input_file=self.input_file, ext='.csv')
+        # Reorder columns and export to csv
+        data.to_csv(save_path, index=False)
+        self._output_file.append(save_path)
+
+    def to_json(self, save_path=None, pretty=True, **kwargs):
+        #TODO Currently only EVL files can be exported to JSON
+        """Convert supported formats to .json file.
 
         Parameters
         ----------
         save_path : str
             path to save the JSON file to
-        pretty : bool, default False
+        pretty : bool, default True
             Output more human readable JSON
         kwargs
             keyword arguments passed into `parse_file`
         """
-        # Parse EVR file if it hasn't already been done
-        if not self.data:
+        # Parse file if it hasn't already been done
+        if not self._data_dict:
             self.parse_file(**kwargs)
 
         # Check if the save directory is safe
@@ -84,8 +102,5 @@ class EvParserBase():
 
         # Save the entire parsed EVR dictionary as a JSON file
         with open(save_path, 'w') as f:
-            f.write(json.dumps(self.data, indent=indent))
+            f.write(json.dumps(self._data_dict, indent=indent))
         self._output_file.append(str(save_path))
-
-    def to_csv(self):
-        """Base method for saving to a csv file"""

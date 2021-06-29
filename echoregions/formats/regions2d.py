@@ -3,11 +3,13 @@ import numpy as np
 import pandas as pd
 from ..convert import utils
 from ..convert.evr_parser import Regions2DParser
+from . import Geometry
 
 
-class Regions2D():
+class Regions2D(Geometry):
     def __init__(self, input_file=None, parse=True,
                  offset=0, min_depth=None, max_depth=None, depth=None):
+        super().__init__()
         self._parser = Regions2DParser(input_file)
         self._plotter = None
         self._masker = None
@@ -16,6 +18,8 @@ class Regions2D():
         self.max_depth = max_depth
         self.min_depth = min_depth
         self.offset = offset
+
+        self.data = None
         if parse:
             self.parse_file()
 
@@ -24,11 +28,6 @@ class Regions2D():
 
     def __getitem__(self, val):
         return self.data.iloc[val]
-
-    @property
-    def data(self):
-        """Dictionary containing region data and metadata for the EVR file"""
-        return self._parser.data
 
     @property
     def output_file(self):
@@ -43,61 +42,50 @@ class Regions2D():
         return self._parser.input_file
 
     @property
-    def depth(self):
-        """Get the range vector that provides the min_depth and max_depth"""
-        return self._parser.depth
-
-    @depth.setter
-    def depth(self, val):
-        """Set the range vector that provides the min_depth and max_depth"""
-        self._parser.depth = val
-
-    @property
     def max_depth(self):
         """Get the depth value that the 9999.99 edge will be set to"""
-        if self._parser.max_depth is None and self.depth is not None:
-            self.max_depth = self.depth.max()
-        return self._parser.max_depth
-
-    @property
-    def min_depth(self):
-        """Get the depth value that the -9999.99 edge will be set to"""
-        if self._parser.min_depth is None and self.depth is not None:
-            self.min_depth = self.depth.min()
-        return self._parser.min_depth
-
-    @property
-    def offset(self):
-        """Get the depth offset to apply to y values"""
-        return self._parser.offset
+        if self._max_depth is None and self.depth is not None:
+            self._max_depth = self.depth.max()
+        return self._max_depth
 
     @max_depth.setter
     def max_depth(self, val):
         """Set the depth value that the 9999.99 edge will be set to"""
-        if self._parser.min_depth is not None:
-            if val <= self._parser.min_depth:
+        if self.min_depth is not None:
+            if val <= self.min_depth:
                 raise ValueError("max_depth cannot be less than min_depth")
-        self._parser.max_depth = float(val) if val is not None else val
+        self._max_depth = float(val) if val is not None else val
+
+    @property
+    def min_depth(self):
+        """Get the depth value that the -9999.99 edge will be set to"""
+        if self._min_depth is None and self.depth is not None:
+            self._min_depth = self.depth.min()
+        return self._min_depth
 
     @min_depth.setter
     def min_depth(self, val):
         """Set the depth value that the -9999.99 edge will be set to"""
-        if self._parser.max_depth is not None:
-            if val >= self._parser.max_depth:
+        if self.max_depth is not None:
+            if val >= self.max_depth:
                 raise ValueError("min_depth cannot be greater than max_depth")
-        self._parser.min_depth = float(val) if val is not None else val
+        self._min_depth = float(val) if val is not None else val
+
+    @property
+    def offset(self):
+        """Get the depth offset to apply to y values"""
+        return self._offset
 
     @offset.setter
     def offset(self, val):
         """Set the depth offset to apply to y values"""
-        self._parser.offset = float(val)
-        self.adjust_offset()
+        self._offset = float(val)
 
     def parse_file(self, offset=0):
         """Parse the EVR file as a DataFrame into `Regions2D.data`
         """
-        self._parser.parse_file()
-        self.adjust_depth_bounds()
+        self.data = self._parser.parse_file()
+        self.replace_nan_depth()
         self.adjust_offset()
 
     def to_csv(self, save_path=None, **kwargs):
@@ -112,7 +100,9 @@ class Regions2D():
         kwargs : keyword arguments
             Additional arguments passed to `Regions2D.parse_file`
         """
-        self._parser.to_csv(save_path=save_path, **kwargs)
+        if self.data is None:
+            self.parse_file(**kwargs)
+        self._parser.to_csv(self.data, save_path=save_path, **kwargs)
 
     def to_json(self, save_path=None, **kwargs):
         # TODO: Implement this function
@@ -134,7 +124,7 @@ class Regions2D():
 
         Parameters
         ----------
-        region : float, str, list, Series, DataFrame, `None`
+        region : float, str, list, Series, DataFrame, ``None``
             A region id provided as a number, string, list of these,
             or a DataFrame/Series containing the region_id column name.
         copy : bool
@@ -168,7 +158,7 @@ class Regions2D():
         ----------
         region : str, list, or DataFrame
             region(s) to select raw files with
-            If `None`, select all regions. Defaults to `None`
+            If ``None``, select all regions. Defaults to ``None``
 
         Returns
         -------
@@ -189,7 +179,7 @@ class Regions2D():
             raw filenames
         region : str, list, or DataFrame
             region(s) to select raw files with
-            If none, select all regions. Defaults to `None`
+            If none, select all regions. Defaults to ``None``
 
         Returns
         -------
@@ -234,7 +224,7 @@ class Regions2D():
         regions['depth'] = regions['depth'] + self.offset
         return regions
 
-    def adjust_depth_bounds(self, inplace=False):
+    def replace_nan_depth(self, inplace=False):
         """Replace 9999.99 or -9999.99 depth values with user-specified min_depth and max_depth values
 
         Parameters
@@ -284,7 +274,7 @@ class Regions2D():
         ---------
         region : str, list, or DataFrame
             Region(s) to select raw files with
-            If none, select all regions. Defaults to `None`
+            If none, select all regions. Defaults to ``None``
 
         kwargs : keyword arguments
             Additional arguments passed to matplotlib plot
@@ -299,7 +289,7 @@ class Regions2D():
     def _init_masker(self):
         """Initialize the object used to mask regions"""
         if self._masker is None:
-            if not self.data:
+            if self.data is None:
                 raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
             from ..mask.region_mask import Regions2DMasker
             self._masker = Regions2DMasker(self)

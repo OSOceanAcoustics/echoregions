@@ -11,10 +11,6 @@ class Regions2DParser(EvParserBase):
     """
     def __init__(self, input_file=None):
         super().__init__(input_file, 'EVR')
-        self.depth = None
-        self.min_depth = None   # Set to replace -9999.9900000000 depth values which are EVR min range
-        self.max_depth = None   # Set to replace 9999.9900000000 depth values which are EVR max range
-        self.offset = 0         # Set to apply depth offset (meters)
 
     def _parse(self, fid):
         """Reads an open file and returns the file metadata and region information"""
@@ -46,7 +42,7 @@ class Regions2DParser(EvParserBase):
                 'bounding_rectangle_bottom': bottom,                    # Bottom of bounding box
             }
 
-        def _points_to_list(line):
+        def _parse_points(line):
             """Takes a line with point information and creates a tuple (x, y) for each point"""
             points_x = parse_time([f'{line[idx]} {line[idx + 1]}' for idx in range(0, len(line), 3)]).values
             points_y = np.array([float(line[idx + 2]) for idx in range(0, len(line), 3)])
@@ -80,7 +76,7 @@ class Regions2DParser(EvParserBase):
             points_line = self.read_line(fid, True)
             # For type: 0=bad (No data), 1=analysis, 3=fishtracks, 4=bad (empty water)
             r_metadata['type'] = points_line.pop()
-            r_points = _points_to_list(points_line)
+            r_points = _parse_points(points_line)
             r_metadata['name'] = self.read_line(fid)
 
             # Store region data into a GeoDataFrame
