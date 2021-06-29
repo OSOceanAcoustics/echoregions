@@ -20,8 +20,8 @@ class Regions2DParser(EvParserBase):
         """Reads an open file and returns the file metadata and region information"""
         def _region_metadata_to_dict(line):
             """Assigns a name to each value in the metadata line for each region"""
-            top = self.swap_depth_edge(line[9])
-            bottom = self.swap_depth_edge(line[12])
+            top = float(line[9])
+            bottom = float(line[12])
             bound_calculated = int(line[6])
             if bound_calculated:
                 left = parse_time(f'{line[7]} {line[8]}', unix=False)
@@ -49,7 +49,7 @@ class Regions2DParser(EvParserBase):
         def _points_to_list(line):
             """Takes a line with point information and creates a tuple (x, y) for each point"""
             points_x = parse_time([f'{line[idx]} {line[idx + 1]}' for idx in range(0, len(line), 3)]).values
-            points_y = np.array([self.swap_depth_edge(line[idx + 2]) for idx in range(0, len(line), 3)])
+            points_y = np.array([float(line[idx + 2]) for idx in range(0, len(line), 3)])
             return points_x, points_y
 
         # Read header containing metadata about the EVR file
@@ -95,27 +95,3 @@ class Regions2DParser(EvParserBase):
             df = df.append(row, ignore_index=True)
 
         return df[row.keys()].convert_dtypes()
-
-    def swap_depth_edge(self, depth):
-        """Replace 9999.99 and -9999.99 edge values with user specified min and max values.
-        Applies offset to depth value if depth is not an edge value.
-
-        Parameters
-        ----------
-        depth : float
-            Depth in meters or depth edge
-
-        Returns
-        -------
-        float
-            Depth in meters
-        """
-        depth = float(depth)
-        if depth == 9999.99 and self.max_depth is not None:
-            return self.max_depth
-        elif depth == -9999.99 and self.min_depth is not None:
-            return self.min_depth
-        elif depth != -9999.99 and depth != 9999.99:
-            return depth + self.offset
-        else:
-            return depth

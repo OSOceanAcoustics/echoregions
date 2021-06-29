@@ -1,18 +1,18 @@
-from ..convert import utils
-from ..convert.evr_parser import Region2DParser
 from pathlib import Path
 import numpy as np
+import pandas as pd
+from ..convert import utils
+from ..convert.evr_parser import Regions2DParser
 
 
 class Regions2D():
     def __init__(self, input_file=None, parse=True,
-                 offset=0, min_depth=None, max_depth=None, raw_range=None):
-        self._parser = Region2DParser(input_file)
+                 offset=0, min_depth=None, max_depth=None, depth=None):
+        self._parser = Regions2DParser(input_file)
         self._plotter = None
         self._masker = None
-        self._region_ids = None
 
-        self.raw_range = raw_range
+        self.depth = depth
         self.max_depth = max_depth
         self.min_depth = min_depth
         self.offset = offset
@@ -20,18 +20,15 @@ class Regions2D():
             self.parse_file()
 
     def __iter__(self):
-        return iter(self.output_data['regions'].values())
+        return self.data.iterrows()
 
-    def __getitem__(self, key):
-        key = str(key)
-        if key not in self.output_data['regions']:
-            raise KeyError(f"{key} is not a valid region")
-        return self.output_data['regions'][key]
+    def __getitem__(self, val):
+        return self.data.iloc[val]
 
     @property
-    def output_data(self):
+    def data(self):
         """Dictionary containing region data and metadata for the EVR file"""
-        return self._parser.output_data
+        return self._parser.data
 
     @property
     def output_file(self):
@@ -46,29 +43,27 @@ class Regions2D():
         return self._parser.input_file
 
     @property
-    def raw_range(self):
+    def depth(self):
         """Get the range vector that provides the min_depth and max_depth"""
-        return self._parser.raw_range
+        return self._parser.depth
 
-    @raw_range.setter
-    def raw_range(self, val):
+    @depth.setter
+    def depth(self, val):
         """Set the range vector that provides the min_depth and max_depth"""
-        self._parser.raw_range = val
-        self.max_depth
-        self.min_depth
+        self._parser.depth = val
 
     @property
     def max_depth(self):
         """Get the depth value that the 9999.99 edge will be set to"""
-        if self._parser.max_depth is None and self.raw_range is not None:
-            self.max_depth = self.raw_range.max()
+        if self._parser.max_depth is None and self.depth is not None:
+            self.max_depth = self.depth.max()
         return self._parser.max_depth
 
     @property
     def min_depth(self):
         """Get the depth value that the -9999.99 edge will be set to"""
-        if self._parser.min_depth is None and self.raw_range is not None:
-            self.min_depth = self.raw_range.min()
+        if self._parser.min_depth is None and self.depth is not None:
+            self.min_depth = self.depth.min()
         return self._parser.min_depth
 
     @property
@@ -96,11 +91,14 @@ class Regions2D():
     def offset(self, val):
         """Set the depth offset to apply to y values"""
         self._parser.offset = float(val)
+        self.adjust_offset()
 
     def parse_file(self, offset=0):
-        """Parse the EVR file as a DataFrame into `Regions2D.output_data`
+        """Parse the EVR file as a DataFrame into `Regions2D.data`
         """
         self._parser.parse_file()
+        self.adjust_depth_bounds()
+        self.adjust_offset()
 
     def to_csv(self, save_path=None, **kwargs):
         """Convert an EVR file to a CSV file
@@ -117,7 +115,8 @@ class Regions2D():
         self._parser.to_csv(save_path=save_path, **kwargs)
 
     def to_json(self, save_path=None, **kwargs):
-        """Convert EVR to a JSON file
+        # TODO: Implement this function
+        """Convert EVR to a JSON file.
 
         Parameters
         ----------
@@ -128,95 +127,87 @@ class Regions2D():
         kwargs : keyword arguments
             Additional arguments passed to `Regions2D.parse_file`
         """
-        self._parser.to_json(save_path=save_path, **kwargs)
+        # self._parser.to_json(save_path=save_path, **kwargs)
 
-    def close_region(self, points):
-        """Closes a region by appending the first point to the end
+    def select_region(self, region=None, copy=False):
+        """Ensure that region is a DataFrame.
 
         Parameters
         ----------
-        points : list or np.ndarray
-            List of points
+        region : float, str, list, Series, DataFrame, `None`
+            A region id provided as a number, string, list of these,
+            or a DataFrame/Series containing the region_id column name.
+        copy : bool
+            Return a copy of the `data` DataFrame
+        Returns
+        -------
+        DataFrame
+            A DataFrame subselected from Regions2D.data.
+            There is a row for each region id provided by the region parameter.
+        """
+        if region is not None:
+            if isinstance(region, pd.DataFrame):
+                region = list(region.region_id)
+            if isinstance(region, pd.Series):
+                region = [region.region_id]
+            if isinstance(region, float) or isinstance(region, int) or isinstance(region, str):
+                region = [region]
+            # Select row by column id
+            region = self.data[self.data['region_id'].isin(region)]
+        else:
+            region = self.data
+        if copy:
+            return region.copy()
+        else:
+            return region
+
+    def close_region(self, region):
+        """Close a region by appending the first point to end of the list of points.
+
+        Parameters
+        ----------
+        region : str, list, or DataFrame
+            region(s) to select raw files with
+            If `None`, select all regions. Defaults to `None`
 
         Returns
         -------
-        points : list or np.ndarray
-            List of points for closed region or numpy array depending on input type
+        DataFrame
+            Returns a new DataFrame with closed regions
         """
-        self._init_plotter()
-        return self._plotter.close_region(points)
+        region = self.select_region(region, copy=True)
+        region['ping_time'] = region.apply(lambda row: np.append(row['ping_time'], row['ping_time'][0]), axis=1)
+        region['depth'] = region.apply(lambda row: np.append(row['depth'], row['depth'][0]), axis=1)
+        return region
 
-    def set_range_edge_from_raw(self, raw, model='EK60'):
-        """Calculate the sonar range from a raw file using Echopype.
-        Used to replace EVR depth edges -9999.99 and 9999.99 with real values
-
-        Parameters
-        ----------
-        raw : str
-            Path to raw file
-        model : str
-            The sonar model that created the raw file, defaults to `EK60`.
-            See echopype for list of supported sonar models.
-            Echoregions is only tested with EK60
-        """
-        self._parser.set_range_edge_from_raw(raw, model=model)
-
-    def select_raw(self, files, region_id=None, t1=None, t2=None):
+    def select_raw(self, files, region=None):
         """Finds raw files in the time domain that encompasses region or list of regions
 
         Parameters
         ----------
         files : list
             raw filenames
-        region_id : str or list
+        region : str, list, or DataFrame
             region(s) to select raw files with
             If none, select all regions. Defaults to `None`
-        t1 : str, numpy datetime64
-            lower bound to select files from.
-            either EV time string or datetime64 object
-        t2 : str, numpy datetime64
-            upper bound to select files from
-            either EV time string or datetime64 object
 
         Returns
         -------
-        raw : str, list
+        str, list`
             raw file as a string if a single raw file is selected.
             list of raw files if multiple are selected.
         """
         files.sort()
-        filetimes = np.array([utils.parse_filetime(Path(fname).name) for fname in files])
+        filetimes = utils.parse_filetime([Path(fname).name for fname in files]).values
 
-        if region_id is not None:
-            if not isinstance(region_id, list):
-                region_id = [region_id]
-        else:
-            if t1 is None and t2 is None:
-                region_id = list(self.output_data['regions'].keys())
-            elif (t1 is not None and t2 is None) or (t1 is None and t2 is not None):
-                raise ValueError("Both an upper and lower bound must be provided")
-            else:
-                t1 = utils.parse_time(t1)
-                t2 = utils.parse_time(t2)
+        # Ensure that region is a DataFrame
+        region = self.select_region(region)
 
-        if t1 is None:
-            if not all(str(r) in self.output_data['regions'] for r in region_id):
-                raise ValueError(f"Invalid region id in {region_id}")
-            regions = np.array([self.convert_points(list(self.output_data['regions'][str(r)]['points'].values()))
-                                for r in region_id])
-            t1 = []
-            t2 = []
-            for region in regions:
-                points = region[:, 0].astype('datetime64[ms]')
-                t1.append(min(points))
-                t2.append(max(points))
-            t1 = min(t1)
-            t2 = max(t2)
-        lower_idx = np.searchsorted(filetimes, t1) - 1
-        upper_idx = np.searchsorted(filetimes, t2)
+        times = np.hstack(region.ping_time.values)
+        lower_idx = np.searchsorted(filetimes, times.min()) - 1
+        upper_idx = np.searchsorted(filetimes, times.max())
 
-        if lower_idx == -1:
-            lower_idx = 0
+        lower_idx = 0 if lower_idx < 0 else lower_idx
 
         files = files[lower_idx:upper_idx]
         if len(files) == 1:
@@ -224,45 +215,97 @@ class Regions2D():
         else:
             return files
 
+    def adjust_offset(self, inplace=False):
+        """Apply a constant depth value to the 'depth' column in the output DataFrame
+
+        Parameters
+        ----------
+        inplace : bool
+            Modify the current `data` inplace
+
+        Returns
+        -------
+        DataFrame with depth offsetted by the value in Regions2D.offset
+        """
+        if self.offset is None or self.data is None:
+            return
+
+        regions = self.data if inplace else self.data.copy()
+        regions['depth'] = regions['depth'] + self.offset
+        return regions
+
+    def adjust_depth_bounds(self, inplace=False):
+        """Replace 9999.99 or -9999.99 depth values with user-specified min_depth and max_depth values
+
+        Parameters
+        ----------
+        inplace : bool
+            Modify the current `data` inplace
+
+        Returns
+        -------
+        DataFrame with depth edges replaced by Regions2D.min_depth and  Regions2D.max_depth
+        """
+        def replace_depth(row):
+            def swap_val(val):
+                if val == 9999.99:
+                    return self.max_depth
+                elif val == -9999.99:
+                    return self.min_depth
+                else:
+                    return val
+
+            row.at['bounding_rectangle_top'] = swap_val(row['bounding_rectangle_top'])
+            row.at['bounding_rectangle_bottom'] = swap_val(row['bounding_rectangle_bottom'])
+            for idx, val in enumerate(row['depth']):
+                row['depth'][idx] = swap_val(val)
+            return row
+
+        if self.min_depth is None and self.max_depth is None:
+            return
+
+        regions = self.data if inplace else self.data.copy()
+        regions.loc[:] = regions.apply(replace_depth, axis=1)
+        return regions
+
     def _init_plotter(self):
-        """Initialize the object used to plot regions"""
+        """Initialize the object used to plot regions."""
         if self._plotter is None:
-            if not self.output_data:
+            if self.data is None:
                 raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
             from ..plot.region_plot import Regions2DPlotter
             self._plotter = Regions2DPlotter(self)
 
-    def plot_region(self, region, offset=0):
-        """Plot a region from output_data.
+    def plot(self, region, **kwargs):
+        """Plot a region from data.
         Automatically convert time and range_edges.
 
         Parameters
         ---------
-        region : str
-            region_id to plot
+        region : str, list, or DataFrame
+            Region(s) to select raw files with
+            If none, select all regions. Defaults to `None`
 
-        offset : float
-            A depth offset in meters added to the range of the points used for masking
-
-        Returns
-        -------
-        x : np.ndarray
-            x points used by the matplotlib plot function
-        y : np.ndarray
-            y points used by the matplotlib plot function
+        kwargs : keyword arguments
+            Additional arguments passed to matplotlib plot
         """
         self._init_plotter()
-        self._plotter.plot_region(region, offset=offset)
+
+        # Ensure that region is a DataFrame
+        region = self.select_region(region)
+
+        self._plotter.plot(region, **kwargs)
 
     def _init_masker(self):
         """Initialize the object used to mask regions"""
         if self._masker is None:
-            if not self.output_data:
+            if not self.data:
                 raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
             from ..mask.region_mask import Regions2DMasker
             self._masker = Regions2DMasker(self)
 
-    def mask_region(self, ds, region, data_var='Sv', offset=0):
+    def mask(self, ds, region, data_var='Sv', offset=0):
+        # TODO Does not currently work
         """Mask an xarray dataset
 
         Parameters

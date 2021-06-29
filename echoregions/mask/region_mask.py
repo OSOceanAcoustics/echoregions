@@ -9,7 +9,7 @@ class Regions2DMasker():
     def __init__(self, Regions2D):
         self.Regions2D = Regions2D
 
-    def mask_region(self, ds, region, data_var='Sv', offset=0):
+    def mask(self, ds, region, data_var='Sv', offset=0):
         # Collect points that make up the region
         points = np.array(self.Regions2D.convert_points(
             self.Regions2D.get_points_from_region(region),
