@@ -136,3 +136,6 @@ array(9.14999962)
 ![example result](./imgs/plot.png)
 ### Zoomed plot output
 ![zoomed result](./imgs/plot_zoomed.png)
+
+
+Or, you can jump right in using the provided [example notebook](https://github.com/ngkavin/echoregions/blob/main/notebooks/plotting_example.ipynb)!
