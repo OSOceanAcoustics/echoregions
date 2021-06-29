@@ -266,7 +266,7 @@ class Regions2D(Geometry):
             from ..plot.region_plot import Regions2DPlotter
             self._plotter = Regions2DPlotter(self)
 
-    def plot(self, region, **kwargs):
+    def plot(self, region=None, **kwargs):
         """Plot a region from data.
         Automatically convert time and range_edges.
 
