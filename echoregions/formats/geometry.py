@@ -5,7 +5,7 @@ class Geometry():
         self._max_depth = None   # Set to replace 9999.99 depth values which are EVR max range
         self._offset = 0         # Set to apply depth offset (meters)
 
-        self.nan_depth_value = None     # Set to replace -10000.99 depth values with (EVL only)
+        self._nan_depth_value = None     # Set to replace -10000.99 depth values with (EVL only)
 
         # self.data = None
 
