@@ -61,17 +61,15 @@ class EvParserBase():
 
         return self._parse(fid, **kwargs)
 
-    def to_csv(self, data, save_path=None, **kwargs):
+    def to_csv(self, data, save_path=None):
         """Save a Dataframe to a .csv file
 
         Parameters
         ----------
         data : DataFrame
-            Lines DataFrame to save to a CSV
+            DataFrame to save to a CSV
         save_path : str
             path to save the CSV file to
-        kwargs : keyword arguments
-            Additional arguments passed to `Lines.parse_file`
         """
         # Check if the save directory is safe
         save_path = validate_path(save_path=save_path, input_file=self.input_file, ext='.csv')

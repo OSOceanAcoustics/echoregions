@@ -151,7 +151,7 @@ class Regions2D(Geometry):
         else:
             return region
 
-    def close_region(self, region):
+    def close_region(self, region=None):
         """Close a region by appending the first point to end of the list of points.
 
         Parameters
@@ -170,21 +170,21 @@ class Regions2D(Geometry):
         region['depth'] = region.apply(lambda row: np.append(row['depth'], row['depth'][0]), axis=1)
         return region
 
-    def select_raw(self, files, region=None):
-        """Finds raw files in the time domain that encompasses region or list of regions
+    def select_sonar_file(self, files, region=None):
+        """Finds sonar files in the time domain that encompasses region or list of regions
 
         Parameters
         ----------
         files : list
             raw filenames
         region : str, list, or DataFrame
-            region(s) to select raw files with
-            If none, select all regions. Defaults to ``None``
+            region(s) to select sonar files with
+            If ``None``, select all regions. Defaults to ``None``
 
         Returns
         -------
         str, list`
-            raw file as a string if a single raw file is selected.
+            sonar file as a string if a single raw file is selected.
             list of raw files if multiple are selected.
         """
         files.sort()
@@ -266,7 +266,7 @@ class Regions2D(Geometry):
             from ..plot.region_plot import Regions2DPlotter
             self._plotter = Regions2DPlotter(self)
 
-    def plot(self, region=None, **kwargs):
+    def plot(self, region=None, close_region=False, **kwargs):
         """Plot a region from data.
         Automatically convert time and range_edges.
 
@@ -274,8 +274,9 @@ class Regions2D(Geometry):
         ---------
         region : str, list, or DataFrame
             Region(s) to select raw files with
-            If none, select all regions. Defaults to ``None``
-
+            If ``None``, select all regions. Defaults to ``None``
+        close_region : bool
+            Plot the region as a closed polygon. Defaults to False
         kwargs : keyword arguments
             Additional arguments passed to matplotlib plot
         """
@@ -284,7 +285,7 @@ class Regions2D(Geometry):
         # Ensure that region is a DataFrame
         region = self.select_region(region)
 
-        self._plotter.plot(region, **kwargs)
+        self._plotter.plot(region, close_region=close_region, **kwargs)
 
     def _init_masker(self):
         """Initialize the object used to mask regions"""
@@ -302,13 +303,10 @@ class Regions2D(Geometry):
         ----------
         ds : Xarray Dataset
             calibrated data (Sv or Sp) with range
-
         region : str
             ID of region to mask the dataset with
-
         data_var : str
             The data variable in the Dataset to mask
-
         offset : float
             A depth offset in meters added to the range of the points used for masking
 
