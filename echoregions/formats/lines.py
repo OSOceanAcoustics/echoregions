@@ -137,9 +137,8 @@ class Lines(Geometry):
 
     def plot(
         self,
-        calibrated_dataset=None,
-        min_ping_time=None,
-        max_ping_time=None,
+        start_ping_time=None,
+        end_ping_time=None,
         fill_between=True,
         max_depth=0,
         alpha=0.5,
@@ -150,11 +149,9 @@ class Lines(Geometry):
 
         Parameters
         ----------
-        calibrated_dataset : Dataset, default ``None``
-            Dataset containing range and ping_time that sets the bounds for the points plotted.
-        min_ping_time : datetime64, default ``None``
+        start_ping_time : datetime64, default ``None``
             Lower ping_time bound.
-        max_ping_time : datetime64, default ``None``
+        end_ping_time : datetime64, default ``None``
             Upper ping_time bound.
         fill_between : bool, default True
             Use matplotlib `fill_between` to plot the line.
@@ -170,9 +167,8 @@ class Lines(Geometry):
         """
         self._init_plotter()
         self._plotter.plot(
-            calibrated_dataset=calibrated_dataset,
-            min_ping_time=min_ping_time,
-            max_ping_time=max_ping_time,
+            start_ping_time=start_ping_time,
+            end_ping_time=end_ping_time,
             fill_between=fill_between,
             max_depth=max_depth,
             alpha=alpha,

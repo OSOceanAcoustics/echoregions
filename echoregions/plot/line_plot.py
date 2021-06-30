@@ -9,37 +9,20 @@ class LinesPlotter():
 
     def plot(
         self,
-        calibrated_dataset=None,
-        min_ping_time=None,
-        max_ping_time=None,
+        start_ping_time=None,
+        end_ping_time=None,
         fill_between=True,
         max_depth=0,
-        alpha=0.5,
         **kwargs
     ):
-        if calibrated_dataset is not None:
-            if min_ping_time is None:
-                min_ping_time = calibrated_dataset.ping_time.min().values
-            if max_ping_time is None:
-                max_ping_time = calibrated_dataset.ping_time.max().values
-            if max_depth is None:
-                max_depth = calibrated_dataset.range.max().values
-        x = self.Lines.data.ping_time
-        y = self.Lines.data.depth
+        df = self.Lines.data
 
-        # Apply ping_time upper and lower bounds
-        if min_ping_time is not None or max_ping_time is not None:
-            if min_ping_time is not None and max_ping_time is not None:
-                indices = np.where((x >= min_ping_time) & (x <= max_ping_time))
-            elif min_ping_time is not None:
-                indices = np.where((x >= min_ping_time))
-            elif max_ping_time is not None:
-                indices = np.where((x <= max_ping_time))
-
-            x = x[indices]
-            y = y[indices]
+        if start_ping_time is not None:
+            df = df[df['ping_time'] > start_ping_time]
+        if end_ping_time is not None:
+            df = df[df['ping_time'] < end_ping_time]
 
         if fill_between:
-            plt.fill_between(x, y, max_depth, alpha=alpha, **kwargs)
+            plt.fill_between(df.ping_time, df.depth, max_depth, **kwargs)
         else:
-            plt.plot(x, y, alpha=alpha, **kwargs)
+            plt.plot(df.ping_time, df.depth, **kwargs)
