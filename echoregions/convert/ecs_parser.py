@@ -7,8 +7,13 @@ from .utils import validate_path
 class CalibrationParser(EvParserBase):
     """Class for parsing EV calibration (ECS) files
     """
-    def __init__(self, input_file=None):
+    def __init__(self, input_file=None, parse=False, ignore_comments=True):
         super().__init__(input_file, 'ECS')
+
+        self.data = None
+
+        if parse:
+            self.parse_file(ignore_comments=ignore_comments)
 
     def _parse_settings(self, fid, ignore_comments):
         """Reads lines from an open file.
@@ -73,48 +78,35 @@ class CalibrationParser(EvParserBase):
         advance_to_section(fid, 'LOCALCAL SETTINGS')
         localcal_settings = self._parse_settings(fid, ignore_comments=ignore_comments)
 
-        self.data = {
+        self._data_dict = {
             'fileset_settings': fileset_settings,
             'sourcecal_settings': sourcecal_settings,
             'localcal_settings': localcal_settings,
         }
 
-    def to_csv(self, save_path=None, **kwargs):
-        """Convert an Echoview calibration .ecs file to a .csv file
+        self.data = self._to_DataFrame()
 
-        Parameters
-        ----------
-        save_path : str
-            path to save the CSV file to
-        kwargs
-            keyword arguments passed into `parse_file`
-        """
+    def _to_DataFrame(self):
+        """Convert the parsed data from a dictionary to a Pandas DataFrame"""
         def get_row_from_source(row_dict, source_dict, **kw):
             source_dict.update(kw)
             for k, v in source_dict.items():
                 row_dict[k] = v
             return pd.Series(row_dict)
 
-        # Parse ECS file if it hasn't already been done
-        if not self.data:
-            self.parse_file(**kwargs)
-
-        # Check if the save directory is safe
-        save_path = validate_path(save_path=save_path, input_file=self.input_file, ext='.csv')
-
         df = pd.DataFrame()
         id_keys = ['value_source', 'channel']
-        fileset_keys = list(self.data['fileset_settings'].keys())
-        sourcecal_keys = list(list(self.data['sourcecal_settings'].values())[0].keys())
-        localset_keys = list(self.data['localcal_settings'].keys())
+        fileset_keys = list(self._data_dict['fileset_settings'].keys())
+        sourcecal_keys = list(list(self._data_dict['sourcecal_settings'].values())[0].keys())
+        localset_keys = list(self._data_dict['localcal_settings'].keys())
 
         # Combine keys from the different sections and remove duplicates
         row_dict = dict.fromkeys(id_keys + fileset_keys + sourcecal_keys + localset_keys, np.nan)
 
-        for cal, cal_settings in self.data['sourcecal_settings'].items():
+        for cal, cal_settings in self._data_dict['sourcecal_settings'].items():
             row_fileset = get_row_from_source(
                 row_dict=row_dict.copy(),
-                source_dict=self.data['fileset_settings'],
+                source_dict=self._data_dict['fileset_settings'],
                 value_source='FILESET',
                 channel=cal,
             )
@@ -126,12 +118,30 @@ class CalibrationParser(EvParserBase):
             )
             row_localset = get_row_from_source(
                 row_dict=row_dict.copy(),
-                source_dict=self.data['localcal_settings'],
+                source_dict=self._data_dict['localcal_settings'],
                 value_source='LOCALSET',
                 channel=cal,
             )
             df = df.append([row_fileset, row_sourcecal, row_localset], ignore_index=True)
 
+        return df
+
+    def to_csv(self, save_path=None, **kwargs):
+        """Convert an Echoview calibration .ecs file to a .csv file
+
+        Parameters
+        ----------
+        save_path : str
+            path to save the CSV file to
+        kwargs
+            keyword arguments passed into `parse_file`
+        """
+        # Parse ECS file if it hasn't already been done
+        if self.data is None:
+            self.parse_file(**kwargs)
+
+        # Check if the save directory is safe
+        save_path = validate_path(save_path=save_path, input_file=self.input_file, ext='.csv')
         # Export to csv
-        df.to_csv(save_path, index=False)
+        self.data.to_csv(save_path, index=False)
         self._output_file.append(save_path)
