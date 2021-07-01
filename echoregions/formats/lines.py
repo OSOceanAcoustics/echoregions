@@ -85,7 +85,7 @@ class Lines(Geometry):
         def replace_depth(row):
             def swap_val(val):
                 if val == -10000.99:
-                    return self.max_depth
+                    return self.nan_depth_value
                 else:
                     return val
 
