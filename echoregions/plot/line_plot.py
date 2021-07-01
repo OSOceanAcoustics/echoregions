@@ -9,9 +9,10 @@ class LinesPlotter():
 
     def plot(
         self,
+        fmt='',
         start_ping_time=None,
         end_ping_time=None,
-        fill_between=True,
+        fill_between=False,
         max_depth=0,
         **kwargs
     ):
@@ -25,4 +26,4 @@ class LinesPlotter():
         if fill_between:
             plt.fill_between(df.ping_time, df.depth, max_depth, **kwargs)
         else:
-            plt.plot(df.ping_time, df.depth, **kwargs)
+            plt.plot(df.ping_time, df.depth, fmt, **kwargs)

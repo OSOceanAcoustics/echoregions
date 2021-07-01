@@ -137,11 +137,11 @@ class Lines(Geometry):
 
     def plot(
         self,
+        fmt='',
         start_ping_time=None,
         end_ping_time=None,
-        fill_between=True,
+        fill_between=False,
         max_depth=0,
-        alpha=0.5,
         **kwargs
     ):
         """
@@ -149,6 +149,9 @@ class Lines(Geometry):
 
         Parameters
         ----------
+        fmt : str, optional
+            A format string such as 'bo' for blue circles.
+            See matplotlib documentation for more information.
         start_ping_time : datetime64, default ``None``
             Lower ping_time bound.
         end_ping_time : datetime64, default ``None``
@@ -167,10 +170,10 @@ class Lines(Geometry):
         """
         self._init_plotter()
         self._plotter.plot(
+            fmt=fmt,
             start_ping_time=start_ping_time,
             end_ping_time=end_ping_time,
             fill_between=fill_between,
             max_depth=max_depth,
-            alpha=alpha,
             **kwargs
         )
