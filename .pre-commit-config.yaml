@@ -1,5 +1,4 @@
-exclude: |
-  (?x)^(
+exclude: ^(
     docs/|
     notebooks/|
     echoregions/test_data/|
