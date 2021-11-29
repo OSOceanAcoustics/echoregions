@@ -3,8 +3,7 @@ import os
 import numpy as np
 
 import echoregions as er
-
-from ..convert.utils import parse_time
+from echoregions.convert.utils import parse_time
 
 data_dir = "./echoregions/test_data/ek60/"
 output_csv = data_dir + "output_CSV/"
