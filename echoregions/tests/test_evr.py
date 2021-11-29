@@ -2,9 +2,15 @@ import numpy as np
 
 import echoregions as er
 
-data_dir = "./echoregions/test_data/ek60/"
+data_dir = "./echoregions/test_data/"
 output_csv = data_dir + "output_CSV/"
 output_json = data_dir + "output_JSON/"
+
+# TODO: Make a new region file with only 1 region,
+# and check for the exact value for all fields
+
+
+# TODO: Consolidate test converting EVR file
 
 
 def test_convert_evr():
