@@ -37,9 +37,11 @@ class Regions2DParser(EvParserBase):
                 "selected": line[3],  # Always 0
                 "creation_type": line[4],  # How the region was created
                 "dummy": line[5],  # Always -1
-                "bounding_rectangle_calculated": bound_calculated,  # 1 if next 4 fields valid. O otherwise
+                "bounding_rectangle_calculated": bound_calculated,  # 1 if next 4 fields valid.
+                # O otherwise
                 # Date encoded as CCYYMMDD and times in HHmmSSssss
-                # Where CC=Century, YY=Year, MM=Month, DD=Day, HH=Hour, mm=minute, SS=second, ssss=0.1 milliseconds
+                # Where CC=Century, YY=Year, MM=Month, DD=Day, HH=Hour,
+                # mm=minute, SS=second, ssss=0.1 milliseconds
                 "bounding_rectangle_left": left,  # Time and date of bounding box left x
                 "bounding_rectangle_right": right,  # Time and date of bounding box right x
                 "bounding_rectangle_top": top,  # Top of bounding box

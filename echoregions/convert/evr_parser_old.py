@@ -55,7 +55,8 @@ class Region2DParser(EvParserBase):
                     6
                 ],  # 1 if next 4 fields valid. O otherwise
                 # Date encoded as CCYYMMDD and times in HHmmSSssss
-                # Where CC=Century, YY=Year, MM=Month, DD=Day, HH=Hour, mm=minute, SS=second, ssss=0.1 milliseconds
+                # Where CC=Century, YY=Year, MM=Month, DD=Day, HH=Hour, mm=minute,
+                # SS=second, ssss=0.1 milliseconds
                 "bounding_rectangle_left_x": left_x,  # Time and date of bounding box left x
                 "bounding_rectangle_top_y": top_y,  # Top of bounding box
                 "bounding_rectangle_right_x": right_x,  # Time and date of bounding box right x

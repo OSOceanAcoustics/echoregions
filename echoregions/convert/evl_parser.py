@@ -3,7 +3,7 @@ import os
 import pandas as pd
 
 from .ev_parser import EvParserBase
-from .utils import parse_time, validate_path
+from .utils import parse_time
 
 
 class LineParser(EvParserBase):

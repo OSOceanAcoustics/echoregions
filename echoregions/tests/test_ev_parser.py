@@ -4,8 +4,6 @@ import numpy as np
 
 import echoregions as er
 
-from ..convert.ecs_parser import CalibrationParser
-from ..convert.evl_parser import LineParser
 from ..convert.utils import parse_time
 
 data_dir = "./echoregions/test_data/ek60/"
