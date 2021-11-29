@@ -1,14 +1,10 @@
-from ..formats.regions2d import Regions2D
-from ..formats.lines import Lines
 from ..convert.ecs_parser import CalibrationParser
+from ..formats.lines import Lines
+from ..formats.regions2d import Regions2D
 
 
 def read_evr(
-    filepath,
-    offset=0,
-    min_depth=None,
-    max_depth=None,
-    depth=None
+    filepath, offset=0, min_depth=None, max_depth=None, depth=None
 ) -> "Regions2D":
     """Read an EVR file into a Regions2D object.
 
@@ -36,7 +32,7 @@ def read_evr(
         offset=offset,
         min_depth=min_depth,
         max_depth=max_depth,
-        depth=depth
+        depth=depth,
     )
 
 
@@ -69,10 +65,7 @@ def read_evl(
     )
 
 
-def read_ecs(
-    filepath,
-    ignore_comments=True
-) -> "CalibrationParser":
+def read_ecs(filepath, ignore_comments=True) -> "CalibrationParser":
     """Read an ECS file into a CalibrationParser object.
 
     Parameters
@@ -87,4 +80,6 @@ def read_ecs(
     CalibrationParser
         Object that contains ECS data with methods for saving to file.
     """
-    return CalibrationParser(input_file=filepath, parse=True, ignore_comments=ignore_comments)
+    return CalibrationParser(
+        input_file=filepath, parse=True, ignore_comments=ignore_comments
+    )

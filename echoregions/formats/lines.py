@@ -3,8 +3,7 @@ from . import Geometry
 
 
 class Lines(Geometry):
-    def __init__(self, input_file=None, parse=True,
-                 nan_depth_value=None, offset=0):
+    def __init__(self, input_file=None, parse=True, nan_depth_value=None, offset=0):
         self._parser = LineParser(input_file)
         self._plotter = None
         self._masker = None
@@ -82,6 +81,7 @@ class Lines(Geometry):
         -------
         DataFrame with depth edges replaced by Lines.nan_depth_value
         """
+
         def replace_depth(row):
             def swap_val(val):
                 if val == -10000.99:
@@ -89,7 +89,7 @@ class Lines(Geometry):
                 else:
                     return val
 
-            row.at['depth'] = swap_val(row['depth'])
+            row.at["depth"] = swap_val(row["depth"])
             return row
 
         if self.nan_depth_value is None:
@@ -131,13 +131,16 @@ class Lines(Geometry):
         """Initialize the object used to plot lines"""
         if self._plotter is None:
             if self.data is None:
-                raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
+                raise ValueError(
+                    "Input file has not been parsed; call `parse_file` to parse."
+                )
             from ..plot.line_plot import LinesPlotter
+
             self._plotter = LinesPlotter(self)
 
     def plot(
         self,
-        fmt='',
+        fmt="",
         start_ping_time=None,
         end_ping_time=None,
         fill_between=False,

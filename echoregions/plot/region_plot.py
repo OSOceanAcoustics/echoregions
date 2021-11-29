@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 
 
-class Regions2DPlotter():
+class Regions2DPlotter:
     """Class for plotting Regions. Should only be used by `Regions2D`"""
+
     def __init__(self, Regions2D):
         self.Regions2D = Regions2D
 

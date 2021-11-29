@@ -1,14 +1,23 @@
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
+
 from ..convert import utils
 from ..convert.evr_parser import Regions2DParser
 from . import Geometry
 
 
 class Regions2D(Geometry):
-    def __init__(self, input_file=None, parse=True,
-                 offset=0, min_depth=None, max_depth=None, depth=None):
+    def __init__(
+        self,
+        input_file=None,
+        parse=True,
+        offset=0,
+        min_depth=None,
+        max_depth=None,
+        depth=None,
+    ):
         super().__init__()
         self._parser = Regions2DParser(input_file)
         self._plotter = None
@@ -82,8 +91,7 @@ class Regions2D(Geometry):
         self._offset = float(val)
 
     def parse_file(self, offset=0):
-        """Parse the EVR file as a DataFrame into `Regions2D.data`
-        """
+        """Parse the EVR file as a DataFrame into `Regions2D.data`"""
         self.data = self._parser.parse_file()
         self.replace_nan_depth()
         self.adjust_offset()
@@ -140,10 +148,14 @@ class Regions2D(Geometry):
                 region = list(region.region_id)
             if isinstance(region, pd.Series):
                 region = [region.region_id]
-            if isinstance(region, float) or isinstance(region, int) or isinstance(region, str):
+            if (
+                isinstance(region, float)
+                or isinstance(region, int)
+                or isinstance(region, str)
+            ):
                 region = [region]
             # Select row by column id
-            region = self.data[self.data['region_id'].isin(region)]
+            region = self.data[self.data["region_id"].isin(region)]
         else:
             region = self.data
         if copy:
@@ -166,8 +178,12 @@ class Regions2D(Geometry):
             Returns a new DataFrame with closed regions
         """
         region = self.select_region(region, copy=True)
-        region['ping_time'] = region.apply(lambda row: np.append(row['ping_time'], row['ping_time'][0]), axis=1)
-        region['depth'] = region.apply(lambda row: np.append(row['depth'], row['depth'][0]), axis=1)
+        region["ping_time"] = region.apply(
+            lambda row: np.append(row["ping_time"], row["ping_time"][0]), axis=1
+        )
+        region["depth"] = region.apply(
+            lambda row: np.append(row["depth"], row["depth"][0]), axis=1
+        )
         return region
 
     def select_sonar_file(self, files, region=None):
@@ -221,7 +237,7 @@ class Regions2D(Geometry):
             return
 
         regions = self.data if inplace else self.data.copy()
-        regions['depth'] = regions['depth'] + self.offset
+        regions["depth"] = regions["depth"] + self.offset
         return regions
 
     def replace_nan_depth(self, inplace=False):
@@ -236,6 +252,7 @@ class Regions2D(Geometry):
         -------
         DataFrame with depth edges replaced by Regions2D.min_depth and  Regions2D.max_depth
         """
+
         def replace_depth(row):
             def swap_val(val):
                 if val == 9999.99:
@@ -245,10 +262,12 @@ class Regions2D(Geometry):
                 else:
                     return val
 
-            row.at['bounding_rectangle_top'] = swap_val(row['bounding_rectangle_top'])
-            row.at['bounding_rectangle_bottom'] = swap_val(row['bounding_rectangle_bottom'])
-            for idx, val in enumerate(row['depth']):
-                row['depth'][idx] = swap_val(val)
+            row.at["bounding_rectangle_top"] = swap_val(row["bounding_rectangle_top"])
+            row.at["bounding_rectangle_bottom"] = swap_val(
+                row["bounding_rectangle_bottom"]
+            )
+            for idx, val in enumerate(row["depth"]):
+                row["depth"][idx] = swap_val(val)
             return row
 
         if self.min_depth is None and self.max_depth is None:
@@ -262,8 +281,11 @@ class Regions2D(Geometry):
         """Initialize the object used to plot regions."""
         if self._plotter is None:
             if self.data is None:
-                raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
+                raise ValueError(
+                    "Input file has not been parsed; call `parse_file` to parse."
+                )
             from ..plot.region_plot import Regions2DPlotter
+
             self._plotter = Regions2DPlotter(self)
 
     def plot(self, region=None, close_region=False, **kwargs):
@@ -291,11 +313,14 @@ class Regions2D(Geometry):
         """Initialize the object used to mask regions"""
         if self._masker is None:
             if self.data is None:
-                raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
+                raise ValueError(
+                    "Input file has not been parsed; call `parse_file` to parse."
+                )
             from ..mask.region_mask import Regions2DMasker
+
             self._masker = Regions2DMasker(self)
 
-    def mask(self, ds, region, data_var='Sv', offset=0):
+    def mask(self, ds, region, data_var="Sv", offset=0):
         # TODO Does not currently work
         """Mask an xarray dataset
 
