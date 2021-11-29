@@ -41,7 +41,7 @@ class Regions2D(Geometry):
     @property
     def output_file(self):
         """Path(s) to the list of files saved.
-        String if a single file. LIst of strings if multiple.
+        String if a single file. List of strings if multiple.
         """
         return self._parser.output_file
 
