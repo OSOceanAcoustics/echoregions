@@ -204,7 +204,9 @@ class Regions2D(Geometry):
             list of raw files if multiple are selected.
         """
         files.sort()
-        filetimes = utils.parse_filetime([Path(fname).name for fname in files]).values
+        filetimes = utils.parse_simrad_fname_time(
+            [Path(fname).name for fname in files]
+        ).values
 
         # Ensure that region is a DataFrame
         region = self.select_region(region)

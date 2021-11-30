@@ -94,7 +94,7 @@ def parse_time(ev_time, datetime_format="%Y%m%d %H%M%S%f", unix=False):
     return t
 
 
-def parse_filetime(filenames):
+def parse_simrad_fname_time(filenames):
     """Convert Simrad-style datetime to a numpy datetime64 object
 
     Parameters

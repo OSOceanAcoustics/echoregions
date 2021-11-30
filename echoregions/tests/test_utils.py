@@ -1,6 +1,6 @@
 import numpy as np
 
-from echoregions.convert.utils import parse_filetime, parse_time
+from echoregions.convert.utils import parse_simrad_fname_time, parse_time
 
 
 def test_parse_time():
@@ -11,4 +11,6 @@ def test_parse_time():
 
 def test_parse_filename_time():
     raw_fname = "Summer2017-D20170625-T124834.raw"
-    assert parse_filetime(raw_fname) == np.datetime64("2017-06-25T12:48:34.0000")
+    assert parse_simrad_fname_time(raw_fname) == np.datetime64(
+        "2017-06-25T12:48:34.0000"
+    )
