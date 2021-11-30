@@ -1,19 +1,10 @@
 import os
 
-import numpy as np
-
 import echoregions as er
-from echoregions.convert.utils import parse_time
 
 data_dir = "./echoregions/test_data/"
 output_csv = data_dir + "output_CSV/"
 output_json = data_dir + "output_JSON/"
-
-
-def test_parse_time():
-    # Test converting EV datetime string to numpy datetime64
-    timestamp = "20170625 1539223320"
-    assert parse_time(timestamp) == np.datetime64("2017-06-25T15:39:22.3320")
 
 
 def test_convert_ecs():

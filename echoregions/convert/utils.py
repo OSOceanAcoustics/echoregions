@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-EK60_fname_pattern = (
+SIMRAD_FILENAME_MATCHER = re.compile(
     r"(?P<survey>.+)?-?D(?P<date>\w{1,8})-T(?P<time>\w{1,6})-?(?P<postfix>\w+)?\..+"
 )
 
@@ -110,10 +110,11 @@ def parse_filetime(filenames):
     if isinstance(filenames, list):
         f_list = []
         for f in filenames:
-            groups = re.match(EK60_fname_pattern, f).groups()
-            f_list.append(f"{groups[1]} {groups[2]}")
+            groups = SIMRAD_FILENAME_MATCHER.match(f)
+            f_list.append(groups["date"] + " " + groups["time"])
     elif isinstance(filenames, str):
-        f_list = [filenames]
+        groups = SIMRAD_FILENAME_MATCHER.match(filenames)
+        f_list = [groups["date"] + " " + groups["time"]]
     else:
         raise ValueError("'filenames' must be type str or list")
     return parse_time(f_list, "%Y%m%d %H%M%S")
