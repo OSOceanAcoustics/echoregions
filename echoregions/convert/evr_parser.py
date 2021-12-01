@@ -59,7 +59,7 @@ class Regions2DParser(EvParserBase):
             return points_x, points_y
 
         # Read header containing metadata about the EVR file
-        file_type, file_format_number, echoview_version = self.read_line(fid, True)
+        file_type, file_format_number, echoview_version = fid.readline().strip().split()
         file_metadata = pd.Series(
             {
                 # TODO: add back the trailing ".evr" in filename for completeness
@@ -71,30 +71,30 @@ class Regions2DParser(EvParserBase):
         )
         df = pd.DataFrame()
         row = {}
-        n_regions = int(self.read_line(fid))
+        n_regions = int(fid.readline().strip())
         # Loop over all regions in file
         for r in range(n_regions):
             # Unpack region data
             fid.readline()  # blank line separates each region
 
             # TODO: consider using fid.readlines() directly for code readability
-            r_metadata = _region_metadata_to_dict(self.read_line(fid, True))
+            r_metadata = _region_metadata_to_dict(fid.readline().strip().split())
             # Add notes to region data
-            n_note_lines = int(self.read_line(fid))
-            r_notes = [self.read_line(fid) for line in range(n_note_lines)]
+            n_note_lines = int(fid.readline().strip())
+            r_notes = [fid.readline().strip() for line in range(n_note_lines)]
             # Add detection settings to region data
-            n_detection_setting_lines = int(self.read_line(fid))
+            n_detection_setting_lines = int(fid.readline().strip())
             r_detection_settings = [
-                self.read_line(fid) for line in range(n_detection_setting_lines)
+                fid.readline().strip() for line in range(n_detection_setting_lines)
             ]
             # Add classification to region data
-            r_metadata["region_classification"] = self.read_line(fid)
+            r_metadata["region_classification"] = fid.readline().strip()
             # Add point x and y
-            points_line = self.read_line(fid, True)
+            points_line = fid.readline().strip().split()
             # For type: 0=bad (No data), 1=analysis, 3=fishtracks, 4=bad (empty water)
             r_metadata["region_type"] = points_line.pop()
             r_points = _parse_points(points_line)
-            r_metadata["region_name"] = self.read_line(fid)
+            r_metadata["region_name"] = fid.readline().strip()
 
             # Store region data into a GeoDataFrame
             row = pd.concat(

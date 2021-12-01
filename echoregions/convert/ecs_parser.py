@@ -31,7 +31,7 @@ class CalibrationParser(EvParserBase):
 
         settings = {}
         while True:
-            line = self.read_line(fid, split=True)
+            line = fid.readline().strip().split()
             # Exit loop if no more fields in section
             if len(line) == 0:
                 break
@@ -60,7 +60,7 @@ class CalibrationParser(EvParserBase):
         sourcecal = {}
         # Parse all 'SourceCal' sections. Return when all have been parsed
         while True:
-            cal_name = self.read_line(fid, split=True)
+            cal_name = fid.readline().strip().split()
             if len(cal_name) > 0 and cal_name[0] == "SourceCal":
                 sourcecal["_".join(cal_name)] = self._parse_settings(
                     fid, ignore_comments=ignore_comments

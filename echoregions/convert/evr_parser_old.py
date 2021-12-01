@@ -81,7 +81,7 @@ class Region2DParser(EvParserBase):
             return points
 
         # Read header containing metadata about the EVR file
-        file_type, file_format_number, echoview_version = self.read_line(fid, True)
+        file_type, file_format_number, echoview_version = fid.readline().strip().split()
         file_metadata = {
             "file_name": os.path.splitext(os.path.basename(self.input_file))[0],
             "file_type": file_type,
@@ -94,7 +94,7 @@ class Region2DParser(EvParserBase):
         # Loop over all regions in file
         for r in range(n_regions):
             fid.readline()  # blank line separates each region
-            region_metadata = self.read_line(fid, True)
+            region_metadata = fid.readline().strip().split()
             rid = region_metadata[2]  # Region ID (unique for each region)
 
             regions[rid]["metadata"] = _region_metadata_to_dict(region_metadata)
@@ -111,7 +111,7 @@ class Region2DParser(EvParserBase):
             # Add classification to region data
             regions[rid]["metadata"]["region_classification"] = self.read_line(fid)
             # Add point x and y
-            points_line = self.read_line(fid, True)
+            points_line = fid.readline().strip().split()
             # For type: 0=bad (No data), 1=analysis, 3=fishtracks, 4=bad (empty water)
             regions[rid]["metadata"]["type"] = points_line.pop()
             regions[rid]["points"] = _points_to_dict(points_line)
