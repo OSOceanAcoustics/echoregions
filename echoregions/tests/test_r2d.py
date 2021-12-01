@@ -11,7 +11,9 @@ output_json = data_dir + "output_JSON/"
 
 
 def test_plot():
-    # Test converting EV regions file (EVR)
+    """
+    Test region plotting.
+    """
     evr_path = data_dir + "x1.evr"
     r2d = er.read_evr(evr_path, min_depth=0, max_depth=100, offset=5)
     df = r2d.data.loc[r2d.data["region_name"] == "Chicken nugget"]
@@ -20,8 +22,10 @@ def test_plot():
     assert df["time"][10][0] == np.datetime64("2017-06-25T20:01:47.093000000")
 
 
-def test_file_select():
-    # Test file selection based on region bounds
+def test_select_sonar_file():
+    """
+    Test sonar file selection based on region bounds.
+    """
     raw_files = [
         "Summer2017-D20170625-T124834.nc",
         "Summer2017-D20170625-T132103.nc",
