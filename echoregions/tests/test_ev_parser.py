@@ -12,7 +12,6 @@ def test_convert_ecs():
     ecs_path = data_dir + "Summer2017_JuneCal_3freq.ecs"
 
     ecs = er.read_ecs(ecs_path)
-    ecs.parse_file(ignore_comments=True)
     ecs.to_csv(output_csv)
     ecs.to_json(output_json)
 
