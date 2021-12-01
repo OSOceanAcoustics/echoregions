@@ -22,4 +22,4 @@ class Regions2DPlotter:
         if close_region:
             region = self.Regions2D.close_region(region)
         for idx, row in region.iterrows():
-            plt.plot(row.ping_time, row.depth, **kwargs)
+            plt.plot(row["time"], row["depth"], **kwargs)

@@ -17,10 +17,10 @@ def test_convert_evr():
     # Test converting EV regions file (EVR)
     evr_path = data_dir + "x1.evr"
     r2d = er.read_evr(evr_path, min_depth=0, max_depth=100, offset=5)
-    df = r2d.data.loc[r2d.data["name"] == "Chicken nugget"]
+    df = r2d.data.loc[r2d.data["region_name"] == "Chicken nugget"]
     r2d.plot([11], color="k")
-    assert df.depth[10][0] == 102.2552007996
-    assert df.ping_time[10][0] == np.datetime64("2017-06-25T20:01:47.093000000")
+    assert df["depth"][10][0] == 102.2552007996
+    assert df["time"][10][0] == np.datetime64("2017-06-25T20:01:47.093000000")
 
 
 def test_file_select():
