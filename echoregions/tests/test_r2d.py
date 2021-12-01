@@ -10,10 +10,7 @@ output_json = data_dir + "output_JSON/"
 # and check for the exact value for all fields
 
 
-# TODO: Consolidate test converting EVR file
-
-
-def test_convert_evr():
+def test_plot():
     # Test converting EV regions file (EVR)
     evr_path = data_dir + "x1.evr"
     r2d = er.read_evr(evr_path, min_depth=0, max_depth=100, offset=5)

@@ -10,7 +10,7 @@ evl_path = data_dir / "x1.evl"
 # and check for the exact value for all fields
 
 
-def test_plot_evl():
+def test_plot():
     # Test plotting Lines with options
     start_date = "2017-06-25"
     end_date = "2017-06-26"
