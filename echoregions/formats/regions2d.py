@@ -264,10 +264,8 @@ class Regions2D(Geometry):
                 else:
                     return val
 
-            row.at["bounding_rectangle_top"] = swap_val(row["bounding_rectangle_top"])
-            row.at["bounding_rectangle_bottom"] = swap_val(
-                row["bounding_rectangle_bottom"]
-            )
+            row.at["region_bbox_top"] = swap_val(row["region_bbox_top"])
+            row.at["region_bbox_bottom"] = swap_val(row["region_bbox_bottom"])
             for idx, val in enumerate(row["depth"]):
                 row["depth"][idx] = swap_val(val)
             return row
