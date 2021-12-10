@@ -33,8 +33,8 @@ class Regions2DParser(EvParserBase):
             return {
                 "region_id": int(line[2]),
                 "region_structure_version": line[0],  # 13 currently
-                "point_count": line[1],  # Number of points in the region
-                "selected": line[3],  # Always 0
+                "region_point_count": line[1],  # Number of points in the region
+                "region_selected": line[3],  # Always 0
                 "region_creation_type": line[4],  # How the region was created
                 "dummy": line[5],  # Always -1
                 "region_bbox_calculated": bound_calculated,  # 1 if next 4 fields valid.
