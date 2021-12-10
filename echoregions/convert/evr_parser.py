@@ -87,8 +87,8 @@ class Regions2DParser(EvParserBase):
             r_detection_settings = [
                 self.read_line(fid) for line in range(n_detection_setting_lines)
             ]
-            # Add classification to region data
-            r_metadata["region_classification"] = self.read_line(fid)
+            # Add class to region data
+            r_metadata["region_class"] = self.read_line(fid)
             # Add point x and y
             points_line = self.read_line(fid, True)
             # For type: 0=bad (No data), 1=analysis, 3=fishtracks, 4=bad (empty water)
