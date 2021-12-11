@@ -12,7 +12,7 @@ setup(
     author_email="ng.kavin97@gmail.com",
     maintainer="Kavin Nguyen",
     maintainer_email="ng.kavin97@gmail.com",
-    description="Parsers and functions for working with EVR, ECS, and ECL files",
+    description="Parsers and functions for working with EVR and EVL files",
     url="https://github.com/OSOceanAcoustics/echoregions",
     install_requires=INSTALL_REQUIRES,
     packages=find_packages(),
