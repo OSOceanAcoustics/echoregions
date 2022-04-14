@@ -5,7 +5,6 @@ import echoregions as er
 data_dir = Path("./echoregions/test_data/")
 evl_path = data_dir / "x1.evl"
 
-
 # TODO: Make a new EVL file with only 1 line,
 # and check for the exact value for all fields
 
