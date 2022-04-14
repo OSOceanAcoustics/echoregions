@@ -32,20 +32,23 @@ class Regions2DParser(EvParserBase):
 
             return {
                 "region_id": int(line[2]),
-                "structure_version": line[0],  # 13 currently
-                "point_count": line[1],  # Number of points in the region
-                "selected": line[3],  # Always 0
-                "creation_type": line[4],  # How the region was created
+                "region_structure_version": line[0],  # 13 currently
+                "region_point_count": line[1],  # Number of points in the region
+                "region_selected": line[3],  # Always 0
+                "region_creation_type": line[4],  # How the region was created
                 "dummy": line[5],  # Always -1
-                "bounding_rectangle_calculated": bound_calculated,  # 1 if next 4 fields valid.
+                "region_bbox_calculated": bound_calculated,  # 1 if next 4 fields valid.
+
                 # O otherwise
                 # Date encoded as CCYYMMDD and times in HHmmSSssss
                 # Where CC=Century, YY=Year, MM=Month, DD=Day, HH=Hour,
                 # mm=minute, SS=second, ssss=0.1 milliseconds
-                "bounding_rectangle_left": left,  # Time and date of bounding box left x
-                "bounding_rectangle_right": right,  # Time and date of bounding box right x
-                "bounding_rectangle_top": top,  # Top of bounding box
-                "bounding_rectangle_bottom": bottom,  # Bottom of bounding box
+
+                "region_bbox_left": left,  # Time and date of bounding box left x
+                "region_bbox_right": right,  # Time and date of bounding box right x
+                "region_bbox_top": top,  # Top of bounding box
+                "region_bbox_bottom": bottom,  # Bottom of bounding box
+
             }
 
         def _parse_points(line):
@@ -62,9 +65,10 @@ class Regions2DParser(EvParserBase):
         file_type, file_format_number, echoview_version = self.read_line(fid, True)
         file_metadata = pd.Series(
             {
+                # TODO: add back the trailing ".evr" in filename for completeness
                 "file_name": os.path.splitext(os.path.basename(self.input_file))[0],
                 "file_type": file_type,
-                "file_format_number": file_format_number,
+                "evr_file_format_number": file_format_number,
                 "echoview_version": echoview_version,
             }
         )
@@ -75,6 +79,9 @@ class Regions2DParser(EvParserBase):
         for r in range(n_regions):
             # Unpack region data
             fid.readline()  # blank line separates each region
+
+            # TODO: consider using fid.readlines() directly for code readability
+
             r_metadata = _region_metadata_to_dict(self.read_line(fid, True))
             # Add notes to region data
             n_note_lines = int(self.read_line(fid))
@@ -84,24 +91,26 @@ class Regions2DParser(EvParserBase):
             r_detection_settings = [
                 self.read_line(fid) for line in range(n_detection_setting_lines)
             ]
-            # Add classification to region data
-            r_metadata["region_classification"] = self.read_line(fid)
+
+            # Add class to region data
+            r_metadata["region_class"] = self.read_line(fid)
             # Add point x and y
             points_line = self.read_line(fid, True)
             # For type: 0=bad (No data), 1=analysis, 3=fishtracks, 4=bad (empty water)
-            r_metadata["type"] = points_line.pop()
+            r_metadata["region_type"] = points_line.pop()
             r_points = _parse_points(points_line)
-            r_metadata["name"] = self.read_line(fid)
+            r_metadata["region_name"] = self.read_line(fid)
 
             # Store region data into a GeoDataFrame
             row = pd.concat(
                 [
                     file_metadata,
                     pd.Series(r_metadata)[r_metadata.keys()],
-                    pd.Series({"ping_time": r_points[0]}),
+                    pd.Series({"time": r_points[0]}),
                     pd.Series({"depth": r_points[1]}),
-                    pd.Series({"notes": r_notes}),
-                    pd.Series({"detection_settings": r_detection_settings}),
+                    pd.Series({"region_notes": r_notes}),
+                    pd.Series({"region_detection_settings": r_detection_settings}),
+
                 ]
             )
             df = df.append(row, ignore_index=True)

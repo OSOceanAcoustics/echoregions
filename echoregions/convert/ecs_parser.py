@@ -5,6 +5,8 @@ from .ev_parser import EvParserBase
 from .utils import validate_path
 
 
+# TODO: move this to under echopype
+#       don't need to inherit EvParserBase since most parent methods are not used
 class CalibrationParser(EvParserBase):
     """Class for parsing EV calibration (ECS) files"""
 
@@ -21,13 +23,19 @@ class CalibrationParser(EvParserBase):
         The function expects the lines to be in the format <field> = <value>.
         There may be hash marks (#) before the field and after the value.
         Collects these fields and values into a dictionary until a blank line is encountered
+
+        # TODO: add docstring
         """
+        # TODO: parse values after the # to give units and range of valid values
+        # TODO: use regex to parse lines to make this more robust
+
         settings = {}
         while True:
             line = self.read_line(fid, split=True)
             # Exit loop if no more fields in section
             if len(line) == 0:
                 break
+
             # Check if field is commented out
             if line[0] == "#":
                 if ignore_comments:
@@ -61,6 +69,15 @@ class CalibrationParser(EvParserBase):
                 return sourcecal
 
     def parse_file(self, ignore_comments=True):
+        # TODO: according to Echoview docs, a leading # means that the values are not used.
+        #       rather than completely ignoring the key-value pair, let's store them
+        #       but have a flag to indicate usage status
+        # TODO: create a mechanism to allow the right-overwriting-left convention
+        #       perhaps a class storing each of the settings sections
+        #       and then a summary object giving the final settings?
+        # TODO: add a header reader and record instrument, time created, and version nunber
+        #       currently header is just skipped
+
         def advance_to_section(fid, section):
             # Function for skipping lines that do not contain the variables to save
             cont = True
@@ -74,6 +91,8 @@ class CalibrationParser(EvParserBase):
 
         fid = open(self.input_file, encoding="utf-8-sig")
 
+        # TODO: consolidate to use the same _parse_settings,
+        #        with the new settings class as output
         advance_to_section(fid, "FILESET SETTINGS")
         fileset_settings = self._parse_settings(fid, ignore_comments=ignore_comments)
         advance_to_section(fid, "SOURCECAL SETTINGS")
@@ -81,12 +100,14 @@ class CalibrationParser(EvParserBase):
         advance_to_section(fid, "LOCALCAL SETTINGS")
         localcal_settings = self._parse_settings(fid, ignore_comments=ignore_comments)
 
+        # TODO: re-write below to use new class and associated methods
+        #       ._to_DataFrame hides the use of self._data_dict: not a good practice
+
         self._data_dict = {
             "fileset_settings": fileset_settings,
             "sourcecal_settings": sourcecal_settings,
             "localcal_settings": localcal_settings,
         }
-
         self.data = self._to_DataFrame()
 
     def _to_DataFrame(self):
@@ -110,6 +131,9 @@ class CalibrationParser(EvParserBase):
         row_dict = dict.fromkeys(
             id_keys + fileset_keys + sourcecal_keys + localset_keys, np.nan
         )
+
+        # NOTE: [WJ commented] sloppy to just use sourcecal_settings and loop through all dicts
+        # there could be info for other transducers not present in that section
 
         for cal, cal_settings in self._data_dict["sourcecal_settings"].items():
             row_fileset = get_row_from_source(

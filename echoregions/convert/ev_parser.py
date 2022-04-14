@@ -7,17 +7,10 @@ from .utils import validate_path
 class EvParserBase:
     def __init__(self, input_file, file_format):
         self._input_file = None
-        self._filename = None
         self._output_file = []
 
         self.format = file_format
         self.input_file = input_file
-
-    @property
-    def filename(self):
-        if self._filename is None or self._filename not in self.input_file:
-            self._filename = os.path.splitext(os.path.basename(self.input_file))[0]
-        return self._filename
 
     @property
     def input_file(self):

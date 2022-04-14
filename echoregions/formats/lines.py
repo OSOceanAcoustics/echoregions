@@ -55,15 +55,8 @@ class Lines(Geometry):
         self._offset = float(val)
 
     def parse_file(self):
-        """Parse the EVL file into `Lines.data`
-
-        Parameters
-        ----------
-        nan_depth_value : float, default ``None``
-            Depth in meters to replace -10000.990000 ranges with.
-            Don't replace if ``None``.
-        offset : float, default 0
-            depth offset in meters.
+        """
+        Parse the EVL file into `Lines.data`.
         """
         self.data = self._parser.parse_file()
         self.adjust_offset()
