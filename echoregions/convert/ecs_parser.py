@@ -132,8 +132,9 @@ class CalibrationParser(EvParserBase):
             id_keys + fileset_keys + sourcecal_keys + localset_keys, np.nan
         )
 
-        # [WJ commented] sloppy to just use sourcecal_settings and loop through all dicts
+        # NOTE: [WJ commented] sloppy to just use sourcecal_settings and loop through all dicts
         # there could be info for other transducers not present in that section
+    
         for cal, cal_settings in self._data_dict["sourcecal_settings"].items():
             row_fileset = get_row_from_source(
                 row_dict=row_dict.copy(),

@@ -3,6 +3,7 @@ exclude: ^(
     notebooks/|
     echoregions/test_data/|
   )
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.0.1

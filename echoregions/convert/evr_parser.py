@@ -38,14 +38,17 @@ class Regions2DParser(EvParserBase):
                 "region_creation_type": line[4],  # How the region was created
                 "dummy": line[5],  # Always -1
                 "region_bbox_calculated": bound_calculated,  # 1 if next 4 fields valid.
+
                 # O otherwise
                 # Date encoded as CCYYMMDD and times in HHmmSSssss
                 # Where CC=Century, YY=Year, MM=Month, DD=Day, HH=Hour,
                 # mm=minute, SS=second, ssss=0.1 milliseconds
+              
                 "region_bbox_left": left,  # Time and date of bounding box left x
                 "region_bbox_right": right,  # Time and date of bounding box right x
                 "region_bbox_top": top,  # Top of bounding box
                 "region_bbox_bottom": bottom,  # Bottom of bounding box
+
             }
 
         def _parse_points(line):
@@ -78,6 +81,7 @@ class Regions2DParser(EvParserBase):
             fid.readline()  # blank line separates each region
 
             # TODO: consider using fid.readlines() directly for code readability
+
             r_metadata = _region_metadata_to_dict(self.read_line(fid, True))
             # Add notes to region data
             n_note_lines = int(self.read_line(fid))
@@ -87,6 +91,7 @@ class Regions2DParser(EvParserBase):
             r_detection_settings = [
                 self.read_line(fid) for line in range(n_detection_setting_lines)
             ]
+
             # Add class to region data
             r_metadata["region_class"] = self.read_line(fid)
             # Add point x and y
@@ -105,6 +110,7 @@ class Regions2DParser(EvParserBase):
                     pd.Series({"depth": r_points[1]}),
                     pd.Series({"region_notes": r_notes}),
                     pd.Series({"region_detection_settings": r_detection_settings}),
+
                 ]
             )
             df = df.append(row, ignore_index=True)

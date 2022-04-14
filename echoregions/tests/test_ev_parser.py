@@ -2,10 +2,9 @@ import os
 
 import echoregions as er
 
-data_dir = "./echoregions/test_data/"
+data_dir = "./echoregions/test_data/ek60/"
 output_csv = data_dir + "output_CSV/"
 output_json = data_dir + "output_JSON/"
-
 
 def test_convert_ecs():
     # Test converting an EV calibration file (ECS)
