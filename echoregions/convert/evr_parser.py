@@ -43,7 +43,7 @@ class Regions2DParser(EvParserBase):
                 # Date encoded as CCYYMMDD and times in HHmmSSssss
                 # Where CC=Century, YY=Year, MM=Month, DD=Day, HH=Hour,
                 # mm=minute, SS=second, ssss=0.1 milliseconds
-              
+
                 "region_bbox_left": left,  # Time and date of bounding box left x
                 "region_bbox_right": right,  # Time and date of bounding box right x
                 "region_bbox_top": top,  # Top of bounding box
