@@ -1,14 +1,15 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from .ev_parser import EvParserBase
 from .utils import validate_path
 
 
 class CalibrationParser(EvParserBase):
-    """Class for parsing EV calibration (ECS) files
-    """
+    """Class for parsing EV calibration (ECS) files"""
+
     def __init__(self, input_file=None, parse=False, ignore_comments=True):
-        super().__init__(input_file, 'ECS')
+        super().__init__(input_file, "ECS")
 
         self.data = None
 
@@ -28,7 +29,7 @@ class CalibrationParser(EvParserBase):
             if len(line) == 0:
                 break
             # Check if field is commented out
-            if line[0] == '#':
+            if line[0] == "#":
                 if ignore_comments:
                     continue
                 else:
@@ -39,7 +40,7 @@ class CalibrationParser(EvParserBase):
             field = line[idx]
             val = line[idx + 2]
             # If no value is recorded for the field, save a nan
-            val = np.nan if val == '#' else val
+            val = np.nan if val == "#" else val
             settings[field] = val
         return settings
 
@@ -52,8 +53,10 @@ class CalibrationParser(EvParserBase):
         # Parse all 'SourceCal' sections. Return when all have been parsed
         while True:
             cal_name = self.read_line(fid, split=True)
-            if len(cal_name) > 0 and cal_name[0] == 'SourceCal':
-                sourcecal['_'.join(cal_name)] = self._parse_settings(fid, ignore_comments=ignore_comments)
+            if len(cal_name) > 0 and cal_name[0] == "SourceCal":
+                sourcecal["_".join(cal_name)] = self._parse_settings(
+                    fid, ignore_comments=ignore_comments
+                )
             else:
                 return sourcecal
 
@@ -66,28 +69,29 @@ class CalibrationParser(EvParserBase):
                 line = fid.readline()
                 if section in line:
                     cont = False
-            fid.readline()          # Bottom of heading box
-            fid.readline()          # Blank line
+            fid.readline()  # Bottom of heading box
+            fid.readline()  # Blank line
 
-        fid = open(self.input_file, encoding='utf-8-sig')
+        fid = open(self.input_file, encoding="utf-8-sig")
 
-        advance_to_section(fid, 'FILESET SETTINGS')
+        advance_to_section(fid, "FILESET SETTINGS")
         fileset_settings = self._parse_settings(fid, ignore_comments=ignore_comments)
-        advance_to_section(fid, 'SOURCECAL SETTINGS')
+        advance_to_section(fid, "SOURCECAL SETTINGS")
         sourcecal_settings = self._parse_sourcecal(fid, ignore_comments=ignore_comments)
-        advance_to_section(fid, 'LOCALCAL SETTINGS')
+        advance_to_section(fid, "LOCALCAL SETTINGS")
         localcal_settings = self._parse_settings(fid, ignore_comments=ignore_comments)
 
         self._data_dict = {
-            'fileset_settings': fileset_settings,
-            'sourcecal_settings': sourcecal_settings,
-            'localcal_settings': localcal_settings,
+            "fileset_settings": fileset_settings,
+            "sourcecal_settings": sourcecal_settings,
+            "localcal_settings": localcal_settings,
         }
 
         self.data = self._to_DataFrame()
 
     def _to_DataFrame(self):
         """Convert the parsed data from a dictionary to a Pandas DataFrame"""
+
         def get_row_from_source(row_dict, source_dict, **kw):
             source_dict.update(kw)
             for k, v in source_dict.items():
@@ -95,34 +99,40 @@ class CalibrationParser(EvParserBase):
             return pd.Series(row_dict)
 
         df = pd.DataFrame()
-        id_keys = ['value_source', 'channel']
-        fileset_keys = list(self._data_dict['fileset_settings'].keys())
-        sourcecal_keys = list(list(self._data_dict['sourcecal_settings'].values())[0].keys())
-        localset_keys = list(self._data_dict['localcal_settings'].keys())
+        id_keys = ["value_source", "channel"]
+        fileset_keys = list(self._data_dict["fileset_settings"].keys())
+        sourcecal_keys = list(
+            list(self._data_dict["sourcecal_settings"].values())[0].keys()
+        )
+        localset_keys = list(self._data_dict["localcal_settings"].keys())
 
         # Combine keys from the different sections and remove duplicates
-        row_dict = dict.fromkeys(id_keys + fileset_keys + sourcecal_keys + localset_keys, np.nan)
+        row_dict = dict.fromkeys(
+            id_keys + fileset_keys + sourcecal_keys + localset_keys, np.nan
+        )
 
-        for cal, cal_settings in self._data_dict['sourcecal_settings'].items():
+        for cal, cal_settings in self._data_dict["sourcecal_settings"].items():
             row_fileset = get_row_from_source(
                 row_dict=row_dict.copy(),
-                source_dict=self._data_dict['fileset_settings'],
-                value_source='FILESET',
+                source_dict=self._data_dict["fileset_settings"],
+                value_source="FILESET",
                 channel=cal,
             )
             row_sourcecal = get_row_from_source(
                 row_dict=row_dict.copy(),
                 source_dict=cal_settings,
-                value_source='SOURCECAL',
+                value_source="SOURCECAL",
                 channel=cal,
             )
             row_localset = get_row_from_source(
                 row_dict=row_dict.copy(),
-                source_dict=self._data_dict['localcal_settings'],
-                value_source='LOCALSET',
+                source_dict=self._data_dict["localcal_settings"],
+                value_source="LOCALSET",
                 channel=cal,
             )
-            df = df.append([row_fileset, row_sourcecal, row_localset], ignore_index=True)
+            df = df.append(
+                [row_fileset, row_sourcecal, row_localset], ignore_index=True
+            )
 
         return df
 
@@ -141,7 +151,9 @@ class CalibrationParser(EvParserBase):
             self.parse_file(**kwargs)
 
         # Check if the save directory is safe
-        save_path = validate_path(save_path=save_path, input_file=self.input_file, ext='.csv')
+        save_path = validate_path(
+            save_path=save_path, input_file=self.input_file, ext=".csv"
+        )
         # Export to csv
         self.data.to_csv(save_path, index=False)
         self._output_file.append(save_path)

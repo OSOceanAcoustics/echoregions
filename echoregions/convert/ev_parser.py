@@ -1,9 +1,10 @@
 import json
 import os
+
 from .utils import validate_path
 
 
-class EvParserBase():
+class EvParserBase:
     def __init__(self, input_file, file_format):
         self._input_file = None
         self._filename = None
@@ -57,7 +58,7 @@ class EvParserBase():
         """
         if self.input_file is None:
             return
-        fid = open(self.input_file, encoding='utf-8-sig')
+        fid = open(self.input_file, encoding="utf-8-sig")
 
         return self._parse(fid, **kwargs)
 
@@ -72,13 +73,15 @@ class EvParserBase():
             path to save the CSV file to
         """
         # Check if the save directory is safe
-        save_path = validate_path(save_path=save_path, input_file=self.input_file, ext='.csv')
+        save_path = validate_path(
+            save_path=save_path, input_file=self.input_file, ext=".csv"
+        )
         # Reorder columns and export to csv
         data.to_csv(save_path, index=False)
         self._output_file.append(save_path)
 
     def to_json(self, save_path=None, pretty=True, **kwargs):
-        #TODO Currently only EVL files can be exported to JSON
+        # TODO Currently only EVL files can be exported to JSON
         """Convert supported formats to .json file.
 
         Parameters
@@ -95,10 +98,12 @@ class EvParserBase():
             self.parse_file(**kwargs)
 
         # Check if the save directory is safe
-        save_path = validate_path(save_path=save_path, input_file=self.input_file, ext='.json')
+        save_path = validate_path(
+            save_path=save_path, input_file=self.input_file, ext=".json"
+        )
         indent = 4 if pretty else None
 
         # Save the entire parsed EVR dictionary as a JSON file
-        with open(save_path, 'w') as f:
+        with open(save_path, "w") as f:
             f.write(json.dumps(self._data_dict, indent=indent))
         self._output_file.append(str(save_path))

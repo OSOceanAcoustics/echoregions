@@ -1,17 +1,18 @@
-import re
-import os
 import json
-import datetime as dt
+import os
+import re
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
-import matplotlib
 
-EK60_fname_pattern = r'(?P<survey>.+)?-?D(?P<date>\w{1,8})-T(?P<time>\w{1,6})-?(?P<postfix>\w+)?\..+'
+EK60_fname_pattern = (
+    r"(?P<survey>.+)?-?D(?P<date>\w{1,8})-T(?P<time>\w{1,6})-?(?P<postfix>\w+)?\..+"
+)
 
 
 def from_JSON(j):
-    """ Opens a JSON file
+    """Opens a JSON file
 
     Parameters
     ----------
@@ -19,7 +20,7 @@ def from_JSON(j):
         Valid JSON string or path to JSON file
     """
     if os.path.isfile(j):
-        with open(j, 'r') as f:
+        with open(j, "r") as f:
             data_dict = json.load(f)
     else:
         try:
@@ -29,7 +30,7 @@ def from_JSON(j):
     return data_dict
 
 
-def validate_path(save_path=None, input_file=None, ext='.json'):
+def validate_path(save_path=None, input_file=None, ext=".json"):
     # Check if save_path is specified.
     # If not try to create one with the input_file and ext
 
@@ -45,7 +46,7 @@ def validate_path(save_path=None, input_file=None, ext='.json'):
     else:
         save_path = Path(save_path)
         # If save path is a directory, use name of input file
-        if save_path.suffix == '':
+        if save_path.suffix == "":
             if input_file is None:
                 raise ValueError("No filename given")
             else:
@@ -63,7 +64,7 @@ def validate_path(save_path=None, input_file=None, ext='.json'):
     return str(save_path)
 
 
-def parse_time(ev_time, datetime_format='%Y%m%d %H%M%S%f', unix=False):
+def parse_time(ev_time, datetime_format="%Y%m%d %H%M%S%f", unix=False):
     """Convert EV datetime to a numpy datetime64 object
 
     Parameters
@@ -81,13 +82,15 @@ def parse_time(ev_time, datetime_format='%Y%m%d %H%M%S%f', unix=False):
     np.datetime64 or float
         converted input datetime
     """
-    if isinstance(ev_time, np.ndarray) and np.issubdtype(ev_time.dtype, 'datetime64[ms]'):
+    if isinstance(ev_time, np.ndarray) and np.issubdtype(
+        ev_time.dtype, "datetime64[ms]"
+    ):
         return ev_time
     elif not isinstance(ev_time, str) and not isinstance(ev_time, list):
         raise ValueError("'ev_time' must be type str or list")
     t = pd.to_datetime(ev_time, format=datetime_format)
     if unix:
-        t = (t - pd.Timestamp('1970-01-01')) / pd.Timedelta('1s')
+        t = (t - pd.Timestamp("1970-01-01")) / pd.Timedelta("1s")
     return t
 
 
@@ -113,4 +116,4 @@ def parse_filetime(filenames):
         f_list = [filenames]
     else:
         raise ValueError("'filenames' must be type str or list")
-    return parse_time(f_list, '%Y%m%d %H%M%S')
+    return parse_time(f_list, "%Y%m%d %H%M%S")

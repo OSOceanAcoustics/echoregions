@@ -1,24 +1,24 @@
 import os
-import numpy as np
-import echoregions as er
-from ..convert.utils import parse_time
-from ..convert.ecs_parser import CalibrationParser
-from ..convert.evl_parser import LineParser
 
-data_dir = './echoregions/test_data/ek60/'
-output_csv = data_dir + 'output_CSV/'
-output_json = data_dir + 'output_JSON/'
+import numpy as np
+
+import echoregions as er
+from echoregions.convert.utils import parse_time
+
+data_dir = "./echoregions/test_data/ek60/"
+output_csv = data_dir + "output_CSV/"
+output_json = data_dir + "output_JSON/"
 
 
 def test_parse_time():
     # Test converting EV datetime string to numpy datetime64
-    timestamp = '20170625 1539223320'
-    assert parse_time(timestamp) == np.datetime64('2017-06-25T15:39:22.3320')
+    timestamp = "20170625 1539223320"
+    assert parse_time(timestamp) == np.datetime64("2017-06-25T15:39:22.3320")
 
 
 def test_convert_ecs():
     # Test converting an EV calibration file (ECS)
-    ecs_path = data_dir + 'Summer2017_JuneCal_3freq.ecs'
+    ecs_path = data_dir + "Summer2017_JuneCal_3freq.ecs"
 
     ecs = er.read_ecs(ecs_path)
     ecs.parse_file(ignore_comments=True)
@@ -35,7 +35,7 @@ def test_convert_ecs():
 
 def test_convert_evl():
     # Test converting an EV lines files (EVL)
-    evl_path = data_dir + 'x1.bottom.evl'
+    evl_path = data_dir + "x1.bottom.evl"
     evl = er.read_evl(evl_path)
     evl.to_csv(output_csv)
     evl.to_json(output_json)
@@ -50,7 +50,7 @@ def test_convert_evl():
 
 def test_convert_evr():
     # Test converting an EV 2D Regions files (EVR)
-    evr_path = data_dir + 'x1.evr'
+    evr_path = data_dir + "x1.evr"
     evr = er.read_evr(evr_path)
     evr.to_csv(output_csv)
 
