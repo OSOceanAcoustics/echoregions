@@ -8,7 +8,9 @@ output_json = data_dir + "output_JSON/"
 
 
 def test_convert_evl():
-    # Test converting an EV lines files (EVL)
+    """
+    Test converting an Echoview lines files (.EVL).
+    """
     evl_path = data_dir + "x1.evl"
     evl = er.read_evl(evl_path)
     evl.to_csv(output_csv)
@@ -23,7 +25,9 @@ def test_convert_evl():
 
 
 def test_convert_evr():
-    # Test converting an EV 2D Regions files (EVR)
+    """
+    Test converting an Echoview 2D Regions files (.EVR).
+    """
     evr_path = data_dir + "x1.evr"
     evr = er.read_evr(evr_path)
     evr.to_csv(output_csv)

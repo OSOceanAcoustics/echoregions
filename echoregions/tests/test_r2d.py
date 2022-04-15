@@ -10,21 +10,22 @@ output_json = data_dir + "output_JSON/"
 # and check for the exact value for all fields
 
 
-# TODO: Consolidate test converting EVR file
-
-
-def test_convert_evr():
-    # Test converting EV regions file (EVR)
+def test_plot():
+    """
+    Test region plotting.
+    """
     evr_path = data_dir + "x1.evr"
     r2d = er.read_evr(evr_path, min_depth=0, max_depth=100, offset=5)
-    df = r2d.data.loc[r2d.data["name"] == "Chicken nugget"]
+    df = r2d.data.loc[r2d.data["region_name"] == "Chicken nugget"]
     r2d.plot([11], color="k")
-    assert df.depth[10][0] == 102.2552007996
-    assert df.ping_time[10][0] == np.datetime64("2017-06-25T20:01:47.093000000")
+    assert df["depth"][10][0] == 102.2552007996
+    assert df["time"][10][0] == np.datetime64("2017-06-25T20:01:47.093000000")
 
 
-def test_file_select():
-    # Test file selection based on region bounds
+def test_select_sonar_file():
+    """
+    Test sonar file selection based on region bounds.
+    """
     raw_files = [
         "Summer2017-D20170625-T124834.nc",
         "Summer2017-D20170625-T132103.nc",

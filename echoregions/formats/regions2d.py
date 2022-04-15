@@ -178,8 +178,8 @@ class Regions2D(Geometry):
             Returns a new DataFrame with closed regions
         """
         region = self.select_region(region, copy=True)
-        region["ping_time"] = region.apply(
-            lambda row: np.append(row["ping_time"], row["ping_time"][0]), axis=1
+        region["time"] = region.apply(
+            lambda row: np.append(row["time"], row["time"][0]), axis=1
         )
         region["depth"] = region.apply(
             lambda row: np.append(row["depth"], row["depth"][0]), axis=1
@@ -211,7 +211,7 @@ class Regions2D(Geometry):
         # Ensure that region is a DataFrame
         region = self.select_region(region)
 
-        times = np.hstack(region.ping_time.values)
+        times = np.hstack(region["time"].values)
         lower_idx = np.searchsorted(filetimes, times.min()) - 1
         upper_idx = np.searchsorted(filetimes, times.max())
 

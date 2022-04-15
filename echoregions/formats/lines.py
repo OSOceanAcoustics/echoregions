@@ -134,8 +134,8 @@ class Lines(Geometry):
     def plot(
         self,
         fmt="",
-        start_ping_time=None,
-        end_ping_time=None,
+        start_time=None,
+        end_time=None,
         fill_between=False,
         max_depth=0,
         **kwargs
@@ -148,10 +148,10 @@ class Lines(Geometry):
         fmt : str, optional
             A format string such as 'bo' for blue circles.
             See matplotlib documentation for more information.
-        start_ping_time : datetime64, default ``None``
-            Lower ping_time bound.
-        end_ping_time : datetime64, default ``None``
-            Upper ping_time bound.
+        start_time : datetime64, default ``None``
+            Lower time bound.
+        end_time : datetime64, default ``None``
+            Upper time bound.
         fill_between : bool, default True
             Use matplotlib `fill_between` to plot the line.
             The area between the EVL points and `max_depth` will be filled in.
@@ -167,8 +167,8 @@ class Lines(Geometry):
         self._init_plotter()
         self._plotter.plot(
             fmt=fmt,
-            start_ping_time=start_ping_time,
-            end_ping_time=end_ping_time,
+            start_time=start_time,
+            end_time=end_time,
             fill_between=fill_between,
             max_depth=max_depth,
             **kwargs
