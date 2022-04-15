@@ -1,6 +1,5 @@
 from ..formats.lines import Lines
 from ..formats.regions2d import Regions2D
-from .ecs_parser import CalibrationParser
 
 
 def read_evr(
@@ -62,26 +61,6 @@ def read_evl(
         parse=True,
         nan_depth_value=nan_depth_value,
         offset=offset,
-    )
-
-
-def read_ecs(filepath, ignore_comments=True) -> "CalibrationParser":
-    """Read an ECS file into a CalibrationParser object.
-
-    Parameters
-    ----------
-    filepath : str, Path object
-        A valid path to an EVL file
-    ignore_comments : bool
-        Skip over lines of the ECS file that are commented out
-
-    Returns
-    -------
-    CalibrationParser
-        Object that contains ECS data with methods for saving to file.
-    """
-    return CalibrationParser(
-        input_file=filepath, parse=True, ignore_comments=ignore_comments
     )
 
 
