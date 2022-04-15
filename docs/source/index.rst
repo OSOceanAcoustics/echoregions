@@ -6,7 +6,7 @@
 Welcome to echoregions!
 =======================================
 *Echoregions* supplies parsers and tools for working with select EchoView
-file formats including EVR, EVL, and ECS files.
+file formats including EVR and EVL files.
 It is designed to work well with echopype_, a package for ocean sonar data processing.
 
 .. _echopype: https://echopype.readthedocs.io/en/latest/
