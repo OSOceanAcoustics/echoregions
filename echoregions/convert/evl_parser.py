@@ -16,7 +16,7 @@ class LineParser(EvParserBase):
 
     def _parse(self, fid):
         # Read header containing metadata about the EVL file
-        file_type, file_format_number, ev_version = self.read_line(fid, True)
+        file_type, file_format_number, ev_version = fid.readline().strip().split()
         file_metadata = {
             # TODO: add back the trailing ".evl" in filename for completeness
             "file_name": os.path.splitext(os.path.basename(self.input_file))[0],
@@ -28,9 +28,9 @@ class LineParser(EvParserBase):
         # and check if the total number of lines read equals to n_points;
         # if the number of lines don't match, return error
         points = []
-        n_points = int(self.read_line(fid))
+        n_points = int(fid.readline().strip())
         for i in range(n_points):
-            date, time, depth, status = self.read_line(fid, split=True)
+            date, time, depth, status = fid.readline().strip().split()
             points.append(
                 {
                     "time": f"{date} {time}",  # Format: CCYYMMDD HHmmSSssss
