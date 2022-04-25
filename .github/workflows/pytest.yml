@@ -5,7 +5,7 @@ on: [push, pull_request, workflow_dispatch]
 
 jobs:
   test:
-    runs-on: ununtu-latest
+    runs-on: ubuntu-latest
     
     steps:
       - name: Check out repository code
