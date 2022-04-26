@@ -6,7 +6,7 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
@@ -20,8 +20,6 @@ jobs:
           python -m pip install --upgrade setuptools wheel
           pip install -r requirements-dev.txt
           pip install -e .
-          
+
       - name: Run tests
         run: pytest
-        
-        
