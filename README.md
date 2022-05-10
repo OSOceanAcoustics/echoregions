@@ -3,6 +3,8 @@
 <img src="https://readthedocs.org/projects/echoregions/badge/?version=latest"/>
 </a>
 
+![example workflow](https://github.com/OSOceanAcoustics/echoregions/actions/workflows/pytest.yml/badge.svg)
+
 
 EchoRegions is a tool used for parsing and utilizing region files created in EchoView.
 
