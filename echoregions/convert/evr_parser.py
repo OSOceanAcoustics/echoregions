@@ -1,11 +1,10 @@
+import copy
 import os
+import time
 
+import matplotlib
 import numpy as np
 import pandas as pd
-import time
-import matplotlib
-
-import copy
 
 from .ev_parser import EvParserBase
 from .utils import parse_time
@@ -115,8 +114,9 @@ class Regions2DParser(EvParserBase):
 
         return df[row.keys()].convert_dtypes()
 
-
-    def convert_points(self, points, convert_time=True, convert_depth_edges=True, offset=0, unix=False):
+    def convert_points(
+        self, points, convert_time=True, convert_depth_edges=True, offset=0, unix=False
+    ):
         def convert_single(point):
             if convert_time:
                 point[0] = matplotlib.dates.date2num(point[0])

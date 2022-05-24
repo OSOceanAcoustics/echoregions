@@ -90,12 +90,14 @@ class Regions2D(Geometry):
     def offset(self, val):
         """Set the depth offset to apply to y values"""
         self._offset = float(val)
-        
+
     @property
     def plotter(self):
         if self._plotter is None:
             if not self.data:
-                raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
+                raise ValueError(
+                    "Input file has not been parsed; call `parse_file` to parse."
+                )
             self._plotter = Region2DPlotter(self)
         return self._plotter
 
@@ -286,7 +288,9 @@ class Regions2D(Geometry):
         regions.loc[:] = regions.apply(replace_depth, axis=1)
         return regions
 
-    def convert_points(self, points, convert_time=True, convert_depth_edges=True, offset=0, unix=False):
+    def convert_points(
+        self, points, convert_time=True, convert_depth_edges=True, offset=0, unix=False
+    ):
         """Convert x and y values of points from the EV format.
         Returns a copy of points.
         Parameters
@@ -313,8 +317,9 @@ class Regions2D(Geometry):
             convert_time=convert_time,
             convert_depth_edges=convert_depth_edges,
             offset=offset,
-            unix=unix
+            unix=unix,
         )
+
     def get_points_from_region(self, region, file=None):
         """Get points from specified region from a JSON or CSV file
         or from the parsed data.
