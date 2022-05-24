@@ -2,6 +2,10 @@ import os
 
 import numpy as np
 import pandas as pd
+import time
+import matplotlib
+
+import copy
 
 from .ev_parser import EvParserBase
 from .utils import parse_time
@@ -110,3 +114,29 @@ class Regions2DParser(EvParserBase):
             df = df.append(row, ignore_index=True)
 
         return df[row.keys()].convert_dtypes()
+
+
+    def convert_points(self, points, convert_time=True, convert_depth_edges=True, offset=0, unix=False):
+        def convert_single(point):
+            if convert_time:
+                point[0] = matplotlib.dates.date2num(point[0])
+
+            if convert_depth_edges:
+                point[1] = self.swap_depth_edge(point[1]) + offset
+
+        if isinstance(points, dict):
+            for point in points.values():
+                convert_single(point)
+        else:
+            for point in points:
+                convert_single(point)
+
+        return points
+
+    def swap_depth_edge(self, y):
+        if float(y) == 9999.99 and self.max_depth is not None:
+            return self.max_depth
+        elif float(y) == -9999.99 and self.min_depth is not None:
+            return self.min_depth
+        else:
+            return float(y)

@@ -5,6 +5,7 @@ import pandas as pd
 
 from ..convert import utils
 from ..convert.evr_parser import Regions2DParser
+from ..plot.region_plot import Regions2DPlotter
 from . import Geometry
 
 
@@ -89,6 +90,14 @@ class Regions2D(Geometry):
     def offset(self, val):
         """Set the depth offset to apply to y values"""
         self._offset = float(val)
+        
+    @property
+    def plotter(self):
+        if self._plotter is None:
+            if not self.data:
+                raise ValueError("Input file has not been parsed; call `parse_file` to parse.")
+            self._plotter = Region2DPlotter(self)
+        return self._plotter
 
     def parse_file(self, offset=0):
         """Parse the EVR file as a DataFrame into `Regions2D.data`"""
@@ -277,6 +286,51 @@ class Regions2D(Geometry):
         regions.loc[:] = regions.apply(replace_depth, axis=1)
         return regions
 
+    def convert_points(self, points, convert_time=True, convert_depth_edges=True, offset=0, unix=False):
+        """Convert x and y values of points from the EV format.
+        Returns a copy of points.
+        Parameters
+        ----------
+        points : list, dict
+            point in [x, y] format or list/dict of these
+        convert_time : bool
+            Whether to convert EV time to datetime64, defaults `True`
+        convert_depth_edges : bool
+            Whether to convert -9999.99 edges to real range values.
+            Min and max ranges must be set manually or by calling `set_range_edge_from_raw`
+        offset : float
+            depth offset in meters
+        unix : bool
+            unix : bool
+            Whether or not to output the time in the unix time format
+        Returns
+        -------
+        points : list or dict
+            single converted point or list/dict of converted points depending on input
+        """
+        return self._parser.convert_points(
+            points,
+            convert_time=convert_time,
+            convert_depth_edges=convert_depth_edges,
+            offset=offset,
+            unix=unix
+        )
+    def get_points_from_region(self, region, file=None):
+        """Get points from specified region from a JSON or CSV file
+        or from the parsed data.
+        Parameters
+        ----------
+        region : int, str, or dict
+            ID of the region to extract points from or region dictionary
+        file : str
+            path to JSON or CSV file. Use parsed data if None
+        Returns
+        -------
+        points : list
+            list of x, y points
+        """
+        return self.plotter.get_points_from_region(region, file)
+
     def _init_plotter(self):
         """Initialize the object used to plot regions."""
         if self._plotter is None:
@@ -320,7 +374,7 @@ class Regions2D(Geometry):
 
             self._masker = Regions2DMasker(self)
 
-    def mask(self, ds, region, data_var="Sv", offset=0):
+    def mask(self, ds, region, data_var="Sv", mask_var=None, offset=0):
         # TODO Does not currently work
         """Mask an xarray dataset
 
@@ -332,6 +386,8 @@ class Regions2D(Geometry):
             ID of region to mask the dataset with
         data_var : str
             The data variable in the Dataset to mask
+        mask_var : str
+            If provided, used to name the output mask array, otherwise `mask`
         offset : float
             A depth offset in meters added to the range of the points used for masking
 
@@ -340,4 +396,5 @@ class Regions2D(Geometry):
         A dataset with the data_var masked by the specified region
         """
         self._init_masker()
-        return self._masker.mask_region(ds, region, offset=offset)
+        region = self.select_region(region)
+        return self._masker.mask(ds, region, mask_var=mask_var, offset=offset)

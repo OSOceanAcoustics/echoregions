@@ -9,19 +9,20 @@ class Regions2DMasker:
 
     def __init__(self, Regions2D):
         self.Regions2D = Regions2D
+        self.Regions2D.replace_nan_depth(inplace=True)
 
-    def mask(self, ds, region, data_var="Sv", offset=0):
+    def mask(self, ds, region, data_var="Sv", mask_var=None, offset=0):
         # Collect points that make up the region
-        points = np.array(
-            self.Regions2D.convert_points(
-                self.Regions2D.get_points_from_region(region),
+        points = [list(item) for item in zip(list(region['time'].iloc[0]), list(region['depth'].iloc[0]))]
+        
+        points = self.Regions2D.convert_points(
+                points,
                 convert_time=True,
-                convert_depth_edges=True,
+                convert_depth_edges=False,
                 offset=offset,
                 unix=True,
             )
-        )
-        points = self.Regions2D.close_region(points)
+        
         # Convert ping_time to unix_time since the masking does not work on datetime objects
         ds = ds.assign_coords(
             unix_time=(
@@ -34,15 +35,14 @@ class Regions2DMasker:
             ds["range"] = ds.range.isel(frequency=0, ping_time=0)
         if "range_bin" in ds.dims:
             ds = ds.swap_dims({"range_bin": "range"})
+        
         # Initialize mask object
-        M = regionmask.Regions([points])
-        masked_da = []
-        # Loop over frequencies since regionmask only masks in 2 dimensions
-        for freq in ds[data_var].transpose("frequency", ...):
-            masked_da.append(
-                M.mask(freq, lon_name="unix_time", lat_name="range").assign_coords(
-                    frequency=freq.frequency
-                )
-            )
-        masked_da = xr.concat(masked_da, "frequency")
-        return ds.assign({data_var: masked_da})
+        r = regionmask.Regions([points])
+        #TODO: make selection of frequency outside
+        M = r.mask(ds[data_var].isel(frequency=0), lon_name="unix_time", lat_name="depth", wrap_lon=False)
+        
+        # assign specific name to mask array, otherwise 'mask'
+        if mask_var:
+            M = M.rename(mask_var)
+        M = M.drop('frequency')
+        return(M)
