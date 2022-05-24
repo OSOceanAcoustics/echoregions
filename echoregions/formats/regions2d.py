@@ -217,8 +217,7 @@ class Regions2D(Geometry):
         lower_idx = 0 if lower_idx < 0 else lower_idx
 
         files = files[lower_idx:upper_idx]
-        return(files)
-        
+        return files
 
     def adjust_offset(self, inplace=False):
         """Apply a constant depth value to the 'depth' column in the output DataFrame
