@@ -12,12 +12,14 @@ class Regions2DMasker:
         self.Regions2D = Regions2D
         self.Regions2D.replace_nan_depth(inplace=True)
 
-    def mask(self, ds, region_df, data_var="Sv", mask_var=None, mask_labels=None, offset=0):
+    def mask(
+        self, ds, region_df, data_var="Sv", mask_var=None, mask_labels=None, offset=0
+    ):
         # Collect points that make up the region
         # points = [
         #    list(item)
         #    for item in zip(list(region_df["time"]), list(region_df["depth"]))
-        #]
+        # ]
 
         region_df = region_df[["region_id", "time", "depth"]]
 
@@ -25,11 +27,11 @@ class Regions2DMasker:
         df = region_df.apply(pd.Series.explode)
 
         # convert region time to integer timestamp
-        df['time'] = matplotlib.dates.date2num(df['time'])
-  
+        df["time"] = matplotlib.dates.date2num(df["time"])
+
         # create a list of dataframes for each regions
         grouped = list(df.groupby("region_id"))
-  
+
         # convert to list of numpy arrays which is an acceptable format to create region mask
         regions_np = [np.array(region[["time", "depth"]]) for id, region in grouped]
 
@@ -42,7 +44,7 @@ class Regions2DMasker:
         #    convert_depth_edges=False,
         #    offset=offset,
         #    unix=True,
-        #)
+        # )
 
         # Convert ping_time to unix_time since the masking does not work on datetime objects
         ds = ds.assign_coords(
@@ -59,13 +61,13 @@ class Regions2DMasker:
 
         # set up mask labels
         if mask_labels:
-            if mask_labels=="from_ids":
+            if mask_labels == "from_ids":
                 r = regionmask.Regions(regions_np, numbers=region_ids)
             elif isinstance(mask_labels, list):
                 r = regionmask.Regions(regions_np, numbers=mask_labels)
             else:
                 ValueError("mask_labels must be None, 'from_ids', or a list.")
-        
+
         # Initialize mask object
         # TODO: make selection of frequency outside
         M = r.mask(
