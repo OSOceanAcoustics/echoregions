@@ -19,6 +19,8 @@ class Regions2DMasker:
         #    for item in zip(list(region_df["time"]), list(region_df["depth"]))
         #]
 
+
+
         region_df = region_df[["region_id", "time", "depth"]]
 
         # organize the regions in a format for region mask
@@ -59,24 +61,48 @@ class Regions2DMasker:
 
         # set up mask labels
         if mask_labels:
-            if mask_labels=="from_ids":
-                r = regionmask.Regions(regions_np, numbers=region_ids)
+            if mask_labels == "from_ids":
+                r = regionmask.Regions(outlines=regions_np, numbers=region_ids)
+                M = r.mask(
+                    ds[data_var].isel(frequency=0),
+                    lon_name="unix_time",
+                    lat_name="depth",
+                    wrap_lon=False,
+                )
+
             elif isinstance(mask_labels, list):
-                r = regionmask.Regions(regions_np, numbers=mask_labels)
+                r = regionmask.Regions(outlines=regions_np)
+                M = r.mask(
+                    ds[data_var].isel(frequency=0),
+                    lon_name="unix_time",
+                    lat_name="depth",
+                    wrap_lon=False,
+                )
+                # convert default labels to mask_labels
+                S = xr.where(~M.isnull(), 0, M)
+                S = M
+                for idx, label in enumerate(mask_labels):
+                    S = xr.where(M == idx, label, S)
+                M = S
             else:
-                ValueError("mask_labels must be None, 'from_ids', or a list.")
-        
-        # Initialize mask object
-        # TODO: make selection of frequency outside
-        M = r.mask(
-            ds[data_var].isel(frequency=0),
-            lon_name="unix_time",
-            lat_name="depth",
-            wrap_lon=False,
-        )
+                raise ValueError("mask_labels must be None, 'from_ids', or a list.")
+        else:
+            r = regionmask.Regions(outlines=regions_np)
+            M = r.mask(
+                ds[data_var].isel(frequency=0),
+                lon_name="unix_time",
+                lat_name="depth",
+                wrap_lon=False,
+            )
+    
+            
+        # TODO: make selection of frequency outside 
+ 
 
         # assign specific name to mask array, otherwise 'mask'
         if mask_var:
             M = M.rename(mask_var)
+
+        # drop the unnecessary frequency component
         M = M.drop("frequency")
         return M
