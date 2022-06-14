@@ -21,8 +21,6 @@ class Regions2DMasker:
         #    for item in zip(list(region_df["time"]), list(region_df["depth"]))
         # ]
 
-
-
         region_df = region_df[["region_id", "time", "depth"]]
 
         # organize the regions in a format for region mask
@@ -99,10 +97,9 @@ class Regions2DMasker:
                 lat_name="depth",
                 wrap_lon=False,
             )
-    
-            
-        # TODO: make selection of frequency outside 
-        
+
+        # TODO: make selection of frequency outside
+
         # assign specific name to mask array, otherwise 'mask'
         if mask_var:
             M = M.rename(mask_var)

@@ -397,11 +397,11 @@ class Regions2D(Geometry):
             If provided, used to name the output mask array, otherwise `mask`
         mask_labels:
             None: assigns labels automatically 0,1,2,...
-            
-            "from_ids": uses the region ids 
+
+            "from_ids": uses the region ids
 
             list: uses a list of integers as labels
-            
+
         offset : float
             A depth offset in meters added to the range of the points used for masking
 
@@ -411,10 +411,12 @@ class Regions2D(Geometry):
         """
 
         if isinstance(mask_labels, list) and (len(mask_labels) != len(region_ids)):
-            raise ValueError("If mask_labels is a list, it should be of same length as region_ids.")
-        
+            raise ValueError(
+                "If mask_labels is a list, it should be of same length as region_ids."
+            )
+
         self._init_masker()
-        
+
         # dataframe containing region information
         region_df = self.select_region(region_ids)
         return self._masker.mask(
