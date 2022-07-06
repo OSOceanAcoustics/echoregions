@@ -380,7 +380,7 @@ class Regions2D(Geometry):
             self._masker = Regions2DMasker(self)
 
     def mask(
-        self, ds, region_ids, data_var="Sv", mask_var=None, mask_labels=None, offset=0
+        self, ds, region_ids, mask_var=None, mask_labels=None, offset=0
     ):
         # TODO Does not currently work
         """Mask an xarray dataset
@@ -390,9 +390,7 @@ class Regions2D(Geometry):
         ds : Xarray Dataset
             calibrated data (Sv or Sp) with range
         region_ids : list
-            list IDs of regions to create mask for
-        data_var : str
-            The data variable in the Dataset to mask
+            list IDs of regions to create mask for 
         mask_var : str
             If provided, used to name the output mask array, otherwise `mask`
         mask_labels:
