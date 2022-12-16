@@ -1,6 +1,6 @@
 numpy
 pandas
 matplotlib
-shapely==1.8.2
 regionmask==0.9.0
+shapely==1.8.2
 
