@@ -3,3 +3,5 @@ flake8
 isort
 pre-commit
 pytest
+xarray
+netcdf4
