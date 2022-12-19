@@ -12,9 +12,7 @@ class Regions2DMasker:
         self.Regions2D = Regions2D
         self.Regions2D.replace_nan_depth(inplace=True)
 
-    def mask(
-        self, ds, region_df, mask_var=None, mask_labels=None, offset=0
-    ):
+    def mask(self, ds, region_df, mask_var=None, mask_labels=None, offset=0):
         # select only columns which are important
         region_df = region_df[["region_id", "time", "depth"]]
 
@@ -79,8 +77,6 @@ class Regions2DMasker:
                 lat_name="depth",
                 wrap_lon=False,
             )
-
-
 
         # assign specific name to mask array, otherwise 'mask'
         if mask_var:

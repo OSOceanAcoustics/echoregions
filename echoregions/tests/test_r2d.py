@@ -1,8 +1,10 @@
-import numpy as np
-import echoregions as er
-import xarray as xr
 import os
 from datetime import timedelta
+
+import numpy as np
+import xarray as xr
+
+import echoregions as er
 
 data_dir = "./echoregions/test_data/"
 output_csv = data_dir + "output_CSV/"
@@ -14,25 +16,32 @@ def read_Sv(SONAR_PATH_Sv, SONAR_PATH_raw, region_ids):
     # Select the file(s) that a region is contained in.
     raw_files = os.listdir(SONAR_PATH_raw)
     select_raw_files = r2d.select_sonar_file(raw_files, region_ids)
-    
+
     # Select the file(s) that a region is contained in.
     Sv_files = os.listdir(SONAR_PATH_Sv)
     select_Sv_files = r2d.select_sonar_file(Sv_files, region_ids)
-    
+
     # convert a single file output to a list of one element
     if type(select_Sv_files) == str:
         select_Sv_files = [select_Sv_files]
     # convert a single file output to a list of one element
     if type(select_raw_files) == str:
         select_raw_files = [select_raw_files]
-        
+
     # reading the selected Sv files into one dataset
-    Sv = xr.open_mfdataset([os.path.join(SONAR_PATH_Sv, item) for item in select_Sv_files])
-    
+    Sv = xr.open_mfdataset(
+        [os.path.join(SONAR_PATH_Sv, item) for item in select_Sv_files]
+    )
+
     ## creating a depth dimension for Sv ##
 
     # reading the processed platform data
-    ds_plat = xr.open_mfdataset([os.path.join(SONAR_PATH_raw, item) for item in select_raw_files], concat_dim='ping_time', combine='nested', group='Platform')
+    ds_plat = xr.open_mfdataset(
+        [os.path.join(SONAR_PATH_raw, item) for item in select_raw_files],
+        concat_dim="ping_time",
+        combine="nested",
+        group="Platform",
+    )
     # assuming water level is constant
     water_level = ds_plat.isel(location_time=0, frequency=0, ping_time=0).water_level
     del ds_plat
@@ -41,24 +50,34 @@ def read_Sv(SONAR_PATH_Sv, SONAR_PATH_raw, region_ids):
 
     # assuming water levels are same for different frequencies and location_time
     depth = water_level + Sv_range
-    depth = depth.drop_vars('frequency')
-    depth = depth.drop_vars('location_time')
+    depth = depth.drop_vars("frequency")
+    depth = depth.drop_vars("location_time")
     # creating a new depth dimension
-    Sv['depth'] = depth
-    Sv = Sv.swap_dims({'range_bin': 'depth'})
-    return(Sv)
+    Sv["depth"] = depth
+    Sv = Sv.swap_dims({"range_bin": "depth"})
+    return Sv
 
-# helper function to read Sv with depth dimension from file folders based on a list of files 
+
+# helper function to read Sv with depth dimension from file folders based on a list of files
 # (both raw and sv need to be supplied at this time
 # once the new format is incorporated in Sv this step can be simplified and the function may not be needed.
-def read_Sv_from_paths(SONAR_PATH_Sv, SONAR_PATH_raw, select_Sv_files, select_raw_files):
+def read_Sv_from_paths(
+    SONAR_PATH_Sv, SONAR_PATH_raw, select_Sv_files, select_raw_files
+):
     # reading the selected Sv files into one dataset
-    Sv = xr.open_mfdataset([os.path.join(SONAR_PATH_Sv, item) for item in select_Sv_files])
-    
+    Sv = xr.open_mfdataset(
+        [os.path.join(SONAR_PATH_Sv, item) for item in select_Sv_files]
+    )
+
     ## creating a depth dimension for Sv ##
 
     # reading the processed platform data
-    ds_plat = xr.open_mfdataset([os.path.join(SONAR_PATH_raw, item) for item in select_raw_files], concat_dim='ping_time', combine='nested', group='Platform')
+    ds_plat = xr.open_mfdataset(
+        [os.path.join(SONAR_PATH_raw, item) for item in select_raw_files],
+        concat_dim="ping_time",
+        combine="nested",
+        group="Platform",
+    )
     # assuming water level is constant
     water_level = ds_plat.isel(location_time=0, frequency=0, ping_time=0).water_level
     del ds_plat
@@ -67,19 +86,16 @@ def read_Sv_from_paths(SONAR_PATH_Sv, SONAR_PATH_raw, select_Sv_files, select_ra
 
     # assuming water levels are same for different frequencies and location_time
     depth = water_level + Sv_range
-    depth = depth.drop_vars('frequency')
-    depth = depth.drop_vars('location_time')
+    depth = depth.drop_vars("frequency")
+    depth = depth.drop_vars("location_time")
     # creating a new depth dimension
-    Sv['depth'] = depth
-    Sv = Sv.swap_dims({'range_bin': 'depth'})
-    return(Sv)
-
+    Sv["depth"] = depth
+    Sv = Sv.swap_dims({"range_bin": "depth"})
+    return Sv
 
 
 # TODO: Make a new region file with only 1 region,
 # and check for the exact value for all fields
-
-
 
 
 def test_plot():
@@ -128,39 +144,33 @@ def test_select_sonar_file():
 
 def test_mask_no_overlap():
     """
-        test if mask is empty when there is no overlap
+    test if mask is empty when there is no overlap
     """
     evr_path = data_dir + "x1.evr"
     r2d = er.read_evr(evr_path)
     region_ids = r2d.data.region_id.values
 
     # we will create a 15 minute window around the bounding box of the region
-    bbox_left = r2d.data[r2d.data.region_id.isin(region_ids)].region_bbox_right.iloc[0] + timedelta(minutes = 15)
-    bbox_right = bbox_left + timedelta(minutes = 15)
-    
+    bbox_left = r2d.data[r2d.data.region_id.isin(region_ids)].region_bbox_right.iloc[
+        0
+    ] + timedelta(minutes=15)
+    bbox_right = bbox_left + timedelta(minutes=15)
+
     ds = xr.open_dataset(os.path.join(data_dir, "x1_test.nc"))
 
     r2d.min_depth = ds.Sv.depth.min()
     r2d.max_depth = ds.Sv.depth.max()
 
     # select a chunk of the dataset after the region so there is no overlap
-    Sv_no_overlap = ds.Sv.sel(ping_time = slice(bbox_left, bbox_right))
-
-
-
-    
+    Sv_no_overlap = ds.Sv.sel(ping_time=slice(bbox_left, bbox_right))
 
     M = r2d.mask(Sv_no_overlap, [11])
-    
+
     assert M.isnull().data.all()
 
 
-
-
-
 def test_mask_correct_labels():
-    """ testing if the generated id labels are as expected
-    """
+    """testing if the generated id labels are as expected"""
 
     evr_path = data_dir + "x1.evr"
     r2d = er.read_evr(evr_path)
@@ -169,5 +179,3 @@ def test_mask_correct_labels():
     M = r2d.mask(ds.Sv, region_ids, mask_labels=region_ids).values
     # it matches only a 11th region becasue x1_test.nc is a chunk around that region only
     assert set(np.unique(M[~np.isnan(M)])) == {11}
-
-        
