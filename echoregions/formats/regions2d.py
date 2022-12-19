@@ -210,9 +210,8 @@ class Regions2D(Geometry):
 
         Returns
         -------
-        str, list`
-            sonar file as a string if a single raw file is selected.
-            list of raw files if multiple are selected.
+        list
+            list of raw file(s) spanning the
         """
         files.sort()
         filetimes = utils.parse_simrad_fname_time(
@@ -229,10 +228,7 @@ class Regions2D(Geometry):
         lower_idx = 0 if lower_idx < 0 else lower_idx
 
         files = files[lower_idx:upper_idx]
-        if len(files) == 1:
-            return files[0]
-        else:
-            return files
+        return files
 
     def adjust_offset(self, inplace=False):
         """Apply a constant depth value to the 'depth' column in the output DataFrame
