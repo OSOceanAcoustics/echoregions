@@ -12,15 +12,8 @@ class Regions2DMasker:
         self.Regions2D = Regions2D
         self.Regions2D.replace_nan_depth(inplace=True)
 
-    def mask(
-        self, ds, region_df, data_var="Sv", mask_var=None, mask_labels=None, offset=0
-    ):
-        # Collect points that make up the region
-        # points = [
-        #    list(item)
-        #    for item in zip(list(region_df["time"]), list(region_df["depth"]))
-        # ]
-
+    def mask(self, ds, region_df, mask_var=None, mask_labels=None, offset=0):
+        # select only columns which are important
         region_df = region_df[["region_id", "time", "depth"]]
 
         # organize the regions in a format for region mask
@@ -38,14 +31,6 @@ class Regions2DMasker:
         # corresponding region ids converted to int
         region_ids = [int(id) for id, region in grouped]
 
-        # points = self.Regions2D.convert_points(
-        #    points,
-        #    convert_time=True,
-        #    convert_depth_edges=False,
-        #    offset=offset,
-        #    unix=True,
-        # )
-
         # Convert ping_time to unix_time since the masking does not work on datetime objects
         ds = ds.assign_coords(
             unix_time=(
@@ -53,11 +38,6 @@ class Regions2DMasker:
                 matplotlib.dates.date2num(ds.coords["ping_time"].values),
             )
         )
-        # Select range in one dimension
-        if ds["range"].ndim == 3:
-            ds["range"] = ds.range.isel(frequency=0, ping_time=0)
-        if "range_bin" in ds.dims:
-            ds = ds.swap_dims({"range_bin": "range"})
 
         # set up mask labels
         if mask_labels:
@@ -65,7 +45,7 @@ class Regions2DMasker:
                 # create mask
                 r = regionmask.Regions(outlines=regions_np, numbers=region_ids)
                 M = r.mask(
-                    ds[data_var].isel(frequency=0),
+                    ds,
                     lon_name="unix_time",
                     lat_name="depth",
                     wrap_lon=False,
@@ -75,7 +55,7 @@ class Regions2DMasker:
                 # create mask
                 r = regionmask.Regions(outlines=regions_np)
                 M = r.mask(
-                    ds[data_var].isel(frequency=0),
+                    ds,
                     lon_name="unix_time",
                     lat_name="depth",
                     wrap_lon=False,
@@ -92,18 +72,14 @@ class Regions2DMasker:
             # create mask
             r = regionmask.Regions(outlines=regions_np)
             M = r.mask(
-                ds[data_var].isel(frequency=0),
+                ds,
                 lon_name="unix_time",
                 lat_name="depth",
                 wrap_lon=False,
             )
 
-        # TODO: make selection of frequency outside
-
         # assign specific name to mask array, otherwise 'mask'
         if mask_var:
             M = M.rename(mask_var)
 
-        # drop the unnecessary frequency component
-        M = M.drop("frequency")
         return M
