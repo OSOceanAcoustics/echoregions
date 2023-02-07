@@ -10,6 +10,7 @@ data_dir = "./echoregions/test_data/"
 output_csv = data_dir + "output_CSV/"
 output_json = data_dir + "output_JSON/"
 
+
 # helper function to read Sv with depth dimension from file folders based on region ids.
 # once the new format is incorporated in Sv this step can be simplified and the function may not be needed.
 def read_Sv(SONAR_PATH_Sv, SONAR_PATH_raw, region_ids):
