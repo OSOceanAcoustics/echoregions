@@ -3,5 +3,5 @@ flake8
 isort
 pre-commit
 pytest
-xarray
+xarray>=2023.2.0
 netcdf4
