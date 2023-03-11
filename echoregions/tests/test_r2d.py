@@ -145,7 +145,7 @@ def test_select_sonar_file():
     evr_paths = data_dir + "x1.evr"
     r2d = er.read_evr(evr_paths)
     raw = r2d.select_sonar_file(raw_files, 11)
-    assert raw == "Summer2017-D20170625-T195927.nc"
+    assert raw == ["Summer2017-D20170625-T195927.nc"]
 
 
 def test_mask_no_overlap():
