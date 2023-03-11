@@ -98,7 +98,7 @@ class Regions2D(Geometry):
                 raise ValueError(
                     "Input file has not been parsed; call `parse_file` to parse."
                 )
-            self._plotter = Region2DPlotter(self)
+            self._plotter = Regions2DPlotter(self)
         return self._plotter
 
     def parse_file(self, offset=0):
@@ -250,7 +250,7 @@ class Regions2D(Geometry):
         return regions
 
     def replace_nan_depth(self, inplace=False):
-        """Replace 9999.99 or -9999.99 depth values with user-specified min_depth and max_depth values
+        """Replace 9999.99 or -9999.99 depth values with user-specified min_depth and max_depth
 
         Parameters
         ----------
@@ -339,7 +339,6 @@ class Regions2D(Geometry):
                 raise ValueError(
                     "Input file has not been parsed; call `parse_file` to parse."
                 )
-            from ..plot.region_plot import Regions2DPlotter
 
             self._plotter = Regions2DPlotter(self)
 

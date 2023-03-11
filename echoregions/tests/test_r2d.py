@@ -12,8 +12,12 @@ output_json = data_dir + "output_JSON/"
 
 
 # helper function to read Sv with depth dimension from file folders based on region ids.
-# once the new format is incorporated in Sv this step can be simplified and the function may not be needed.
+# once the new format is incorporated in Sv,
+# this step can be simplified and the function may not be needed.
 def read_Sv(SONAR_PATH_Sv, SONAR_PATH_raw, region_ids):
+    evr_paths = data_dir + "x1.evr"
+    r2d = er.read_evr(evr_paths)
+
     # Select the file(s) that a region is contained in.
     raw_files = os.listdir(SONAR_PATH_raw)
     select_raw_files = r2d.select_sonar_file(raw_files, region_ids)
@@ -34,7 +38,7 @@ def read_Sv(SONAR_PATH_Sv, SONAR_PATH_raw, region_ids):
         [os.path.join(SONAR_PATH_Sv, item) for item in select_Sv_files]
     )
 
-    ## creating a depth dimension for Sv ##
+    # creating a depth dimension for Sv:
 
     # reading the processed platform data
     ds_plat = xr.open_mfdataset(
@@ -61,7 +65,8 @@ def read_Sv(SONAR_PATH_Sv, SONAR_PATH_raw, region_ids):
 
 # helper function to read Sv with depth dimension from file folders based on a list of files
 # (both raw and sv need to be supplied at this time
-# once the new format is incorporated in Sv this step can be simplified and the function may not be needed.
+# once the new format is incorporated in Sv,
+# this step can be simplified and the function may not be needed.
 def read_Sv_from_paths(
     SONAR_PATH_Sv, SONAR_PATH_raw, select_Sv_files, select_raw_files
 ):
@@ -70,7 +75,7 @@ def read_Sv_from_paths(
         [os.path.join(SONAR_PATH_Sv, item) for item in select_Sv_files]
     )
 
-    ## creating a depth dimension for Sv ##
+    # creating a depth dimension for Sv:
 
     # reading the processed platform data
     ds_plat = xr.open_mfdataset(
