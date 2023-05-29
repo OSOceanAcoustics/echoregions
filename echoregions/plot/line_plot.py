@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
+
 class LinesPlotter:
     """Class for plotting Regions. Should only be used by `Lines`"""
 
