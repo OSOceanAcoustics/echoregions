@@ -24,3 +24,5 @@ jobs:
 
       - name: Run tests
         run: pytest
+      - name: Run coverage
+        run: coverage report
