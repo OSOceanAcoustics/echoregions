@@ -1,6 +1,5 @@
 import matplotlib
 import numpy as np
-import pandas as pd
 import regionmask
 import xarray as xr
 
