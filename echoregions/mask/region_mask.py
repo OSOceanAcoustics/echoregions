@@ -1,6 +1,5 @@
 import matplotlib
 import numpy as np
-import pandas as pd
 import regionmask
 import xarray as xr
 
@@ -17,7 +16,7 @@ class Regions2DMasker:
         region_df = region_df[["region_id", "time", "depth"]]
 
         # organize the regions in a format for region mask
-        df = region_df.apply(pd.Series.explode)
+        df = region_df.explode(["time", "depth"])
 
         # convert region time to integer timestamp
         df["time"] = matplotlib.dates.date2num(df["time"])
