@@ -70,8 +70,7 @@ class Regions2DParser(EvParserBase):
                 "echoview_version": echoview_version,
             }
         )
-        df = pd.DataFrame()
-        row = {}
+        rows = []
         n_regions = int(fid.readline().strip())
         # Loop over all regions in file
         for r in range(n_regions):
@@ -109,9 +108,11 @@ class Regions2DParser(EvParserBase):
                 ]
             )
             row = row.to_frame().T
-            df = pd.concat([df, row], ignore_index=True)
+            rows.append(row)
+            
+        df = pd.concat(rows, ignore_index=True)
 
-        return df[row.keys()].convert_dtypes()
+        return df[rows[0].keys()].convert_dtypes()
 
     def convert_points(
         self, points, convert_time=True, convert_depth_edges=True, offset=0, unix=False
