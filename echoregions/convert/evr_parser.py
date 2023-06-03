@@ -109,7 +109,7 @@ class Regions2DParser(EvParserBase):
             )
             row = row.to_frame().T
             rows.append(row)
-            
+
         df = pd.concat(rows, ignore_index=True)
 
         return df[rows[0].keys()].convert_dtypes()
