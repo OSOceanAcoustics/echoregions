@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import pandas as pd
 
 
 class LinesPlotter:
@@ -19,9 +18,9 @@ class LinesPlotter:
     ):
         df = self.Lines.data
         if start_time is not None:
-            df = df[df["time"] > pd.to_datetime(start_time)]
+            df = df[df["time"] > start_time]
         if end_time is not None:
-            df = df[df["time"] < pd.to_datetime(end_time)]
+            df = df[df["time"] < end_time]
 
         if fill_between:
             plt.fill_between(df.time, df.depth, max_depth, **kwargs)
