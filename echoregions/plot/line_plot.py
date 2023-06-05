@@ -17,7 +17,6 @@ class LinesPlotter:
         **kwargs
     ):
         df = self.Lines.data
-
         if start_time is not None:
             df = df[df["time"] > start_time]
         if end_time is not None:

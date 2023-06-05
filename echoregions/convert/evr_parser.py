@@ -70,8 +70,7 @@ class Regions2DParser(EvParserBase):
                 "echoview_version": echoview_version,
             }
         )
-        df = pd.DataFrame()
-        row = {}
+        rows = []
         n_regions = int(fid.readline().strip())
         # Loop over all regions in file
         for r in range(n_regions):
@@ -97,7 +96,7 @@ class Regions2DParser(EvParserBase):
             r_points = _parse_points(points_line)
             r_metadata["region_name"] = fid.readline().strip()
 
-            # Store region data into a GeoDataFrame
+            # Store region data into a Pandas series
             row = pd.concat(
                 [
                     file_metadata,
@@ -108,9 +107,12 @@ class Regions2DParser(EvParserBase):
                     pd.Series({"region_detection_settings": r_detection_settings}),
                 ]
             )
-            df = df.append(row, ignore_index=True)
+            row = row.to_frame().T
+            rows.append(row)
 
-        return df[row.keys()].convert_dtypes()
+        df = pd.concat(rows, ignore_index=True)
+
+        return df[rows[0].keys()].convert_dtypes()
 
     def convert_points(
         self, points, convert_time=True, convert_depth_edges=True, offset=0, unix=False
