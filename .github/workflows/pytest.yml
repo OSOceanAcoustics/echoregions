@@ -25,9 +25,4 @@ jobs:
       - name: Run Coverage Pytest
         run: pytest --cov=./ --cov-report=xml
       - name: Create HTML Coverage
-        run: coverage html
-      - name: Upload HTML report.
-        uses: actions/upload-artifact@v3
-        with:
-          name: html-report
-          path: htmlcov
+        run: coverage report -m
