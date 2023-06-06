@@ -2,7 +2,7 @@ import os
 
 import matplotlib
 import numpy as np
-from numpy import array
+from numpy import ndarray
 import pandas as pd
 from pandas import DataFrame
 
@@ -52,7 +52,7 @@ class Regions2DParser(EvParserBase):
                 "region_bbox_bottom": bottom,  # Bottom of bounding box
             }
 
-        def _parse_points(line: str) -> Tuple[array]:
+        def _parse_points(line: str) -> Tuple[ndarray]:
             """Takes a line with point information and creates a tuple (x, y) for each point"""
             points_x = parse_time(
                 [f"{line[idx]} {line[idx + 1]}" for idx in range(0, len(line), 3)]

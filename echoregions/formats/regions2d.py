@@ -1,9 +1,9 @@
 from pathlib import Path
 
 import numpy as np
+from numpy import ndarray
 from typing import Union, List, Dict, Iterable
 from pandas import DataFrame, Series
-from numpy import array
 from xarray import Dataset
 
 from ..convert import utils
@@ -20,7 +20,7 @@ class Regions2D(Geometry):
         offset: Union[int, float]=0,
         min_depth: Union[int, float]=None,
         max_depth: Union[int, float]=None,
-        depth: array=None,
+        depth: ndarray=None,
     ):
         super().__init__()
         self._parser = Regions2DParser(input_file)
