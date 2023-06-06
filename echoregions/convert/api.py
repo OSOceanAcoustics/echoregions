@@ -1,9 +1,11 @@
 from ..formats.lines import Lines
 from ..formats.regions2d import Regions2D
 from typing import List
+from numpy import ndarray
+import numpy as np
 
 def read_evr(filepath: str, offset: int=0, min_depth: float=None, 
-             max_depth: float=None, depth: List[float]=None) -> Regions2D:
+             max_depth: float=None, depth: ndarray=None) -> Regions2D:
     """Read an EVR file into a Regions2D object.
 
     Parameters
@@ -16,8 +18,8 @@ def read_evr(filepath: str, offset: int=0, min_depth: float=None,
         Depth value in meters to set -9999.99 depth edges to.
     max_depth : float, default ``None``
         Depth value in meters to set 9999.99 depth edges to.
-    depth : list, default ``None``
-        List of range values assumed to be monotonically increasing.
+    depth : numpy array, default ``None``
+        Array of range values assumed to be monotonically increasing.
 
     Returns
     -------
