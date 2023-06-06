@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pandas as pd
+
 import echoregions as er
 
 data_dir = Path("./echoregions/test_data/")
@@ -14,8 +16,8 @@ def test_plot():
     """
     Test plotting Lines with options.
     """
-    start_date = "2017-06-25"
-    end_date = "2017-06-26"
+    start_date = pd.to_datetime("2017-06-25")
+    end_date = pd.to_datetime("2017-06-26")
     lines = er.read_evl(evl_path)
     lines.plot(
         start_time=start_date,
