@@ -18,7 +18,6 @@ class Regions2DMasker:
 
     def mask(self, ds: DataArray, region_df: DataFrame, mask_var: str=None, 
             mask_labels: Union[List, str]=None, offset: Union[int, float]=0) -> DataArray:
-        # TODO Typecheck and make pytest for ds and region_df
         # select only columns which are important
         region_df = region_df[["region_id", "time", "depth"]]
 
