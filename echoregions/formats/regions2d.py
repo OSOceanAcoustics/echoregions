@@ -4,13 +4,12 @@ import numpy as np
 from numpy import ndarray
 from typing import Union, List, Dict, Iterable
 from pandas import DataFrame, Series
-from xarray import Dataset
+from xarray import DataArray
 
 from ..convert import utils
 from . import Geometry
 from ..plot.region_plot import Regions2DPlotter
 from ..convert.evr_parser import Regions2DParser
-
 
 class Regions2D(Geometry):
     def __init__(
@@ -162,14 +161,16 @@ class Regions2D(Geometry):
         if region is not None:
             if isinstance(region, DataFrame):
                 region = list(region.region_id)
-            if isinstance(region, Series):
+            elif isinstance(region, Series):
                 region = [region.region_id]
-            if (
+            elif (
                 isinstance(region, float)
                 or isinstance(region, int)
                 or isinstance(region, str)
             ):
                 region = [region]
+            elif not isinstance(region, list):
+                raise TypeError(f"Invalid Region Type: {type(region)}")
             # Select row by column id
             region = self.data[self.data["region_id"].isin(region)]
         else:
@@ -179,7 +180,7 @@ class Regions2D(Geometry):
         else:
             return region
 
-    def close_region(self, region: Union[str, List, DataFrame]=None) -> DataFrame:
+    def close_region(self, region: Union[float, str, List, Series, DataFrame]=None) -> DataFrame:
         """Close a region by appending the first point to end of the list of points.
 
         Parameters
@@ -203,7 +204,7 @@ class Regions2D(Geometry):
         return region
 
     def select_sonar_file(self, files: List[str], 
-                          region: Union[str, List, DataFrame]=None) -> List:
+                          region: Union[float, str, list, Series, DataFrame]=None) -> List:
         """Finds sonar files in the time domain that encompasses region or list of regions
 
         Parameters
@@ -383,14 +384,14 @@ class Regions2D(Geometry):
 
             self._masker = Regions2DMasker(self)
 
-    def mask(self, ds: Dataset, region_ids: List, mask_var: str=None, mask_labels=None, 
-             offset: Union[int, float]=0) -> Dataset:
+    def mask(self, ds: DataArray, region_ids: List, mask_var: str=None, mask_labels=None, 
+             offset: Union[int, float]=0) -> DataArray:
         # TODO Does not currently work.
-        """Mask an xarray dataset
+        """Mask an xarray DataArray.
 
         Parameters
         ----------
-        ds : Xarray Dataset
+        ds : Xarray DataArray
             calibrated data (Sv or Sp) with range
         region_ids : list
             list IDs of regions to create mask for
@@ -408,13 +409,15 @@ class Regions2D(Geometry):
 
         Returns
         -------
-        A dataset with the data_var masked by the specified region
+        A DataArray with the data_var masked by the specified region
         """
 
         if isinstance(mask_labels, list) and (len(mask_labels) != len(region_ids)):
             raise ValueError(
                 "If mask_labels is a list, it should be of same length as region_ids."
             )
+
+        if not isinstance(ds, DataArray): raise TypeError(f"Invalid ds Type: {type(ds)}")
 
         self._init_masker()
 

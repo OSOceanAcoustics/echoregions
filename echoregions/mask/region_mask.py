@@ -2,9 +2,9 @@ import matplotlib
 import numpy as np
 import regionmask
 import xarray as xr
-from xarray import Dataset
+from xarray import DataArray
 from pandas import DataFrame
-from typing import Union, NewType, Any
+from typing import Union, NewType, List, Any
 
 # Regions 2D Type Place Holder
 Regions2DType = NewType('Regions2D', Any)
@@ -16,8 +16,9 @@ class Regions2DMasker:
         self.Regions2D = Regions2D
         self.Regions2D.replace_nan_depth(inplace=True)
 
-    def mask(self, ds: Dataset, region_df: DataFrame, mask_var: str=None, 
-            mask_labels: str=None, offset: Union[int, float]=0) -> Dataset:
+    def mask(self, ds: DataArray, region_df: DataFrame, mask_var: str=None, 
+            mask_labels: Union[List, str]=None, offset: Union[int, float]=0) -> DataArray:
+        # TODO Typecheck and make pytest for ds and region_df
         # select only columns which are important
         region_df = region_df[["region_id", "time", "depth"]]
 
