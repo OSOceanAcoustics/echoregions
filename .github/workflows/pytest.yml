@@ -26,7 +26,7 @@ jobs:
         run: pytest --cov=./ --cov-report=xml
       - name: Create HTML Coverage
         run: coverage html
-      - name: Upload HTML report if check failed.
+      - name: Upload HTML report.
         uses: actions/upload-artifact@v3
         with:
           name: html-report
