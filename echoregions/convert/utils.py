@@ -2,16 +2,17 @@ import json
 import os
 import re
 from pathlib import Path
-
+from typing import List, Union, Dict
 import numpy as np
+from numpy import datetime64
 import pandas as pd
+from pandas import Timestamp
 
 SIMRAD_FILENAME_MATCHER = re.compile(
     r"(?P<survey>.+)?-?D(?P<date>\w{1,8})-T(?P<time>\w{1,6})-?(?P<postfix>\w+)?\..+"
 )
 
-
-def from_JSON(j):
+def from_JSON(j: str) -> Dict:
     """Opens a JSON file
 
     Parameters
@@ -30,7 +31,7 @@ def from_JSON(j):
     return data_dict
 
 
-def validate_path(save_path=None, input_file=None, ext=".json"):
+def validate_path(save_path: str=None, input_file: str=None, ext: str=".json") -> str:
     # Check if save_path is specified.
     # If not try to create one with the input_file and ext
 
@@ -64,7 +65,8 @@ def validate_path(save_path=None, input_file=None, ext=".json"):
     return str(save_path)
 
 
-def parse_time(ev_time, datetime_format="%Y%m%d %H%M%S%f", unix=False):
+def parse_time(ev_time: Union[List[str], str], datetime_format: str="%Y%m%d %H%M%S%f", 
+               unix: bool=False) -> Timestamp:
     """Convert EV datetime to a numpy datetime64 object
 
     Parameters
@@ -94,7 +96,7 @@ def parse_time(ev_time, datetime_format="%Y%m%d %H%M%S%f", unix=False):
     return t
 
 
-def parse_simrad_fname_time(filenames):
+def parse_simrad_fname_time(filenames: List[str]) -> datetime64:
     """Convert Simrad-style datetime to a numpy datetime64 object
 
     Parameters

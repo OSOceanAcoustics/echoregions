@@ -1,10 +1,9 @@
 from ..formats.lines import Lines
 from ..formats.regions2d import Regions2D
+from typing import List
 
-
-def read_evr(
-    filepath, offset=0, min_depth=None, max_depth=None, depth=None
-) -> "Regions2D":
+def read_evr(filepath: str, offset: int=0, min_depth: float=None, 
+             max_depth: float=None, depth: List[float]=None) -> Regions2D:
     """Read an EVR file into a Regions2D object.
 
     Parameters
@@ -17,8 +16,8 @@ def read_evr(
         Depth value in meters to set -9999.99 depth edges to.
     max_depth : float, default ``None``
         Depth value in meters to set 9999.99 depth edges to.
-    depth : array, default ``None``
-        Array of range values assumed to be monotonically increasing
+    depth : list, default ``None``
+        List of range values assumed to be monotonically increasing.
 
     Returns
     -------
@@ -35,11 +34,7 @@ def read_evr(
     )
 
 
-def read_evl(
-    filepath,
-    nan_depth_value=None,
-    offset=0,
-) -> "Lines":
+def read_evl(filepath: str, nan_depth_value: float=None, offset: float=0) -> Lines:
     """Read an EVL file into a Lines object.
 
     Parameters
@@ -60,11 +55,11 @@ def read_evl(
         input_file=str(filepath),
         parse=True,
         nan_depth_value=nan_depth_value,
-        offset=offset,
+        offset=offset
     )
 
 
-def merge(objects, reindex_ids=False):
+def merge(objects: List[Regions2D], reindex_ids: bool=False) -> Regions2D:
     """Merge echoregion objects.
     Currently only supports merging Regions2D objects.
 
@@ -81,7 +76,7 @@ def merge(objects, reindex_ids=False):
     if not isinstance(objects, list) or not all(
         isinstance(o, Regions2D) for o in objects
     ):
-        return ValueError("`merge` takes a list of Regions2D objects")
+        return TypeError("`merge` takes a list of Regions2D objects")
 
     merged_idx = []
     merged_data = []

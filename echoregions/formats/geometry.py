@@ -1,3 +1,5 @@
+from pandas import DataFrame
+
 class Geometry:
     def __init__(self):
         self.depth = (
@@ -17,7 +19,7 @@ class Geometry:
 
         # self.data = None
 
-    def adjust_offset(self, inplace=False):
+    def adjust_offset(self, inplace: bool=False) -> DataFrame:
         """Apply a constant depth value to the 'depth' column in the output DataFrame
 
         Parameters
@@ -36,5 +38,5 @@ class Geometry:
         regions["depth"] = regions["depth"] + self.offset
         return regions
 
-    def replace_nan_depth(self):
+    def replace_nan_depth(self) -> None:
         """Base method for replacing nan depth values with user-specified replacement value"""

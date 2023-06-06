@@ -2,10 +2,13 @@ import os
 
 import matplotlib
 import numpy as np
+from numpy import array
 import pandas as pd
+from pandas import DataFrame
 
 from .ev_parser import EvParserBase
 from .utils import parse_time
+from typing import TextIO, Union, List, Dict, Tuple
 
 
 class Regions2DParser(EvParserBase):
@@ -13,13 +16,13 @@ class Regions2DParser(EvParserBase):
     Using this class directly is not recommended; use Regions2D instead.
     """
 
-    def __init__(self, input_file=None):
+    def __init__(self, input_file: str=None):
         super().__init__(input_file, "EVR")
 
-    def _parse(self, fid):
+    def _parse(self, fid: TextIO) -> DataFrame:
         """Reads an open file and returns the file metadata and region information"""
 
-        def _region_metadata_to_dict(line):
+        def _region_metadata_to_dict(line: List) -> Dict:
             """Assigns a name to each value in the metadata line for each region"""
             top = float(line[9])
             bottom = float(line[12])
@@ -49,7 +52,7 @@ class Regions2DParser(EvParserBase):
                 "region_bbox_bottom": bottom,  # Bottom of bounding box
             }
 
-        def _parse_points(line):
+        def _parse_points(line: str) -> Tuple[array]:
             """Takes a line with point information and creates a tuple (x, y) for each point"""
             points_x = parse_time(
                 [f"{line[idx]} {line[idx + 1]}" for idx in range(0, len(line), 3)]
@@ -114,10 +117,10 @@ class Regions2DParser(EvParserBase):
 
         return df[rows[0].keys()].convert_dtypes()
 
-    def convert_points(
-        self, points, convert_time=True, convert_depth_edges=True, offset=0, unix=False
-    ):
-        def convert_single(point):
+    def convert_points(self, points: Union[List, Dict], convert_time: 
+                       bool=True, convert_depth_edges: bool=True, 
+                       offset: int=0, unix: bool=False) -> Union[List, Dict]:
+        def convert_single(point: List) -> None:
             if convert_time:
                 point[0] = matplotlib.dates.date2num(point[0])
 
@@ -133,7 +136,7 @@ class Regions2DParser(EvParserBase):
 
         return points
 
-    def swap_depth_edge(self, y):
+    def swap_depth_edge(self, y: Union[int, float]) -> Union[int, float]:
         if float(y) == 9999.99 and self.max_depth is not None:
             return self.max_depth
         elif float(y) == -9999.99 and self.min_depth is not None:

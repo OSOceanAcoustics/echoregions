@@ -1,11 +1,13 @@
 import json
 import os
+import pandas as pd
+from pandas import DataFrame
 
 from .utils import validate_path
 
 
 class EvParserBase:
-    def __init__(self, input_file, file_format):
+    def __init__(self, input_file: str, file_format: str):
         self._input_file = None
         self._output_file = []
 
@@ -13,11 +15,11 @@ class EvParserBase:
         self.input_file = input_file
 
     @property
-    def input_file(self):
+    def input_file(self) -> str:
         return self._input_file
 
     @input_file.setter
-    def input_file(self, file):
+    def input_file(self, file: str) -> None:
         if file is not None:
             if not file.upper().endswith(self.format):
                 raise ValueError(f"Input file {file} is not a {self.format} file")
@@ -26,7 +28,7 @@ class EvParserBase:
             self._input_file = file
 
     @property
-    def output_file(self):
+    def output_file(self) -> str:
         if len(self._output_file) == 1:
             self._output_file = list(set(self._output_file))
             return self._output_file[0]
@@ -34,7 +36,7 @@ class EvParserBase:
             return self._output_file
 
     @staticmethod
-    def read_line(open_file, split=False):
+    def read_line(open_file, split: bool=False) -> str:
         """Remove the LF at the end of every line.
         Specify split = True to split the line on spaces"""
         if split:
@@ -42,12 +44,13 @@ class EvParserBase:
         else:
             return open_file.readline().strip()
 
-    def _parse(fid, **kwargs):
+    def _parse(fid, **kwargs) -> None:
         """Base method for parsing files"""
 
-    def parse_file(self, **kwargs):
+    def parse_file(self, **kwargs) -> DataFrame:
         """Base method for parsing the file in `input_file` and constructing `data`
-        Used for EVR and EVL parsers
+        Used for EVR and EVL parsers. EVR and EVL _parse returns DataFrame, so the
+        typing here reflects that.
         """
         if self.input_file is None:
             return
@@ -55,7 +58,7 @@ class EvParserBase:
 
         return self._parse(fid, **kwargs)
 
-    def to_csv(self, data, save_path=None):
+    def to_csv(self, data: pd.DataFrame, save_path: bool=None) -> None:
         """Save a Dataframe to a .csv file
 
         Parameters
@@ -73,7 +76,7 @@ class EvParserBase:
         data.to_csv(save_path, index=False)
         self._output_file.append(save_path)
 
-    def to_json(self, save_path=None, pretty=True, **kwargs):
+    def to_json(self, save_path: str=None, pretty: bool=True, **kwargs) -> None:
         # TODO Currently only EVL files can be exported to JSON
         """Convert supported formats to .json file.
 

@@ -2,16 +2,19 @@ import matplotlib
 import numpy as np
 import regionmask
 import xarray as xr
-
+from xarray import Dataset
+from pandas import DataFrame
+from typing import Union
 
 class Regions2DMasker:
     """Class for masking Regions. Should Only be used by Regions2D"""
 
-    def __init__(self, Regions2D):
+    def __init__(self, Regions2D: 'Regions2D'):
         self.Regions2D = Regions2D
         self.Regions2D.replace_nan_depth(inplace=True)
 
-    def mask(self, ds, region_df, mask_var=None, mask_labels=None, offset=0):
+    def mask(self, ds: Dataset, region_df: DataFrame, mask_var: str=None, 
+            mask_labels: str=None, offset: Union[int, float]=0) -> Dataset:
         # select only columns which are important
         region_df = region_df[["region_id", "time", "depth"]]
 

@@ -1,13 +1,12 @@
 import matplotlib.pyplot as plt
 
-
 class Regions2DPlotter:
     """Class for plotting Regions. Should only be used by `Regions2D`"""
 
-    def __init__(self, Regions2D):
+    def __init__(self, Regions2D: 'Regions2D'):
         self.Regions2D = Regions2D
 
-    def plot(self, region, close_region=False, **kwargs):
+    def plot(self, region, close_region=False, **kwargs) -> None:
         """Plot one or more regions.
 
         Parameters

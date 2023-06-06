@@ -1,20 +1,22 @@
 import os
 
 import pandas as pd
+from pandas import DataFrame
 
 from .ev_parser import EvParserBase
 from .utils import parse_time
+from typing import TextIO
 
 
 class LineParser(EvParserBase):
     """Class for parsing EV lines (EVL) files"""
 
-    def __init__(self, input_file=None):
+    def __init__(self, input_file: str=None):
         super().__init__(input_file, "EVL")
 
         self._data_dict = {}
 
-    def _parse(self, fid):
+    def _parse(self, fid: TextIO) -> DataFrame:
         # Read header containing metadata about the EVL file
         file_type, file_format_number, ev_version = fid.readline().strip().split()
         file_metadata = {
