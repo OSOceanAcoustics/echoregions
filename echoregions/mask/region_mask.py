@@ -4,12 +4,15 @@ import regionmask
 import xarray as xr
 from xarray import Dataset
 from pandas import DataFrame
-from typing import Union
+from typing import Union, NewType, Any
+
+# Regions 2D Type Place Holder
+Regions2DType = NewType('Regions2D', Any)
 
 class Regions2DMasker:
     """Class for masking Regions. Should Only be used by Regions2D"""
 
-    def __init__(self, Regions2D: 'Regions2D'):
+    def __init__(self, Regions2D: Regions2DType):
         self.Regions2D = Regions2D
         self.Regions2D.replace_nan_depth(inplace=True)
 

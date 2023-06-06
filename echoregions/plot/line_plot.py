@@ -1,11 +1,14 @@
 import matplotlib.pyplot as plt
 from datetime import datetime
-from typing import Union
+from typing import Union, NewType, Any
+
+# Lines Type Place Holder
+LinesType = NewType('Lines', Any)
 
 class LinesPlotter:
     """Class for plotting Regions. Should only be used by `Lines`"""
 
-    def __init__(self, Lines: 'Lines'):
+    def __init__(self, Lines: LinesType):
         self.Lines = Lines
 
     def plot(self, fmt: str="", start_time: datetime=None, end_time: datetime=None,
