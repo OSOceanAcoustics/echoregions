@@ -170,7 +170,8 @@ class Regions2D(Geometry):
             ):
                 region = [region]
             elif not isinstance(region, list):
-                raise TypeError(f"Invalid Region Type: {type(region)}")
+                raise TypeError(f"Invalid Region Type: {type(region)}. Must be \
+                                of type float, str, list, Series, DataFrame, ``None``")
             # Select row by column id
             region = self.data[self.data["region_id"].isin(region)]
         else:
@@ -417,7 +418,9 @@ class Regions2D(Geometry):
                 "If mask_labels is a list, it should be of same length as region_ids."
             )
 
-        if not isinstance(ds, DataArray): raise TypeError(f"Invalid ds Type: {type(ds)}")
+        if not isinstance(ds, DataArray):
+            raise TypeError(f"Invalid ds Type: {type(ds)}. Must be of type\
+                            float, str, list, Series, DataFrame, ``None``")
 
         self._init_masker()
 
