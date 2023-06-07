@@ -1,6 +1,5 @@
 from typing import List
 
-import numpy as np
 from numpy import ndarray
 
 from ..formats.lines import Lines
@@ -86,9 +85,7 @@ def merge(objects: List[Regions2D], reindex_ids: bool = False) -> Regions2D:
     """
     if isinstance(objects, list):
         if len(objects) == 0:
-            raise ValueError(
-                f"objects must contain elements. objects sent in is empty."
-            )
+            raise ValueError("objects must contain elements. objects sent in is empty.")
         if not all(isinstance(o, Regions2D) for o in objects):
             raise TypeError("Invalid elements in objects. Must be of type Regions2D")
     else:
