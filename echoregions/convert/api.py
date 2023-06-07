@@ -5,9 +5,7 @@ from numpy import ndarray
 
 from ..formats.lines import Lines
 from ..formats.regions2d import Regions2D
-from typing import List
-from numpy import ndarray
-import numpy as np
+
 
 def read_evr(
     filepath: str,
@@ -88,7 +86,9 @@ def merge(objects: List[Regions2D], reindex_ids: bool = False) -> Regions2D:
     """
     if isinstance(objects, list):
         if len(objects) == 0:
-            raise ValueError(f"objects must contain elements. objects sent in is empty.")
+            raise ValueError(
+                f"objects must contain elements. objects sent in is empty."
+            )
         if not all(isinstance(o, Regions2D) for o in objects):
             raise TypeError("Invalid elements in objects. Must be of type Regions2D")
     else:
