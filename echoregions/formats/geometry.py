@@ -1,5 +1,6 @@
 from pandas import DataFrame
 
+
 class Geometry:
     def __init__(self):
         self.depth = (
@@ -19,7 +20,7 @@ class Geometry:
 
         # self.data = None
 
-    def adjust_offset(self, inplace: bool=False) -> DataFrame:
+    def adjust_offset(self, inplace: bool = False) -> DataFrame:
         """Apply a constant depth value to the 'depth' column in the output DataFrame
 
         Parameters

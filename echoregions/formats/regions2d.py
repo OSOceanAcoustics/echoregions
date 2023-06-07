@@ -1,25 +1,26 @@
 from pathlib import Path
+from typing import Dict, Iterable, List, Union
 
 import numpy as np
 from numpy import ndarray
-from typing import Union, List, Dict, Iterable
 from pandas import DataFrame, Series
 from xarray import DataArray
 
 from ..convert import utils
-from . import Geometry
-from ..plot.region_plot import Regions2DPlotter
 from ..convert.evr_parser import Regions2DParser
+from ..plot.region_plot import Regions2DPlotter
+from . import Geometry
+
 
 class Regions2D(Geometry):
     def __init__(
         self,
-        input_file: str=None,
-        parse: bool=True,
-        offset: Union[int, float]=0,
-        min_depth: Union[int, float]=None,
-        max_depth: Union[int, float]=None,
-        depth: ndarray=None,
+        input_file: str = None,
+        parse: bool = True,
+        offset: Union[int, float] = 0,
+        min_depth: Union[int, float] = None,
+        max_depth: Union[int, float] = None,
+        depth: ndarray = None,
     ):
         super().__init__()
         self._parser = Regions2DParser(input_file)
@@ -103,14 +104,14 @@ class Regions2D(Geometry):
             self._plotter = Regions2DPlotter(self)
         return self._plotter
 
-    def parse_file(self, offset: Union[int, float]=0) -> None:
+    def parse_file(self, offset: Union[int, float] = 0) -> None:
         # TODO make use of offset.
         """Parse the EVR file as a DataFrame into `Regions2D.data`"""
         self.data = self._parser.parse_file()
         self.replace_nan_depth()
         self.adjust_offset()
 
-    def to_csv(self, save_path: str=None, **kwargs) -> None:
+    def to_csv(self, save_path: str = None, **kwargs) -> None:
         """Convert an EVR file to a CSV file
 
         Parameters
@@ -126,7 +127,7 @@ class Regions2D(Geometry):
             self.parse_file(**kwargs)
         self._parser.to_csv(self.data, save_path=save_path, **kwargs)
 
-    def to_json(self, save_path: str=None, **kwargs) -> None:
+    def to_json(self, save_path: str = None, **kwargs) -> None:
         # TODO: Implement this function
         """Convert EVR to a JSON file.
 
@@ -141,8 +142,9 @@ class Regions2D(Geometry):
         """
         # self._parser.to_json(save_path=save_path, **kwargs)
 
-    def select_region(self, region: Union[float, str, list, Series, DataFrame]=None,
-                      copy=False) -> DataFrame:
+    def select_region(
+        self, region: Union[float, str, list, Series, DataFrame] = None, copy=False
+    ) -> DataFrame:
         """Ensure that region is a DataFrame.
 
         Parameters
@@ -170,8 +172,10 @@ class Regions2D(Geometry):
             ):
                 region = [region]
             elif not isinstance(region, list):
-                raise TypeError(f"Invalid Region Type: {type(region)}. Must be \
-                                of type float, str, list, Series, DataFrame, ``None``")
+                raise TypeError(
+                    f"Invalid Region Type: {type(region)}. Must be \
+                                of type float, str, list, Series, DataFrame, ``None``"
+                )
             # Select row by column id
             region = self.data[self.data["region_id"].isin(region)]
         else:
@@ -181,7 +185,9 @@ class Regions2D(Geometry):
         else:
             return region
 
-    def close_region(self, region: Union[float, str, List, Series, DataFrame]=None) -> DataFrame:
+    def close_region(
+        self, region: Union[float, str, List, Series, DataFrame] = None
+    ) -> DataFrame:
         """Close a region by appending the first point to end of the list of points.
 
         Parameters
@@ -204,8 +210,11 @@ class Regions2D(Geometry):
         )
         return region
 
-    def select_sonar_file(self, files: List[str], 
-                          region: Union[float, str, list, Series, DataFrame]=None) -> List:
+    def select_sonar_file(
+        self,
+        files: List[str],
+        region: Union[float, str, list, Series, DataFrame] = None,
+    ) -> List:
         """Finds sonar files in the time domain that encompasses region or list of regions
 
         Parameters
@@ -238,7 +247,7 @@ class Regions2D(Geometry):
         files = files[lower_idx:upper_idx]
         return files
 
-    def adjust_offset(self, inplace: bool=False) -> DataFrame:
+    def adjust_offset(self, inplace: bool = False) -> DataFrame:
         """Apply a constant depth value to the 'depth' column in the output DataFrame
 
         Parameters
@@ -257,7 +266,7 @@ class Regions2D(Geometry):
         regions["depth"] = regions["depth"] + self.offset
         return regions
 
-    def replace_nan_depth(self, inplace: bool=False) -> DataFrame:
+    def replace_nan_depth(self, inplace: bool = False) -> DataFrame:
         """Replace 9999.99 or -9999.99 depth values with user-specified min_depth and max_depth
 
         Parameters
@@ -293,8 +302,12 @@ class Regions2D(Geometry):
         return regions
 
     def convert_points(
-        self, points: Union[List, Dict, DataFrame], convert_time: bool=True, 
-        convert_depth_edges: bool=True, offset: Union[int, float]=0, unix: bool=False
+        self,
+        points: Union[List, Dict, DataFrame],
+        convert_time: bool = True,
+        convert_depth_edges: bool = True,
+        offset: Union[int, float] = 0,
+        unix: bool = False,
     ) -> Union[List, Dict]:
         """Convert x and y values of points from the EV format.
         Returns a copy of points.
@@ -325,8 +338,9 @@ class Regions2D(Geometry):
             unix=unix,
         )
 
-    def get_points_from_region(self, region_id: Union[int, str, Dict], 
-                               file: str=None) -> List:
+    def get_points_from_region(
+        self, region_id: Union[int, str, Dict], file: str = None
+    ) -> List:
         """Get points from specified region from a JSON or CSV file
         or from the parsed data.
         Parameters
@@ -352,8 +366,12 @@ class Regions2D(Geometry):
 
             self._plotter = Regions2DPlotter(self)
 
-    def plot(self, region: Union[str, List, DataFrame]=None, close_region: bool=False, 
-             **kwargs) -> None:
+    def plot(
+        self,
+        region: Union[str, List, DataFrame] = None,
+        close_region: bool = False,
+        **kwargs,
+    ) -> None:
         """Plot a region from data.
         Automatically convert time and range_edges.
 
@@ -385,8 +403,14 @@ class Regions2D(Geometry):
 
             self._masker = Regions2DMasker(self)
 
-    def mask(self, ds: DataArray, region_ids: List, mask_var: str=None, mask_labels=None, 
-             offset: Union[int, float]=0) -> DataArray:
+    def mask(
+        self,
+        ds: DataArray,
+        region_ids: List,
+        mask_var: str = None,
+        mask_labels=None,
+        offset: Union[int, float] = 0,
+    ) -> DataArray:
         # TODO Does not currently work.
         """Mask an xarray DataArray.
 
@@ -419,8 +443,10 @@ class Regions2D(Geometry):
             )
 
         if not isinstance(ds, DataArray):
-            raise TypeError(f"Invalid ds Type: {type(ds)}. Must be of type\
-                            float, str, list, Series, DataFrame, ``None``")
+            raise TypeError(
+                f"Invalid ds Type: {type(ds)}. Must be of type\
+                            float, str, list, Series, DataFrame, ``None``"
+            )
 
         self._init_masker()
 

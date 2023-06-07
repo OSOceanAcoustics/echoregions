@@ -1,17 +1,17 @@
 import os
+from typing import TextIO
 
 import pandas as pd
 from pandas import DataFrame
 
 from .ev_parser import EvParserBase
 from .utils import parse_time
-from typing import TextIO
 
 
 class LineParser(EvParserBase):
     """Class for parsing EV lines (EVL) files"""
 
-    def __init__(self, input_file: str=None):
+    def __init__(self, input_file: str = None):
         super().__init__(input_file, "EVL")
 
         self._data_dict = {}

@@ -1,9 +1,11 @@
+from typing import Any, NewType
+
 import matplotlib.pyplot as plt
-from typing import NewType, Any
 from pandas import DataFrame
 
 # Regions 2D Type Place Holder
-Regions2DType = NewType('Regions2D', Any)
+Regions2DType = NewType("Regions2D", Any)
+
 
 class Regions2DPlotter:
     """Class for plotting Regions. Should only be used by `Regions2D`"""
@@ -11,8 +13,7 @@ class Regions2DPlotter:
     def __init__(self, Regions2D: Regions2DType):
         self.Regions2D = Regions2D
 
-    def plot(self, region: DataFrame, 
-             close_region=False, **kwargs) -> None:
+    def plot(self, region: DataFrame, close_region=False, **kwargs) -> None:
         """Plot one or more regions.
 
         Parameters

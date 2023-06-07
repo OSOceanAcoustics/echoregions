@@ -1,14 +1,14 @@
 import os
+from typing import Dict, List, TextIO, Tuple, Union
 
 import matplotlib
 import numpy as np
-from numpy import ndarray
 import pandas as pd
+from numpy import ndarray
 from pandas import DataFrame
 
 from .ev_parser import EvParserBase
 from .utils import parse_time
-from typing import TextIO, Union, List, Dict, Tuple
 
 
 class Regions2DParser(EvParserBase):
@@ -16,7 +16,7 @@ class Regions2DParser(EvParserBase):
     Using this class directly is not recommended; use Regions2D instead.
     """
 
-    def __init__(self, input_file: str=None):
+    def __init__(self, input_file: str = None):
         super().__init__(input_file, "EVR")
 
     def _parse(self, fid: TextIO) -> DataFrame:
@@ -117,9 +117,14 @@ class Regions2DParser(EvParserBase):
 
         return df[rows[0].keys()].convert_dtypes()
 
-    def convert_points(self, points: Union[List, Dict], convert_time: 
-                       bool=True, convert_depth_edges: bool=True, 
-                       offset: int=0, unix: bool=False) -> Union[List, Dict]:
+    def convert_points(
+        self,
+        points: Union[List, Dict],
+        convert_time: bool = True,
+        convert_depth_edges: bool = True,
+        offset: int = 0,
+        unix: bool = False,
+    ) -> Union[List, Dict]:
         def convert_single(point: List) -> None:
             if convert_time:
                 point[0] = matplotlib.dates.date2num(point[0])

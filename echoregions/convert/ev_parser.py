@@ -1,5 +1,6 @@
 import json
 import os
+
 from pandas import DataFrame
 
 from .utils import validate_path
@@ -35,7 +36,7 @@ class EvParserBase:
             return self._output_file
 
     @staticmethod
-    def read_line(open_file, split: bool=False) -> str:
+    def read_line(open_file, split: bool = False) -> str:
         """Remove the LF at the end of every line.
         Specify split = True to split the line on spaces"""
         if split:
@@ -57,7 +58,7 @@ class EvParserBase:
 
         return self._parse(fid, **kwargs)
 
-    def to_csv(self, data: DataFrame, save_path: bool=None) -> None:
+    def to_csv(self, data: DataFrame, save_path: bool = None) -> None:
         """Save a Dataframe to a .csv file
 
         Parameters
@@ -67,8 +68,10 @@ class EvParserBase:
         save_path : str
             path to save the CSV file to
         """
-        if not isinstance(data, DataFrame): 
-            raise TypeError(f"Invalid ds Type: {type(data)}. Must be of type DataFrame.")
+        if not isinstance(data, DataFrame):
+            raise TypeError(
+                f"Invalid ds Type: {type(data)}. Must be of type DataFrame."
+            )
 
         # Check if the save directory is safe
         save_path = validate_path(
@@ -78,7 +81,7 @@ class EvParserBase:
         data.to_csv(save_path, index=False)
         self._output_file.append(save_path)
 
-    def to_json(self, save_path: str=None, pretty: bool=True, **kwargs) -> None:
+    def to_json(self, save_path: str = None, pretty: bool = True, **kwargs) -> None:
         # TODO Currently only EVL files can be exported to JSON
         """Convert supported formats to .json file.
 

@@ -1,11 +1,19 @@
+from typing import List
+
+import numpy as np
+from numpy import ndarray
+
 from ..formats.lines import Lines
 from ..formats.regions2d import Regions2D
-from typing import List
-from numpy import ndarray
-import numpy as np
 
-def read_evr(filepath: str, offset: int=0, min_depth: float=None, 
-             max_depth: float=None, depth: ndarray=None) -> Regions2D:
+
+def read_evr(
+    filepath: str,
+    offset: int = 0,
+    min_depth: float = None,
+    max_depth: float = None,
+    depth: ndarray = None,
+) -> Regions2D:
     """Read an EVR file into a Regions2D object.
 
     Parameters
@@ -36,7 +44,7 @@ def read_evr(filepath: str, offset: int=0, min_depth: float=None,
     )
 
 
-def read_evl(filepath: str, nan_depth_value: float=None, offset: float=0) -> Lines:
+def read_evl(filepath: str, nan_depth_value: float = None, offset: float = 0) -> Lines:
     """Read an EVL file into a Lines object.
 
     Parameters
@@ -57,11 +65,11 @@ def read_evl(filepath: str, nan_depth_value: float=None, offset: float=0) -> Lin
         input_file=str(filepath),
         parse=True,
         nan_depth_value=nan_depth_value,
-        offset=offset
+        offset=offset,
     )
 
 
-def merge(objects: List[Regions2D], reindex_ids: bool=False) -> Regions2D:
+def merge(objects: List[Regions2D], reindex_ids: bool = False) -> Regions2D:
     # TODO currently deprecated must be fixed before further tests.
     """Merge echoregion objects.
     Currently only supports merging Regions2D objects.
@@ -78,11 +86,15 @@ def merge(objects: List[Regions2D], reindex_ids: bool=False) -> Regions2D:
     """
     if isinstance(objects, list):
         if len(objects) == 0:
-            raise ValueError(f"objects must contain elements. objects sent in is empty.")
+            raise ValueError(
+                f"objects must contain elements. objects sent in is empty."
+            )
         if not all(isinstance(o, Regions2D) for o in objects):
             raise TypeError(f"Invalid elements in objects. Must be of type Regions2D")
     else:
-        raise TypeError(f"Invalid objects Type: {type(objects)}. Must be of type List[DataFrame]")
+        raise TypeError(
+            f"Invalid objects Type: {type(objects)}. Must be of type List[DataFrame]"
+        )
 
     merged_idx = []
     merged_data = []
