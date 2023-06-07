@@ -1,6 +1,9 @@
 import os
+from pandas import Series
+import pytest
 
 import echoregions as er
+from ..convert.ev_parser import EvParserBase
 
 data_dir = "./echoregions/test_data/"
 output_csv = data_dir + "output_CSV/"
@@ -36,3 +39,16 @@ def test_convert_evr():
     os.remove(evr.output_file)
 
     os.rmdir(output_csv)
+
+def test_ev_to_csv_type_error():
+    """
+    Testing ev to_csv type checking.
+    """
+    empty_ev = EvParserBase(data_dir + "x1.evl", "EVL")
+
+    with pytest.raises(TypeError):
+        empty_series = Series()
+        empty_ev.to_csv(empty_series)
+    with pytest.raises(TypeError):
+        empty_list = []
+        empty_ev.to_csv(empty_list)

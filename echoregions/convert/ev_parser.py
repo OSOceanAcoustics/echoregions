@@ -1,6 +1,5 @@
 import json
 import os
-import pandas as pd
 from pandas import DataFrame
 
 from .utils import validate_path
@@ -58,7 +57,7 @@ class EvParserBase:
 
         return self._parse(fid, **kwargs)
 
-    def to_csv(self, data: pd.DataFrame, save_path: bool=None) -> None:
+    def to_csv(self, data: DataFrame, save_path: bool=None) -> None:
         """Save a Dataframe to a .csv file
 
         Parameters
@@ -68,6 +67,9 @@ class EvParserBase:
         save_path : str
             path to save the CSV file to
         """
+        if not isinstance(data, DataFrame): 
+            raise TypeError(f"Invalid ds Type: {type(data)}. Must be of type DataFrame.")
+
         # Check if the save directory is safe
         save_path = validate_path(
             save_path=save_path, input_file=self.input_file, ext=".csv"
