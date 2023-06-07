@@ -5,7 +5,6 @@ import pytest
 import echoregions as er
 from ..convert.ev_parser import EvParserBase
 from ..convert.api import merge
-from ..formats.regions2d import Regions2D
 
 data_dir = "./echoregions/test_data/"
 output_csv = data_dir + "output_CSV/"

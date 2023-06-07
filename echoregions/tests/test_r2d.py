@@ -204,7 +204,7 @@ def test_select_type_error():
         empty_tuple = ()
         _ = r2d.select_region(empty_tuple)
 
-def test_select_type_error():
+def test_mask_type_error():
     """
     Tests select error functionality for regions.
     """
