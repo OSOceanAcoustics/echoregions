@@ -2,9 +2,9 @@ import os
 from datetime import timedelta
 
 import numpy as np
-import xarray as xr
-from xarray import Dataset, DataArray
 import pytest
+import xarray as xr
+from xarray import DataArray, Dataset
 
 import echoregions as er
 
@@ -149,6 +149,7 @@ def test_select_sonar_file():
     raw = r2d.select_sonar_file(raw_files, 11)
     assert raw == ["Summer2017-D20170625-T195927.nc"]
 
+
 def test_mask_no_overlap():
     """
     test if mask is empty when there is no overlap
@@ -182,13 +183,14 @@ def test_mask_correct_labels():
 
     evr_path = data_dir + "x1.evr"
     r2d = er.read_evr(evr_path)
-    
-    region_ids = r2d.data.region_id.values # Output is that of IntegerArray
-    region_ids = list(region_ids) # Convert to List
+
+    region_ids = r2d.data.region_id.values  # Output is that of IntegerArray
+    region_ids = list(region_ids)  # Convert to List
     ds = xr.open_dataset(os.path.join(data_dir, "x1_test.nc"))
     M = r2d.mask(ds.Sv, region_ids, mask_labels=region_ids).values
     # it matches only a 11th region becasue x1_test.nc is a chunk around that region only
     assert set(np.unique(M[~np.isnan(M)])) == {11}
+
 
 def test_select_type_error():
     """
@@ -203,6 +205,7 @@ def test_select_type_error():
     with pytest.raises(TypeError):
         empty_tuple = ()
         _ = r2d.select_region(empty_tuple)
+
 
 def test_mask_type_error():
     """

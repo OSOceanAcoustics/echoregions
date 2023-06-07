@@ -1,12 +1,19 @@
+from typing import Dict, Iterable, List, Union
+
+from pandas import DataFrame, Series, Timestamp
+
 from ..convert.evl_parser import LineParser
 from . import Geometry
 
-from pandas import Series, DataFrame, Timestamp
-from typing import Union, List, Dict, Iterable
 
 class Lines(Geometry):
-    def __init__(self, input_file: str=None, parse: bool=True, nan_depth_value:
-                 float=None, offset: float=0):
+    def __init__(
+        self,
+        input_file: str = None,
+        parse: bool = True,
+        nan_depth_value: float = None,
+        offset: float = 0,
+    ):
         self._parser = LineParser(input_file)
         self._plotter = None
         self._masker = None
@@ -65,7 +72,7 @@ class Lines(Geometry):
         self.adjust_offset()
         self.replace_nan_depth()
 
-    def replace_nan_depth(self, inplace: bool=False) -> DataFrame:
+    def replace_nan_depth(self, inplace: bool = False) -> DataFrame:
         """Replace -10000.99 depth values with user-specified nan_depth_value
 
         Parameters
@@ -95,7 +102,7 @@ class Lines(Geometry):
         regions.loc[:] = regions.apply(replace_depth, axis=1)
         return regions
 
-    def to_csv(self, save_path: str=None, **kwargs) -> None:
+    def to_csv(self, save_path: str = None, **kwargs) -> None:
         """Convert an EVL file to a CSV
 
         Parameters
@@ -109,7 +116,7 @@ class Lines(Geometry):
             self.parse_file(**kwargs)
         self._parser.to_csv(self.data, save_path=save_path, **kwargs)
 
-    def to_json(self, save_path: str=None, pretty: bool=False, **kwargs) -> None:
+    def to_json(self, save_path: str = None, pretty: bool = False, **kwargs) -> None:
         """Convert EVL to JSON
 
         Parameters
@@ -134,8 +141,15 @@ class Lines(Geometry):
 
             self._plotter = LinesPlotter(self)
 
-    def plot(self, fmt: str="", start_time: Timestamp=None, end_time: Timestamp=None,
-        fill_between: bool=False, max_depth: Union[int, float]=0, **kwargs) -> None:
+    def plot(
+        self,
+        fmt: str = "",
+        start_time: Timestamp = None,
+        end_time: Timestamp = None,
+        fill_between: bool = False,
+        max_depth: Union[int, float] = 0,
+        **kwargs,
+    ) -> None:
         """
         Plot the points in the EVL file.
 
@@ -161,8 +175,10 @@ class Lines(Geometry):
             Useful arguments include `color`, `lw`, and `marker`.
         """
         if not (isinstance(start_time, Timestamp) and isinstance(end_time, Timestamp)):
-            raise TypeError(f"start and end times are of type {type(start_time)} and {type(end_time)}. \
-                            They must be of of type Pandas Timestamp.")
+            raise TypeError(
+                f"start and end times are of type {type(start_time)} and {type(end_time)}. \
+                            They must be of of type Pandas Timestamp."
+            )
         self._init_plotter()
         self._plotter.plot(
             fmt=fmt,
@@ -170,5 +186,5 @@ class Lines(Geometry):
             end_time=end_time,
             fill_between=fill_between,
             max_depth=max_depth,
-            **kwargs
+            **kwargs,
         )

@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import pandas as pd
 import pytest
 
@@ -25,6 +26,7 @@ def test_plot():
         max_depth=800,
         fill_between=True,
     )
+
 
 def test_plot_type_error():
     """
