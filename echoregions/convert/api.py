@@ -62,6 +62,7 @@ def read_evl(filepath: str, nan_depth_value: float=None, offset: float=0) -> Lin
 
 
 def merge(objects: List[Regions2D], reindex_ids: bool=False) -> Regions2D:
+    # TODO currently deprecated must be fixed before further tests.
     """Merge echoregion objects.
     Currently only supports merging Regions2D objects.
 
@@ -75,10 +76,13 @@ def merge(objects: List[Regions2D], reindex_ids: bool=False) -> Regions2D:
     combined : Regions2D
         A Regions2D object with region ids prepended by the EVR original filename.
     """
-    if not isinstance(objects, list) or not all(
-        isinstance(o, Regions2D) for o in objects
-    ):
-        return TypeError("`merge` takes a list of Regions2D objects")
+    if isinstance(objects, list):
+        if len(objects) == 0:
+            raise ValueError(f"objects must contain elements. objects sent in is empty.")
+        if not all(isinstance(o, Regions2D) for o in objects):
+            raise TypeError(f"Invalid elements in objects. Must be of type Regions2D")
+    else:
+        raise TypeError(f"Invalid objects Type: {type(objects)}. Must be of type List[DataFrame]")
 
     merged_idx = []
     merged_data = []
