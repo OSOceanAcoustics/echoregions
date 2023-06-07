@@ -1,8 +1,7 @@
 from ..convert.evl_parser import LineParser
 from . import Geometry
 
-from numpy import datetime64
-from pandas import Series, DataFrame
+from pandas import Series, DataFrame, Timestamp
 from typing import Union, List, Dict, Iterable
 
 class Lines(Geometry):
@@ -135,7 +134,7 @@ class Lines(Geometry):
 
             self._plotter = LinesPlotter(self)
 
-    def plot(self, fmt: str="", start_time: datetime64=None, end_time: datetime64=None,
+    def plot(self, fmt: str="", start_time: Timestamp=None, end_time: Timestamp=None,
         fill_between: bool=False, max_depth: Union[int, float]=0, **kwargs) -> None:
         """
         Plot the points in the EVL file.
@@ -161,6 +160,9 @@ class Lines(Geometry):
             Additional arguments passed to matplotlib `plot` or `fill_between`.
             Useful arguments include `color`, `lw`, and `marker`.
         """
+        if not (isinstance(start_time, Timestamp) and isinstance(end_time, Timestamp)):
+            raise TypeError(f"start and end times are of type {type(start_time)} and {type(end_time)}. \
+                            They must be of of type Pandas Timestamp.")
         self._init_plotter()
         self._plotter.plot(
             fmt=fmt,
