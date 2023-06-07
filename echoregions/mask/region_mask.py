@@ -1,17 +1,31 @@
+from typing import Any, List, NewType, Union
+
 import matplotlib
 import numpy as np
 import regionmask
 import xarray as xr
+from pandas import DataFrame
+from xarray import DataArray
+
+# Regions 2D Type Place Holder
+Regions2DType = NewType("Regions2D", Any)
 
 
 class Regions2DMasker:
     """Class for masking Regions. Should Only be used by Regions2D"""
 
-    def __init__(self, Regions2D):
+    def __init__(self, Regions2D: Regions2DType):
         self.Regions2D = Regions2D
         self.Regions2D.replace_nan_depth(inplace=True)
 
-    def mask(self, ds, region_df, mask_var=None, mask_labels=None, offset=0):
+    def mask(
+        self,
+        ds: DataArray,
+        region_df: DataFrame,
+        mask_var: str = None,
+        mask_labels: Union[List, str] = None,
+        offset: Union[int, float] = 0,
+    ) -> DataArray:
         # select only columns which are important
         region_df = region_df[["region_id", "time", "depth"]]
 
