@@ -1,10 +1,18 @@
+from typing import List
+
+from numpy import ndarray
+
 from ..formats.lines import Lines
 from ..formats.regions2d import Regions2D
 
 
 def read_evr(
-    filepath, offset=0, min_depth=None, max_depth=None, depth=None
-) -> "Regions2D":
+    filepath: str,
+    offset: int = 0,
+    min_depth: float = None,
+    max_depth: float = None,
+    depth: ndarray = None,
+) -> Regions2D:
     """Read an EVR file into a Regions2D object.
 
     Parameters
@@ -17,8 +25,8 @@ def read_evr(
         Depth value in meters to set -9999.99 depth edges to.
     max_depth : float, default ``None``
         Depth value in meters to set 9999.99 depth edges to.
-    depth : array, default ``None``
-        Array of range values assumed to be monotonically increasing
+    depth : numpy array, default ``None``
+        Array of range values assumed to be monotonically increasing.
 
     Returns
     -------
@@ -35,11 +43,7 @@ def read_evr(
     )
 
 
-def read_evl(
-    filepath,
-    nan_depth_value=None,
-    offset=0,
-) -> "Lines":
+def read_evl(filepath: str, nan_depth_value: float = None, offset: float = 0) -> Lines:
     """Read an EVL file into a Lines object.
 
     Parameters
@@ -64,7 +68,8 @@ def read_evl(
     )
 
 
-def merge(objects, reindex_ids=False):
+def merge(objects: List[Regions2D], reindex_ids: bool = False) -> Regions2D:
+    # TODO currently deprecated must be fixed before further tests.
     """Merge echoregion objects.
     Currently only supports merging Regions2D objects.
 
@@ -78,10 +83,15 @@ def merge(objects, reindex_ids=False):
     combined : Regions2D
         A Regions2D object with region ids prepended by the EVR original filename.
     """
-    if not isinstance(objects, list) or not all(
-        isinstance(o, Regions2D) for o in objects
-    ):
-        return ValueError("`merge` takes a list of Regions2D objects")
+    if isinstance(objects, list):
+        if len(objects) == 0:
+            raise ValueError("objects must contain elements. objects sent in is empty.")
+        if not all(isinstance(o, Regions2D) for o in objects):
+            raise TypeError("Invalid elements in objects. Must be of type Regions2D")
+    else:
+        raise TypeError(
+            f"Invalid objects Type: {type(objects)}. Must be of type List[DataFrame]"
+        )
 
     merged_idx = []
     merged_data = []
