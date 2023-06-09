@@ -5,3 +5,4 @@ pre-commit
 pytest
 xarray>=2023.2.0
 netcdf4
+pytest-cov
