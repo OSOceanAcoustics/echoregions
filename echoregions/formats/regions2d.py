@@ -1,7 +1,10 @@
 from pathlib import Path
+from typing import Dict, Iterable, List, Union
 
 import numpy as np
-import pandas as pd
+from numpy import ndarray
+from pandas import DataFrame, Series
+from xarray import DataArray
 
 from ..convert import utils
 from ..convert.evr_parser import Regions2DParser
@@ -12,12 +15,12 @@ from . import Geometry
 class Regions2D(Geometry):
     def __init__(
         self,
-        input_file=None,
-        parse=True,
-        offset=0,
-        min_depth=None,
-        max_depth=None,
-        depth=None,
+        input_file: str = None,
+        parse: bool = True,
+        offset: Union[int, float] = 0,
+        min_depth: Union[int, float] = None,
+        max_depth: Union[int, float] = None,
+        depth: ndarray = None,
     ):
         super().__init__()
         self._parser = Regions2DParser(input_file)
@@ -33,33 +36,33 @@ class Regions2D(Geometry):
         if parse:
             self.parse_file()
 
-    def __iter__(self):
+    def __iter__(self) -> Iterable:
         return self.data.iterrows()
 
-    def __getitem__(self, val):
+    def __getitem__(self, val: int) -> Series:
         return self.data.iloc[val]
 
     @property
-    def output_file(self):
+    def output_file(self) -> Union[str, List[str]]:
         """Path(s) to the list of files saved.
         String if a single file. List of strings if multiple.
         """
         return self._parser.output_file
 
     @property
-    def input_file(self):
+    def input_file(self) -> str:
         """String path to the EVR file"""
         return self._parser.input_file
 
     @property
-    def max_depth(self):
+    def max_depth(self) -> Union[int, float]:
         """Get the depth value that the 9999.99 edge will be set to"""
         if self._max_depth is None and self.depth is not None:
             self._max_depth = self.depth.max()
         return self._max_depth
 
     @max_depth.setter
-    def max_depth(self, val):
+    def max_depth(self, val: Union[int, float]) -> Union[int, float]:
         """Set the depth value that the 9999.99 edge will be set to"""
         if self.min_depth is not None:
             if val <= self.min_depth:
@@ -67,14 +70,14 @@ class Regions2D(Geometry):
         self._max_depth = float(val) if val is not None else val
 
     @property
-    def min_depth(self):
+    def min_depth(self) -> Union[int, float]:
         """Get the depth value that the -9999.99 edge will be set to"""
         if self._min_depth is None and self.depth is not None:
             self._min_depth = self.depth.min()
         return self._min_depth
 
     @min_depth.setter
-    def min_depth(self, val):
+    def min_depth(self, val: Union[int, float]) -> None:
         """Set the depth value that the -9999.99 edge will be set to"""
         if self.max_depth is not None:
             if val >= self.max_depth:
@@ -82,17 +85,17 @@ class Regions2D(Geometry):
         self._min_depth = float(val) if val is not None else val
 
     @property
-    def offset(self):
+    def offset(self) -> Union[int, float]:
         """Get the depth offset to apply to y values"""
         return self._offset
 
     @offset.setter
-    def offset(self, val):
+    def offset(self, val: Union[int, float]) -> None:
         """Set the depth offset to apply to y values"""
         self._offset = float(val)
 
     @property
-    def plotter(self):
+    def plotter(self) -> Regions2DPlotter:
         if self._plotter is None:
             if not self.data:
                 raise ValueError(
@@ -101,13 +104,14 @@ class Regions2D(Geometry):
             self._plotter = Regions2DPlotter(self)
         return self._plotter
 
-    def parse_file(self, offset=0):
+    def parse_file(self, offset: Union[int, float] = 0) -> None:
+        # TODO make use of offset.
         """Parse the EVR file as a DataFrame into `Regions2D.data`"""
         self.data = self._parser.parse_file()
         self.replace_nan_depth()
         self.adjust_offset()
 
-    def to_csv(self, save_path=None, **kwargs):
+    def to_csv(self, save_path: str = None, **kwargs) -> None:
         """Convert an EVR file to a CSV file
 
         Parameters
@@ -123,7 +127,7 @@ class Regions2D(Geometry):
             self.parse_file(**kwargs)
         self._parser.to_csv(self.data, save_path=save_path, **kwargs)
 
-    def to_json(self, save_path=None, **kwargs):
+    def to_json(self, save_path: str = None, **kwargs) -> None:
         # TODO: Implement this function
         """Convert EVR to a JSON file.
 
@@ -138,7 +142,9 @@ class Regions2D(Geometry):
         """
         # self._parser.to_json(save_path=save_path, **kwargs)
 
-    def select_region(self, region=None, copy=False):
+    def select_region(
+        self, region: Union[float, str, list, Series, DataFrame] = None, copy=False
+    ) -> DataFrame:
         """Ensure that region is a DataFrame.
 
         Parameters
@@ -155,16 +161,21 @@ class Regions2D(Geometry):
             There is a row for each region id provided by the region parameter.
         """
         if region is not None:
-            if isinstance(region, pd.DataFrame):
+            if isinstance(region, DataFrame):
                 region = list(region.region_id)
-            if isinstance(region, pd.Series):
+            elif isinstance(region, Series):
                 region = [region.region_id]
-            if (
+            elif (
                 isinstance(region, float)
                 or isinstance(region, int)
                 or isinstance(region, str)
             ):
                 region = [region]
+            elif not isinstance(region, list):
+                raise TypeError(
+                    f"Invalid Region Type: {type(region)}. Must be \
+                                of type float, str, list, Series, DataFrame, ``None``"
+                )
             # Select row by column id
             region = self.data[self.data["region_id"].isin(region)]
         else:
@@ -174,12 +185,14 @@ class Regions2D(Geometry):
         else:
             return region
 
-    def close_region(self, region=None):
+    def close_region(
+        self, region: Union[float, str, List, Series, DataFrame] = None
+    ) -> DataFrame:
         """Close a region by appending the first point to end of the list of points.
 
         Parameters
         ----------
-        region : str, list, or DataFrame
+        region : float, str, list, Series, DataFrame, ``None``
             region(s) to select raw files with
             If ``None``, select all regions. Defaults to ``None``
 
@@ -197,21 +210,25 @@ class Regions2D(Geometry):
         )
         return region
 
-    def select_sonar_file(self, files, region=None):
+    def select_sonar_file(
+        self,
+        files: List[str],
+        region: Union[float, str, list, Series, DataFrame] = None,
+    ) -> List:
         """Finds sonar files in the time domain that encompasses region or list of regions
 
         Parameters
         ----------
         files : list
             raw filenames
-        region : str, list, or DataFrame
+        region : float, str, list, Series, DataFrame, ``None``
             region(s) to select sonar files with
             If ``None``, select all regions. Defaults to ``None``
 
         Returns
         -------
-        list
-            list of raw file(s) spanning the
+        files: list
+            list of raw file(s) spanning the encompassing region or list of regions.
         """
         files.sort()
         filetimes = utils.parse_simrad_fname_time(
@@ -230,7 +247,7 @@ class Regions2D(Geometry):
         files = files[lower_idx:upper_idx]
         return files
 
-    def adjust_offset(self, inplace=False):
+    def adjust_offset(self, inplace: bool = False) -> DataFrame:
         """Apply a constant depth value to the 'depth' column in the output DataFrame
 
         Parameters
@@ -249,7 +266,7 @@ class Regions2D(Geometry):
         regions["depth"] = regions["depth"] + self.offset
         return regions
 
-    def replace_nan_depth(self, inplace=False):
+    def replace_nan_depth(self, inplace: bool = False) -> DataFrame:
         """Replace 9999.99 or -9999.99 depth values with user-specified min_depth and max_depth
 
         Parameters
@@ -262,8 +279,8 @@ class Regions2D(Geometry):
         DataFrame with depth edges replaced by Regions2D.min_depth and  Regions2D.max_depth
         """
 
-        def replace_depth(row):
-            def swap_val(val):
+        def replace_depth(row: Series) -> Series:
+            def swap_val(val: Union[int, float]) -> Union[int, float]:
                 if val == 9999.99:
                     return self.max_depth
                 elif val == -9999.99:
@@ -285,8 +302,13 @@ class Regions2D(Geometry):
         return regions
 
     def convert_points(
-        self, points, convert_time=True, convert_depth_edges=True, offset=0, unix=False
-    ):
+        self,
+        points: Union[List, Dict, DataFrame],
+        convert_time: bool = True,
+        convert_depth_edges: bool = True,
+        offset: Union[int, float] = 0,
+        unix: bool = False,
+    ) -> Union[List, Dict]:
         """Convert x and y values of points from the EV format.
         Returns a copy of points.
         Parameters
@@ -298,7 +320,7 @@ class Regions2D(Geometry):
         convert_depth_edges : bool
             Whether to convert -9999.99 edges to real range values.
             Min and max ranges must be set manually or by calling `set_range_edge_from_raw`
-        offset : float
+        offset : int, float
             depth offset in meters
         unix : bool
             unix : bool
@@ -316,12 +338,14 @@ class Regions2D(Geometry):
             unix=unix,
         )
 
-    def get_points_from_region(self, region, file=None):
+    def get_points_from_region(
+        self, region_id: Union[int, str, Dict], file: str = None
+    ) -> List:
         """Get points from specified region from a JSON or CSV file
         or from the parsed data.
         Parameters
         ----------
-        region : int, str, or dict
+        region_id : int, str, or dict
             ID of the region to extract points from or region dictionary
         file : str
             path to JSON or CSV file. Use parsed data if None
@@ -330,9 +354,9 @@ class Regions2D(Geometry):
         points : list
             list of x, y points
         """
-        return self.plotter.get_points_from_region(region, file)
+        return self.plotter.get_points_from_region(region_id, file)
 
-    def _init_plotter(self):
+    def _init_plotter(self) -> None:
         """Initialize the object used to plot regions."""
         if self._plotter is None:
             if self.data is None:
@@ -342,13 +366,18 @@ class Regions2D(Geometry):
 
             self._plotter = Regions2DPlotter(self)
 
-    def plot(self, region=None, close_region=False, **kwargs):
+    def plot(
+        self,
+        region: Union[str, List, DataFrame] = None,
+        close_region: bool = False,
+        **kwargs,
+    ) -> None:
         """Plot a region from data.
         Automatically convert time and range_edges.
 
         Parameters
         ---------
-        region : str, list, or DataFrame
+        region : float, str, list, Series, DataFrame, ``None``
             Region(s) to select raw files with
             If ``None``, select all regions. Defaults to ``None``
         close_region : bool
@@ -363,7 +392,7 @@ class Regions2D(Geometry):
 
         self._plotter.plot(region, close_region=close_region, **kwargs)
 
-    def _init_masker(self):
+    def _init_masker(self) -> None:
         """Initialize the object used to mask regions"""
         if self._masker is None:
             if self.data is None:
@@ -374,13 +403,20 @@ class Regions2D(Geometry):
 
             self._masker = Regions2DMasker(self)
 
-    def mask(self, ds, region_ids, mask_var=None, mask_labels=None, offset=0):
-        # TODO Does not currently work
-        """Mask an xarray dataset
+    def mask(
+        self,
+        ds: DataArray,
+        region_ids: List,
+        mask_var: str = None,
+        mask_labels=None,
+        offset: Union[int, float] = 0,
+    ) -> DataArray:
+        # TODO Does not currently work.
+        """Mask an xarray DataArray.
 
         Parameters
         ----------
-        ds : Xarray Dataset
+        ds : Xarray DataArray
             calibrated data (Sv or Sp) with range
         region_ids : list
             list IDs of regions to create mask for
@@ -393,17 +429,23 @@ class Regions2D(Geometry):
 
             list: uses a list of integers as labels
 
-        offset : float
+        offset : int, float
             A depth offset in meters added to the range of the points used for masking
 
         Returns
         -------
-        A dataset with the data_var masked by the specified region
+        A DataArray with the data_var masked by the specified region
         """
 
         if isinstance(mask_labels, list) and (len(mask_labels) != len(region_ids)):
             raise ValueError(
                 "If mask_labels is a list, it should be of same length as region_ids."
+            )
+
+        if not isinstance(ds, DataArray):
+            raise TypeError(
+                f"Invalid ds Type: {type(ds)}. Must be of type\
+                            float, str, list, Series, DataFrame, ``None``"
             )
 
         self._init_masker()

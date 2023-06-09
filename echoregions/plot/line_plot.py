@@ -1,21 +1,27 @@
+from datetime import datetime
+from typing import Any, NewType, Union
+
 import matplotlib.pyplot as plt
+
+# Lines Type Place Holder
+LinesType = NewType("Lines", Any)
 
 
 class LinesPlotter:
     """Class for plotting Regions. Should only be used by `Lines`"""
 
-    def __init__(self, Lines):
+    def __init__(self, Lines: LinesType):
         self.Lines = Lines
 
     def plot(
         self,
-        fmt="",
-        start_time=None,
-        end_time=None,
-        fill_between=False,
-        max_depth=0,
+        fmt: str = "",
+        start_time: datetime = None,
+        end_time: datetime = None,
+        fill_between: bool = False,
+        max_depth: Union[int, float] = 0,
         **kwargs
-    ):
+    ) -> None:
         df = self.Lines.data
         if start_time is not None:
             df = df[df["time"] > start_time]
