@@ -16,14 +16,14 @@ class Regions2D(Geometry):
     def __init__(
         self,
         input_file: str = None,
-        parse: bool = True,
-        offset: Union[int, float] = 0,
         min_depth: Union[int, float] = None,
         max_depth: Union[int, float] = None,
+        offset: Union[int, float] = 0,
         depth: ndarray = None,
     ):
         super().__init__()
         self._parser = Regions2DParser(input_file)
+        self.data = self._parser.data
         self._plotter = None
         self._masker = None
 
@@ -31,10 +31,6 @@ class Regions2D(Geometry):
         self.max_depth = max_depth
         self.min_depth = min_depth
         self.offset = offset
-
-        self.data = None
-        if parse:
-            self.parse_file()
 
     def __iter__(self) -> Iterable:
         return self.data.iterrows()
@@ -85,31 +81,10 @@ class Regions2D(Geometry):
         self._min_depth = float(val) if val is not None else val
 
     @property
-    def offset(self) -> Union[int, float]:
-        """Get the depth offset to apply to y values"""
-        return self._offset
-
-    @offset.setter
-    def offset(self, val: Union[int, float]) -> None:
-        """Set the depth offset to apply to y values"""
-        self._offset = float(val)
-
-    @property
     def plotter(self) -> Regions2DPlotter:
         if self._plotter is None:
-            if not self.data:
-                raise ValueError(
-                    "Input file has not been parsed; call `parse_file` to parse."
-                )
             self._plotter = Regions2DPlotter(self)
         return self._plotter
-
-    def parse_file(self, offset: Union[int, float] = 0) -> None:
-        # TODO make use of offset.
-        """Parse the EVR file as a DataFrame into `Regions2D.data`"""
-        self.data = self._parser.parse_file()
-        self.replace_nan_depth()
-        self.adjust_offset()
 
     def to_csv(self, save_path: str = None, **kwargs) -> None:
         """Convert an EVR file to a CSV file
@@ -120,14 +95,10 @@ class Regions2D(Geometry):
             Path to save csv file to
         convert_time : bool, default False
           Convert times in the EV datetime format to numpy datetime64.
-        kwargs : keyword arguments
-            Additional arguments passed to `Regions2D.parse_file`
         """
-        if self.data is None:
-            self.parse_file(**kwargs)
-        self._parser.to_csv(self.data, save_path=save_path, **kwargs)
+        self._parser.to_csv(self.data, save_path=save_path)
 
-    def to_json(self, save_path: str = None, **kwargs) -> None:
+    def to_json(self, save_path: str = None) -> None:
         # TODO: Implement this function
         """Convert EVR to a JSON file.
 
@@ -137,10 +108,8 @@ class Regions2D(Geometry):
             Path to save csv file to
         pretty : bool, default False
             Output more human readable JSON
-        kwargs : keyword arguments
-            Additional arguments passed to `Regions2D.parse_file`
         """
-        # self._parser.to_json(save_path=save_path, **kwargs)
+        # self._parser.to_json(save_path=save_path)
 
     def select_region(
         self, region: Union[float, str, list, Series, DataFrame] = None, copy=False
@@ -306,7 +275,6 @@ class Regions2D(Geometry):
         points: Union[List, Dict, DataFrame],
         convert_time: bool = True,
         convert_depth_edges: bool = True,
-        offset: Union[int, float] = 0,
         unix: bool = False,
     ) -> Union[List, Dict]:
         """Convert x and y values of points from the EV format.
@@ -320,8 +288,6 @@ class Regions2D(Geometry):
         convert_depth_edges : bool
             Whether to convert -9999.99 edges to real range values.
             Min and max ranges must be set manually or by calling `set_range_edge_from_raw`
-        offset : int, float
-            depth offset in meters
         unix : bool
             unix : bool
             Whether or not to output the time in the unix time format
@@ -334,7 +300,6 @@ class Regions2D(Geometry):
             points,
             convert_time=convert_time,
             convert_depth_edges=convert_depth_edges,
-            offset=offset,
             unix=unix,
         )
 
@@ -359,11 +324,6 @@ class Regions2D(Geometry):
     def _init_plotter(self) -> None:
         """Initialize the object used to plot regions."""
         if self._plotter is None:
-            if self.data is None:
-                raise ValueError(
-                    "Input file has not been parsed; call `parse_file` to parse."
-                )
-
             self._plotter = Regions2DPlotter(self)
 
     def plot(
@@ -395,12 +355,7 @@ class Regions2D(Geometry):
     def _init_masker(self) -> None:
         """Initialize the object used to mask regions"""
         if self._masker is None:
-            if self.data is None:
-                raise ValueError(
-                    "Input file has not been parsed; call `parse_file` to parse."
-                )
             from ..mask.region_mask import Regions2DMasker
-
             self._masker = Regions2DMasker(self)
 
     def mask(
@@ -409,7 +364,6 @@ class Regions2D(Geometry):
         region_ids: List,
         mask_var: str = None,
         mask_labels=None,
-        offset: Union[int, float] = 0,
     ) -> DataArray:
         # TODO Does not currently work.
         """Mask an xarray DataArray.
@@ -428,9 +382,6 @@ class Regions2D(Geometry):
             "from_ids": uses the region ids
 
             list: uses a list of integers as labels
-
-        offset : int, float
-            A depth offset in meters added to the range of the points used for masking
 
         Returns
         -------
@@ -453,5 +404,5 @@ class Regions2D(Geometry):
         # dataframe containing region information
         region_df = self.select_region(region_ids)
         return self._masker.mask(
-            ds, region_df, mask_var=mask_var, mask_labels=mask_labels, offset=offset
+            ds, region_df, mask_var=mask_var, mask_labels=mask_labels
         )

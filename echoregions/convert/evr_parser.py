@@ -18,8 +18,13 @@ class Regions2DParser(EvParserBase):
 
     def __init__(self, input_file: str = None):
         super().__init__(input_file, "EVR")
+        self.data = None
+        self.parse_file()
 
-    def _parse(self, fid: TextIO) -> DataFrame:
+    def parse_file(self):
+        if self.input_file is None:
+            return
+        fid = open(self.input_file, encoding="utf-8-sig")
         """Reads an open file and returns the file metadata and region information"""
 
         def _region_metadata_to_dict(line: List) -> Dict:
@@ -115,7 +120,7 @@ class Regions2DParser(EvParserBase):
 
         df = pd.concat(rows, ignore_index=True)
 
-        return df[rows[0].keys()].convert_dtypes()
+        self.data = df[rows[0].keys()].convert_dtypes()
 
     def convert_points(
         self,
@@ -123,7 +128,6 @@ class Regions2DParser(EvParserBase):
         convert_time: bool = True,
         convert_depth_edges: bool = True,
         offset: int = 0,
-        unix: bool = False,
     ) -> Union[List, Dict]:
         def convert_single(point: List) -> None:
             if convert_time:

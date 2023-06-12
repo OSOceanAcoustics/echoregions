@@ -35,7 +35,6 @@ def read_evr(
     """
     return Regions2D(
         input_file=str(filepath),
-        parse=True,
         offset=offset,
         min_depth=min_depth,
         max_depth=max_depth,
@@ -62,9 +61,7 @@ def read_evl(filepath: str, nan_depth_value: float = None, offset: float = 0) ->
     """
     return Lines(
         input_file=str(filepath),
-        parse=True,
-        nan_depth_value=nan_depth_value,
-        offset=offset,
+        nan_depth_value=nan_depth_value
     )
 
 

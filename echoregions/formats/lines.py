@@ -10,20 +10,14 @@ class Lines(Geometry):
     def __init__(
         self,
         input_file: str = None,
-        parse: bool = True,
         nan_depth_value: float = None,
-        offset: float = 0,
     ):
         self._parser = LineParser(input_file)
+        self.data = self._parser.data
         self._plotter = None
         self._masker = None
 
         self.nan_depth_value = nan_depth_value
-        self.offset = offset
-
-        self.data = None
-        if parse:
-            self.parse_file()
 
     def __iter__(self) -> Iterable:
         """Get points as an iterable. Allows looping over Lines object."""
@@ -53,24 +47,6 @@ class Lines(Geometry):
     def nan_depth_value(self, val: Union[int, float]) -> None:
         """Set the depth in meters that the -10000.99 depth value will be set to"""
         self._nan_depth_value = float(val) if val is not None else None
-
-    @property
-    def offset(self) -> Union[int, float]:
-        """Get the depth offset to apply to y values"""
-        return self._offset
-
-    @offset.setter
-    def offset(self, val: Union[int, float]):
-        """Set the depth offset to apply to y values"""
-        self._offset = float(val)
-
-    def parse_file(self) -> None:
-        """
-        Parse the EVL file into `Lines.data`.
-        """
-        self.data = self._parser.parse_file()
-        self.adjust_offset()
-        self.replace_nan_depth()
 
     def replace_nan_depth(self, inplace: bool = False) -> DataFrame:
         """Replace -10000.99 depth values with user-specified nan_depth_value
@@ -102,21 +78,18 @@ class Lines(Geometry):
         regions.loc[:] = regions.apply(replace_depth, axis=1)
         return regions
 
-    def to_csv(self, save_path: str = None, **kwargs) -> None:
+    def to_csv(self, save_path: str = None) -> None:
         """Convert an EVL file to a CSV
 
         Parameters
         ----------
         save_path : str
             Path to save csv file to
-        kwargs : keyword arguments
-            Additional arguments passed to `Lines.parse_file`
         """
-        if self.data is None:
-            self.parse_file(**kwargs)
-        self._parser.to_csv(self.data, save_path=save_path, **kwargs)
+        
+        self._parser.to_csv(self.data, save_path=save_path)
 
-    def to_json(self, save_path: str = None, pretty: bool = False, **kwargs) -> None:
+    def to_json(self, save_path: str = None, pretty: bool = False) -> None:
         """Convert EVL to JSON
 
         Parameters
@@ -125,20 +98,13 @@ class Lines(Geometry):
             Path to save csv file to
         pretty : bool, default False
             Output more human readable JSON
-        kwargs : keyword arguments
-            Additional arguments passed to `Lines.parse_file`
         """
-        self._parser.to_json(save_path=save_path, pretty=pretty, **kwargs)
+        self._parser.to_json(save_path=save_path, pretty=pretty)
 
     def _init_plotter(self) -> None:
         """Initialize the object used to plot lines"""
         if self._plotter is None:
-            if self.data is None:
-                raise ValueError(
-                    "Input file has not been parsed; call `parse_file` to parse."
-                )
             from ..plot.line_plot import LinesPlotter
-
             self._plotter = LinesPlotter(self)
 
     def plot(

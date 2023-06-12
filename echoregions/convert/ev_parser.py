@@ -26,6 +26,8 @@ class EvParserBase:
             if not os.path.isfile(file):
                 raise ValueError(f"Input file {file} does not exist")
             self._input_file = file
+        else:
+            raise TypeError(f"Input file must not be of type None")
 
     @property
     def output_file(self) -> str:
@@ -43,20 +45,6 @@ class EvParserBase:
             return open_file.readline().strip().split()
         else:
             return open_file.readline().strip()
-
-    def _parse(fid, **kwargs) -> None:
-        """Base method for parsing files"""
-
-    def parse_file(self, **kwargs) -> DataFrame:
-        """Base method for parsing the file in `input_file` and constructing `data`
-        Used for EVR and EVL parsers. EVR and EVL _parse returns DataFrame, so the
-        typing here reflects that.
-        """
-        if self.input_file is None:
-            return
-        fid = open(self.input_file, encoding="utf-8-sig")
-
-        return self._parse(fid, **kwargs)
 
     def to_csv(self, data: DataFrame, save_path: bool = None) -> None:
         """Save a Dataframe to a .csv file

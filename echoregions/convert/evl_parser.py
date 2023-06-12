@@ -13,10 +13,13 @@ class LineParser(EvParserBase):
 
     def __init__(self, input_file: str = None):
         super().__init__(input_file, "EVL")
+        self.data = None
+        self.parse_file()
 
-        self._data_dict = {}
-
-    def _parse(self, fid: TextIO) -> DataFrame:
+    def parse_file(self):
+        if self.input_file is None:
+            return
+        fid = open(self.input_file, encoding="utf-8-sig")
         # Read header containing metadata about the EVL file
         file_type, file_format_number, ev_version = fid.readline().strip().split()
         file_metadata = {
@@ -51,4 +54,4 @@ class LineParser(EvParserBase):
         order = list(self._data_dict["metadata"].keys()) + list(
             self._data_dict["points"][0].keys()
         )
-        return df[order]
+        self.data = df[order]
