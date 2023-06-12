@@ -27,7 +27,7 @@ class EvParserBase:
                 raise ValueError(f"Input file {file} does not exist")
             self._input_file = file
         else:
-            raise TypeError(f"Input file must not be of type None")
+            raise TypeError("Input file must not be of type None")
 
     @property
     def output_file(self) -> str:
