@@ -1,4 +1,5 @@
 from typing import Dict, Iterable, List, Union
+
 from pandas import DataFrame, Series, Timestamp
 
 from ..convert.evl_parser import LineParser
@@ -85,7 +86,7 @@ class Lines(Geometry):
         save_path : str
             Path to save csv file to
         """
-        
+
         self._parser.to_csv(self.data, save_path=save_path)
 
     def to_json(self, save_path: str = None, pretty: bool = False) -> None:
@@ -104,6 +105,7 @@ class Lines(Geometry):
         """Initialize the object used to plot lines"""
         if self._plotter is None:
             from ..plot.line_plot import LinesPlotter
+
             self._plotter = LinesPlotter(self)
 
     def plot(

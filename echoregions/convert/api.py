@@ -1,4 +1,5 @@
 from typing import List
+
 from numpy import ndarray
 
 from ..formats.lines import Lines
@@ -58,10 +59,7 @@ def read_evl(filepath: str, nan_depth_value: float = None, offset: float = 0) ->
     Lines
         Object that contains EVL data and metadata with methods for saving to file.
     """
-    return Lines(
-        input_file=str(filepath),
-        nan_depth_value=nan_depth_value
-    )
+    return Lines(input_file=str(filepath), nan_depth_value=nan_depth_value)
 
 
 def merge(objects: List[Regions2D], reindex_ids: bool = False) -> Regions2D:

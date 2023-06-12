@@ -1,6 +1,8 @@
 import os
+
 import pytest
 from pandas import DataFrame, Series
+
 import echoregions as er
 
 from ..convert.api import merge

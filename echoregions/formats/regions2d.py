@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Dict, Iterable, List, Union
+
 import numpy as np
 from numpy import ndarray
 from pandas import DataFrame, Series
@@ -355,6 +356,7 @@ class Regions2D(Geometry):
         """Initialize the object used to mask regions"""
         if self._masker is None:
             from ..mask.region_mask import Regions2DMasker
+
             self._masker = Regions2DMasker(self)
 
     def mask(

@@ -1,6 +1,8 @@
 from pathlib import Path
+
 import pandas as pd
 import pytest
+
 import echoregions as er
 
 data_dir = Path("./echoregions/test_data/")
