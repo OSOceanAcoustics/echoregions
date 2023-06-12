@@ -149,6 +149,7 @@ def test_select_sonar_file():
     assert raw == ["Summer2017-D20170625-T195927.nc"]
 
 
+@pytest.mark.filterwarnings("ignore:No gridpoint belongs to any region")
 def test_mask_no_overlap():
     """
     test if mask is empty when there is no overlap
