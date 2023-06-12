@@ -1,6 +1,5 @@
 import os
 from datetime import timedelta
-
 import numpy as np
 import pytest
 import xarray as xr

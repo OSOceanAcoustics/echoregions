@@ -1,5 +1,4 @@
 from typing import Dict, Iterable, List, Union
-
 from pandas import DataFrame, Series, Timestamp
 
 from ..convert.evl_parser import LineParser

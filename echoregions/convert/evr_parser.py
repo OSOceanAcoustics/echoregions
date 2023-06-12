@@ -1,11 +1,9 @@
 import os
-from typing import Dict, List, TextIO, Tuple, Union
-
+from typing import Dict, List, Tuple, Union
 import matplotlib
 import numpy as np
 import pandas as pd
 from numpy import ndarray
-from pandas import DataFrame
 
 from .ev_parser import EvParserBase
 from .utils import parse_time

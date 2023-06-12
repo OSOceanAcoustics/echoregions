@@ -1,8 +1,5 @@
 import os
-from typing import TextIO
-
 import pandas as pd
-from pandas import DataFrame
 
 from .ev_parser import EvParserBase
 from .utils import parse_time

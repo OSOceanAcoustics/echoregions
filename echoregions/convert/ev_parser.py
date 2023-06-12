@@ -1,6 +1,5 @@
 import json
 import os
-
 from pandas import DataFrame
 
 from .utils import validate_path

@@ -1,5 +1,4 @@
 from typing import Any, NewType
-
 import matplotlib.pyplot as plt
 from pandas import DataFrame
 

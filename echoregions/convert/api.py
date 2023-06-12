@@ -1,5 +1,4 @@
 from typing import List
-
 from numpy import ndarray
 
 from ..formats.lines import Lines
