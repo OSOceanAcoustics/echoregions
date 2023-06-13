@@ -18,7 +18,6 @@ class Regions2D(Geometry):
         input_file: str = None,
         min_depth: Union[int, float] = None,
         max_depth: Union[int, float] = None,
-        offset: Union[int, float] = 0,
         depth: ndarray = None,
     ):
         super().__init__()
@@ -30,7 +29,6 @@ class Regions2D(Geometry):
         self.depth = depth
         self.max_depth = max_depth
         self.min_depth = min_depth
-        self.offset = offset
 
     def __iter__(self) -> Iterable:
         return self.data.iterrows()
@@ -215,25 +213,6 @@ class Regions2D(Geometry):
 
         files = files[lower_idx:upper_idx]
         return files
-
-    def adjust_offset(self, inplace: bool = False) -> DataFrame:
-        """Apply a constant depth value to the 'depth' column in the output DataFrame
-
-        Parameters
-        ----------
-        inplace : bool
-            Modify the current `data` inplace
-
-        Returns
-        -------
-        DataFrame with depth offsetted by the value in Regions2D.offset
-        """
-        if self.offset is None or self.data is None:
-            return
-
-        regions = self.data if inplace else self.data.copy()
-        regions["depth"] = regions["depth"] + self.offset
-        return regions
 
     def replace_nan_depth(self, inplace: bool = False) -> DataFrame:
         """Replace 9999.99 or -9999.99 depth values with user-specified min_depth and max_depth
