@@ -8,7 +8,6 @@ from ..formats.regions2d import Regions2D
 
 def read_evr(
     filepath: str,
-    offset: int = 0,
     min_depth: float = None,
     max_depth: float = None,
     depth: ndarray = None,
@@ -19,8 +18,6 @@ def read_evr(
     ----------
     filepath : str, Path object
         A valid path to an EVR file
-    offset : float, default 0
-        Depth offset in meters
     min_depth : float, default ``None``
         Depth value in meters to set -9999.99 depth edges to.
     max_depth : float, default ``None``
@@ -35,14 +32,13 @@ def read_evr(
     """
     return Regions2D(
         input_file=str(filepath),
-        offset=offset,
         min_depth=min_depth,
         max_depth=max_depth,
         depth=depth,
     )
 
 
-def read_evl(filepath: str, nan_depth_value: float = None, offset: float = 0) -> Lines:
+def read_evl(filepath: str, nan_depth_value: float = None) -> Lines:
     """Read an EVL file into a Lines object.
 
     Parameters
@@ -51,8 +47,6 @@ def read_evl(filepath: str, nan_depth_value: float = None, offset: float = 0) ->
         A valid path to an EVL file
     nan_depth_value : float, default ``None``
         Depth in meters to replace -10000.990000 ranges with.
-    offset : float, default 0
-        Depth offset in meters
 
     Returns
     -------

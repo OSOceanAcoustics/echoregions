@@ -111,7 +111,7 @@ def test_plot():
     Test region plotting.
     """
     evr_path = data_dir + "x1.evr"
-    r2d = er.read_evr(evr_path, min_depth=0, max_depth=100, offset=5)
+    r2d = er.read_evr(evr_path, min_depth=0, max_depth=100)
     df = r2d.data.loc[r2d.data["region_name"] == "Chicken nugget"]
     r2d.plot([11], color="k")
     assert df["depth"][10][0] == 102.2552007996

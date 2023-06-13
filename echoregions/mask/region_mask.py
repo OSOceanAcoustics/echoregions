@@ -23,8 +23,7 @@ class Regions2DMasker:
         ds: DataArray,
         region_df: DataFrame,
         mask_var: str = None,
-        mask_labels: Union[List, str] = None,
-        offset: Union[int, float] = 0,
+        mask_labels: Union[List, str] = None
     ) -> DataArray:
         # select only columns which are important
         region_df = region_df[["region_id", "time", "depth"]]
