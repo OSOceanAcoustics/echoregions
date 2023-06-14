@@ -5,10 +5,12 @@ import numpy as np
 from numpy import ndarray
 from pandas import DataFrame, Series
 from xarray import DataArray
+import matplotlib.pyplot as plt
 
-from ..utils.utils import parse_simrad_fname_time, validate_path
+from ..utils.time import parse_simrad_fname_time
+from ..utils.io import validate_path
 from .regions2d_parser import parse_regions_file
-from .regions2d_plot import Regions2DPlotter
+from .regions2d_mask import regions2d_mask
 
 
 class Regions2D():
@@ -35,9 +37,6 @@ class Regions2D():
         self.input_file = input_file
         self.data = parse_regions_file(input_file)
         self.output_file = []
-
-        self._plotter = None
-        self._masker = None
 
         self.depth = depth
         self.max_depth = max_depth
@@ -78,12 +77,6 @@ class Regions2D():
             if val >= self.max_depth:
                 raise ValueError("min_depth cannot be greater than max_depth")
         self._min_depth = float(val) if val is not None else val
-
-    @property
-    def plotter(self) -> Regions2DPlotter:
-        if self._plotter is None:
-            self._plotter = Regions2DPlotter(self)
-        return self._plotter
 
     def to_csv(self, save_path: bool = None) -> None:
         """Save a Dataframe to a .csv file
@@ -283,7 +276,7 @@ class Regions2D():
         points : list or dict
             single converted point or list/dict of converted points depending on input
         """
-        def swap_depth_edge(self, y: Union[int, float]) -> Union[int, float]:
+        def _swap_depth_edge(self, y: Union[int, float]) -> Union[int, float]:
             if float(y) == 9999.99 and self.max_depth is not None:
                 return self.max_depth
             elif float(y) == -9999.99 and self.min_depth is not None:
@@ -291,53 +284,24 @@ class Regions2D():
             else:
                 return float(y)
 
-        def convert_single(point: List) -> None:
+        def _convert_single(point: List) -> None:
             if convert_time:
                 point[0] = matplotlib.dates.date2num(point[0])
 
             if convert_depth_edges:
-                point[1] = swap_depth_edge(point[1])
+                point[1] = _swap_depth_edge(point[1])
 
         if isinstance(points, dict):
             for point in points.values():
-                convert_single(point)
+                _convert_single(point)
         else:
             for point in points:
-                convert_single(point)
+                _convert_single(point)
 
         return points
 
-    def get_points_from_region(
-        self, region_id: Union[int, str, Dict], file: str = None
-    ) -> List:
-        """Get points from specified region from a JSON or CSV file
-        or from the parsed data.
-        Parameters
-        ----------
-        region_id : int, str, or dict
-            ID of the region to extract points from or region dictionary
-        file : str
-            path to JSON or CSV file. Use parsed data if None
-        Returns
-        -------
-        points : list
-            list of x, y points
-        """
-        return self.plotter.get_points_from_region(region_id, file)
-
-    def _init_plotter(self) -> None:
-        """Initialize the object used to plot regions."""
-        if self._plotter is None:
-            from .regions2d_plot import Regions2DPlotter
-
-            self._plotter = Regions2DPlotter(self)
-
-    def plot(
-        self,
-        region: Union[str, List, DataFrame] = None,
-        close_region: bool = False,
-        **kwargs,
-    ) -> None:
+    def plot(self, region: Union[str, List, DataFrame] = None, 
+             close_region: bool = False, **kwargs) -> None:
         """Plot a region from data.
         Automatically convert time and range_edges.
 
@@ -351,19 +315,14 @@ class Regions2D():
         kwargs : keyword arguments
             Additional arguments passed to matplotlib plot
         """
-        self._init_plotter()
 
         # Ensure that region is a DataFrame
         region = self.select_region(region)
 
-        self._plotter.plot(region, close_region=close_region, **kwargs)
-
-    def _init_masker(self) -> None:
-        """Initialize the object used to mask regions"""
-        if self._masker is None:
-            from .regions2d_mask import Regions2DMasker
-
-            self._masker = Regions2DMasker(self)
+        if close_region:
+            region = self.Regions2D.close_region(region)
+        for _, row in region.iterrows():
+            plt.plot(row["time"], row["depth"], **kwargs)
 
     def mask(
         self,
@@ -406,10 +365,11 @@ class Regions2D():
                             float, str, list, Series, DataFrame, ``None``"
             )
 
-        self._init_masker()
+        self.replace_nan_depth(inplace=True)
 
         # dataframe containing region information
         region_df = self.select_region(region_ids)
-        return self._masker.mask(
+        
+        return regions2d_mask(
             ds, region_df, mask_var=mask_var, mask_labels=mask_labels
         )

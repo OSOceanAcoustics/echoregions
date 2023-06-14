@@ -4,12 +4,16 @@ import numpy as np
 import pandas as pd
 from numpy import ndarray
 
-from ..utils.utils import parse_time, check_file
+from ..utils.time import parse_time
+from ..utils.io import check_file
 
 def parse_regions_file(input_file: str):
-    # Check for validity of input_file
+    # Check for validity of input_file.
     check_file(input_file, "EVR")
+
+    # Read file.
     fid = open(input_file, encoding="utf-8-sig")
+
     def _region_metadata_to_dict(line: List) -> Dict:
         """Assigns a name to each value in the metadata line for each region"""
         top = float(line[9])

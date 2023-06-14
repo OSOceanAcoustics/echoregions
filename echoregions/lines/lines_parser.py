@@ -1,7 +1,8 @@
 import os
 import pandas as pd
 
-from ..utils.utils import parse_time, check_file
+from ..utils.time import parse_time
+from ..utils.io import check_file
 
 def parse_line_file(input_file: str):
     # Check for validity of input_file

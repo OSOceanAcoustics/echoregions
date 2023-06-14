@@ -1,10 +1,11 @@
 from typing import Dict, Iterable, List, Union
 from pandas import DataFrame, Series, Timestamp
 import json
+import matplotlib.pyplot as plt
 
-from ..utils.utils import validate_path
+from ..utils.io import validate_path
 from .lines_parser import parse_line_file
-
+from .lines_mask import lines_mask
 
 class Lines():
     def __init__(
@@ -28,9 +29,6 @@ class Lines():
         self.input_file = input_file
         self.data = parse_line_file(input_file)
         self.output_file = []
-
-        self._plotter = None
-        self._masker = None
 
         self.nan_depth_value = nan_depth_value
 
@@ -63,7 +61,6 @@ class Lines():
         -------
         DataFrame with depth edges replaced by Lines.nan_depth_value
         """
-
         def replace_depth(row: Series) -> Series:
             def swap_val(val: Union[int, float]) -> Union[int, float]:
                 if val == -10000.99:
@@ -115,7 +112,6 @@ class Lines():
         kwargs
             keyword arguments passed into `parse_file`
         """
-
         # Check if the save directory is safe
         save_path = validate_path(
             save_path=save_path, input_file=self.input_file, ext=".json"
@@ -126,13 +122,6 @@ class Lines():
         with open(save_path, "w") as f:
             f.write(json.dumps(self.data.to_json(), indent=indent))
         self.output_file.append(save_path)
-
-    def _init_plotter(self) -> None:
-        """Initialize the object used to plot lines"""
-        if self._plotter is None:
-            from .lines_plot import LinesPlotter
-
-            self._plotter = LinesPlotter(self)
 
     def plot(
         self,
@@ -172,12 +161,18 @@ class Lines():
                 f"start and end times are of type {type(start_time)} and {type(end_time)}. \
                             They must be of of type Pandas Timestamp."
             )
-        self._init_plotter()
-        self._plotter.plot(
-            fmt=fmt,
-            start_time=start_time,
-            end_time=end_time,
-            fill_between=fill_between,
-            max_depth=max_depth,
-            **kwargs,
-        )
+
+        df = self.data
+        if start_time is not None:
+            df = df[df["time"] > start_time]
+        if end_time is not None:
+            df = df[df["time"] < end_time]
+
+        if fill_between:
+            plt.fill_between(df.time, df.depth, max_depth, **kwargs)
+        else:
+            plt.plot(df.time, df.depth, fmt, **kwargs)
+
+    def mask(self):
+        # TODO Implement Lines Mask
+        return lines_mask()
