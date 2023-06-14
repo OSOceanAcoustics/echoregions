@@ -1,12 +1,9 @@
 import os
-
 import pytest
 from pandas import DataFrame, Series
 
 import echoregions as er
-
-from ..convert.api import merge
-from ..convert.ev_parser import EvParserBase
+from ..utils.api import merge
 
 data_dir = "./echoregions/test_data/"
 output_csv = data_dir + "output_CSV/"
@@ -38,24 +35,10 @@ def test_convert_evr():
     evr = er.read_evr(evr_path)
     evr.to_csv(output_csv)
 
-    assert os.path.exists(evr.output_file)
-    os.remove(evr.output_file)
+    assert os.path.exists(evr.output_file[0])
+    os.remove(evr.output_file[0])
 
     os.rmdir(output_csv)
-
-
-def test_ev_to_csv_type_error():
-    """
-    Test ev to_csv type checking.
-    """
-    empty_ev = EvParserBase(data_dir + "x1.evl", "EVL")
-
-    with pytest.raises(TypeError):
-        empty_series = Series()
-        empty_ev.to_csv(empty_series)
-    with pytest.raises(TypeError):
-        empty_list = []
-        empty_ev.to_csv(empty_list)
 
 
 def test_merge_type_checking():

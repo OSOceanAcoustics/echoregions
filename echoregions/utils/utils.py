@@ -3,7 +3,6 @@ import os
 import re
 from pathlib import Path
 from typing import Dict, List, Union
-
 import numpy as np
 import pandas as pd
 from numpy import datetime64
@@ -127,3 +126,13 @@ def parse_simrad_fname_time(filenames: List[str]) -> datetime64:
     else:
         raise ValueError("'filenames' must be type str or list")
     return parse_time(f_list, "%Y%m%d %H%M%S")
+
+
+def check_file(file: str, format: str) -> None:
+    if file is not None:
+        if not file.upper().endswith(format):
+            raise ValueError(f"Input file {file} is not a {format} file")
+        if not os.path.isfile(file):
+            raise ValueError(f"Input file {file} does not exist")
+    else:
+        raise TypeError("Input file must not be of type None")

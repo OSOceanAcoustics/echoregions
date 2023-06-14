@@ -1,28 +1,41 @@
 from pathlib import Path
 from typing import Dict, Iterable, List, Union
-
+import matplotlib
 import numpy as np
 from numpy import ndarray
 from pandas import DataFrame, Series
 from xarray import DataArray
 
-from ..convert import utils
-from ..convert.evr_parser import Regions2DParser
-from ..plot.region_plot import Regions2DPlotter
-from . import Geometry
+from ..utils.utils import parse_simrad_fname_time, validate_path
+from .regions2d_parser import parse_regions_file
+from .regions2d_plot import Regions2DPlotter
 
 
-class Regions2D(Geometry):
+class Regions2D():
     def __init__(
         self,
-        input_file: str = None,
+        input_file: str,
         min_depth: Union[int, float] = None,
         max_depth: Union[int, float] = None,
         depth: ndarray = None,
     ):
-        super().__init__()
-        self._parser = Regions2DParser(input_file)
-        self.data = self._parser.data
+        self.depth = (
+            None  # Single array that can be used to obtain min_depth and max_depth
+        )
+        self._min_depth = (
+            None  # Set to replace -9999.99 depth values which are EVR min range
+        )
+        self._max_depth = (
+            None  # Set to replace 9999.99 depth values which are EVR max range
+        )
+        self._nan_depth_value = (
+            None  # Set to replace -10000.99 depth values with (EVL only)
+        )
+
+        self.input_file = input_file
+        self.data = parse_regions_file(input_file)
+        self.output_file = []
+
         self._plotter = None
         self._masker = None
 
@@ -35,18 +48,6 @@ class Regions2D(Geometry):
 
     def __getitem__(self, val: int) -> Series:
         return self.data.iloc[val]
-
-    @property
-    def output_file(self) -> Union[str, List[str]]:
-        """Path(s) to the list of files saved.
-        String if a single file. List of strings if multiple.
-        """
-        return self._parser.output_file
-
-    @property
-    def input_file(self) -> str:
-        """String path to the EVR file"""
-        return self._parser.input_file
 
     @property
     def max_depth(self) -> Union[int, float]:
@@ -84,17 +85,26 @@ class Regions2D(Geometry):
             self._plotter = Regions2DPlotter(self)
         return self._plotter
 
-    def to_csv(self, save_path: str = None, **kwargs) -> None:
-        """Convert an EVR file to a CSV file
+    def to_csv(self, save_path: bool = None) -> None:
+        """Save a Dataframe to a .csv file
 
         Parameters
         ----------
         save_path : str
-            Path to save csv file to
-        convert_time : bool, default False
-          Convert times in the EV datetime format to numpy datetime64.
+            path to save the CSV file to
         """
-        self._parser.to_csv(self.data, save_path=save_path)
+        if not isinstance(self.data, DataFrame):
+            raise TypeError(
+                f"Invalid ds Type: {type(self.data)}. Must be of type DataFrame."
+            )
+
+        # Check if the save directory is safe
+        save_path = validate_path(
+            save_path=save_path, input_file=self.input_file, ext=".csv"
+        )
+        # Reorder columns and export to csv
+        self.data.to_csv(save_path, index=False)
+        self.output_file.append(save_path)
 
     def to_json(self, save_path: str = None) -> None:
         # TODO: Implement this function
@@ -107,7 +117,6 @@ class Regions2D(Geometry):
         pretty : bool, default False
             Output more human readable JSON
         """
-        # self._parser.to_json(save_path=save_path)
 
     def select_region(
         self, region: Union[float, str, list, Series, DataFrame] = None, copy=False
@@ -198,7 +207,7 @@ class Regions2D(Geometry):
             list of raw file(s) spanning the encompassing region or list of regions.
         """
         files.sort()
-        filetimes = utils.parse_simrad_fname_time(
+        filetimes = parse_simrad_fname_time(
             [Path(fname).name for fname in files]
         ).values
 
@@ -253,8 +262,7 @@ class Regions2D(Geometry):
         self,
         points: Union[List, Dict, DataFrame],
         convert_time: bool = True,
-        convert_depth_edges: bool = True,
-        unix: bool = False,
+        convert_depth_edges: bool = True
     ) -> Union[List, Dict]:
         """Convert x and y values of points from the EV format.
         Returns a copy of points.
@@ -275,12 +283,29 @@ class Regions2D(Geometry):
         points : list or dict
             single converted point or list/dict of converted points depending on input
         """
-        return self._parser.convert_points(
-            points,
-            convert_time=convert_time,
-            convert_depth_edges=convert_depth_edges,
-            unix=unix,
-        )
+        def swap_depth_edge(self, y: Union[int, float]) -> Union[int, float]:
+            if float(y) == 9999.99 and self.max_depth is not None:
+                return self.max_depth
+            elif float(y) == -9999.99 and self.min_depth is not None:
+                return self.min_depth
+            else:
+                return float(y)
+
+        def convert_single(point: List) -> None:
+            if convert_time:
+                point[0] = matplotlib.dates.date2num(point[0])
+
+            if convert_depth_edges:
+                point[1] = swap_depth_edge(point[1])
+
+        if isinstance(points, dict):
+            for point in points.values():
+                convert_single(point)
+        else:
+            for point in points:
+                convert_single(point)
+
+        return points
 
     def get_points_from_region(
         self, region_id: Union[int, str, Dict], file: str = None
@@ -303,6 +328,8 @@ class Regions2D(Geometry):
     def _init_plotter(self) -> None:
         """Initialize the object used to plot regions."""
         if self._plotter is None:
+            from .regions2d_plot import Regions2DPlotter
+
             self._plotter = Regions2DPlotter(self)
 
     def plot(
@@ -334,7 +361,7 @@ class Regions2D(Geometry):
     def _init_masker(self) -> None:
         """Initialize the object used to mask regions"""
         if self._masker is None:
-            from ..mask.region_mask import Regions2DMasker
+            from .regions2d_mask import Regions2DMasker
 
             self._masker = Regions2DMasker(self)
 

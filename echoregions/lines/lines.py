@@ -1,19 +1,34 @@
 from typing import Dict, Iterable, List, Union
-
 from pandas import DataFrame, Series, Timestamp
+import json
 
-from ..convert.evl_parser import LineParser
-from . import Geometry
+from ..utils.utils import validate_path
+from .lines_parser import parse_line_file
 
 
-class Lines(Geometry):
+class Lines():
     def __init__(
         self,
-        input_file: str = None,
-        nan_depth_value: float = None,
+        input_file: str,
+        nan_depth_value: float = None
     ):
-        self._parser = LineParser(input_file)
-        self.data = self._parser.data
+        self.depth = (
+            None  # Single array that can be used to obtain min_depth and max_depth
+        )
+        self._min_depth = (
+            None  # Set to replace -9999.99 depth values which are EVR min range
+        )
+        self._max_depth = (
+            None  # Set to replace 9999.99 depth values which are EVR max range
+        )
+        self._nan_depth_value = (
+            None  # Set to replace -10000.99 depth values with (EVL only)
+        )
+
+        self.input_file = input_file
+        self.data = parse_line_file(input_file)
+        self.output_file = []
+
         self._plotter = None
         self._masker = None
 
@@ -26,18 +41,6 @@ class Lines(Geometry):
     def __getitem__(self, idx: int) -> Union[Dict, List]:
         """Indexing lines object will return the point at that index"""
         return self.points[idx]
-
-    @property
-    def output_file(self) -> Union[List[str], str]:
-        """Path(s) to the list of files saved.
-        String if a single file. List of strings if multiple.
-        """
-        return self._parser.output_file
-
-    @property
-    def input_file(self) -> str:
-        """String path to the EVL file"""
-        return self._parser.input_file
 
     @property
     def nan_depth_value(self) -> Union[int, float]:
@@ -78,33 +81,56 @@ class Lines(Geometry):
         regions.loc[:] = regions.apply(replace_depth, axis=1)
         return regions
 
-    def to_csv(self, save_path: str = None) -> None:
-        """Convert an EVL file to a CSV
+    def to_csv(self, save_path: bool = None) -> None:
+        """Save a Dataframe to a .csv file
 
         Parameters
         ----------
         save_path : str
-            Path to save csv file to
+            path to save the CSV file to
         """
+        if not isinstance(self.data, DataFrame):
+            raise TypeError(
+                f"Invalid ds Type: {type(self.data)}. Must be of type DataFrame."
+            )
 
-        self._parser.to_csv(self.data, save_path=save_path)
+        # Check if the save directory is safe
+        save_path = validate_path(
+            save_path=save_path, input_file=self.input_file, ext=".csv"
+        )
+        # Reorder columns and export to csv
+        self.data.to_csv(save_path, index=False)
+        self.output_file.append(save_path)
 
-    def to_json(self, save_path: str = None, pretty: bool = False) -> None:
-        """Convert EVL to JSON
+    def to_json(self, save_path: str = None, pretty: bool = True, **kwargs) -> None:
+        # TODO Currently only EVL files can be exported to JSON
+        """Convert supported formats to .json file.
 
         Parameters
         ----------
         save_path : str
-            Path to save csv file to
-        pretty : bool, default False
+            path to save the JSON file to
+        pretty : bool, default True
             Output more human readable JSON
+        kwargs
+            keyword arguments passed into `parse_file`
         """
-        self._parser.to_json(save_path=save_path, pretty=pretty)
+
+        # Check if the save directory is safe
+        save_path = validate_path(
+            save_path=save_path, input_file=self.input_file, ext=".json"
+        )
+        indent = 4 if pretty else None
+
+        # Save the entire parsed EVR dictionary as a JSON file
+        with open(save_path, "w") as f:
+            f.write(json.dumps(self.data.to_json(), indent=indent))
+        self.output_file.append(save_path)
 
     def _init_plotter(self) -> None:
         """Initialize the object used to plot lines"""
         if self._plotter is None:
-            from ..plot.line_plot import LinesPlotter
+            from .lines_plot import LinesPlotter
 
             self._plotter = LinesPlotter(self)
 

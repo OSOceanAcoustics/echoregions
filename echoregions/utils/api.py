@@ -1,9 +1,8 @@
 from typing import List
-
 from numpy import ndarray
 
-from ..formats.lines import Lines
-from ..formats.regions2d import Regions2D
+from ..lines.lines import Lines
+from ..regions2d.regions2d import Regions2D
 
 
 def read_evr(

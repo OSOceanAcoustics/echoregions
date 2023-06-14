@@ -1,6 +1,6 @@
 import numpy as np
 
-from echoregions.convert.utils import parse_simrad_fname_time, parse_time
+from echoregions.utils.utils import parse_simrad_fname_time, parse_time
 
 
 def test_parse_time():
