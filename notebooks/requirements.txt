@@ -1,0 +1,4 @@
+dask
+xarray>=2023.2.0
+echoregions @ git+https://github.com/ctuguinay/echoregions@65a784fc5c9c86f9bc19ea91cbed6e3422554954
+gdown
