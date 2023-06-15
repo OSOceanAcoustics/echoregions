@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 
 from ..utils.io import validate_path
 from .lines_parser import parse_line_file
-from .lines_mask import lines_mask
 
 class Lines():
     def __init__(
@@ -27,7 +26,7 @@ class Lines():
         )
 
         self.input_file = input_file
-        self.data = parse_line_file(input_file)
+        self._data = parse_line_file(input_file)
         self.output_file = []
 
         self.nan_depth_value = nan_depth_value
@@ -43,6 +42,10 @@ class Lines():
     @property
     def nan_depth_value(self) -> Union[int, float]:
         return self._nan_depth_value
+    
+    @property
+    def data(self) -> DataFrame:
+        return self._data
 
     @nan_depth_value.setter
     def nan_depth_value(self, val: Union[int, float]) -> None:
@@ -74,7 +77,7 @@ class Lines():
         if self.nan_depth_value is None:
             return
 
-        regions = self.data if inplace else self.data.copy()
+        regions = self._data if inplace else self._data.copy()
         regions.loc[:] = regions.apply(replace_depth, axis=1)
         return regions
 
@@ -86,9 +89,9 @@ class Lines():
         save_path : str
             path to save the CSV file to
         """
-        if not isinstance(self.data, DataFrame):
+        if not isinstance(self._data, DataFrame):
             raise TypeError(
-                f"Invalid ds Type: {type(self.data)}. Must be of type DataFrame."
+                f"Invalid ds Type: {type(self._data)}. Must be of type DataFrame."
             )
 
         # Check if the save directory is safe
@@ -96,7 +99,7 @@ class Lines():
             save_path=save_path, input_file=self.input_file, ext=".csv"
         )
         # Reorder columns and export to csv
-        self.data.to_csv(save_path, index=False)
+        self._data.to_csv(save_path, index=False)
         self.output_file.append(save_path)
 
     def to_json(self, save_path: str = None, pretty: bool = True, **kwargs) -> None:
@@ -120,7 +123,7 @@ class Lines():
 
         # Save the entire parsed EVR dictionary as a JSON file
         with open(save_path, "w") as f:
-            f.write(json.dumps(self.data.to_json(), indent=indent))
+            f.write(json.dumps(self._data.to_json(), indent=indent))
         self.output_file.append(save_path)
 
     def plot(
@@ -162,7 +165,7 @@ class Lines():
                             They must be of of type Pandas Timestamp."
             )
 
-        df = self.data
+        df = self._data
         if start_time is not None:
             df = df[df["time"] > start_time]
         if end_time is not None:
@@ -172,7 +175,3 @@ class Lines():
             plt.fill_between(df.time, df.depth, max_depth, **kwargs)
         else:
             plt.plot(df.time, df.depth, fmt, **kwargs)
-
-    def mask(self):
-        # TODO Implement Lines Mask
-        return lines_mask()

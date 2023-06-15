@@ -172,7 +172,7 @@ def test_mask_no_overlap():
     # select a chunk of the dataset after the region so there is no overlap
     Sv_no_overlap = ds.Sv.sel(ping_time=slice(bbox_left, bbox_right))
 
-    M = r2d.mask(Sv_no_overlap, [11])
+    M = er.regions2d_mask(Sv_no_overlap, r2d, [11])
 
     assert isinstance(M, DataArray)
     assert M.isnull().data.all()
@@ -187,8 +187,11 @@ def test_mask_correct_labels():
     region_ids = r2d.data.region_id.values  # Output is that of IntegerArray
     region_ids = list(region_ids)  # Convert to List
     ds = xr.open_dataset(os.path.join(data_dir, "x1_test.nc"))
-    M = r2d.mask(ds.Sv, region_ids, mask_labels=region_ids).values
+    M = er.regions2d_mask(ds.Sv, r2d, region_ids, mask_labels=region_ids)
     # it matches only a 11th region becasue x1_test.nc is a chunk around that region only
+    M.plot()
+    #plt.show()
+    M = M.values
     assert set(np.unique(M[~np.isnan(M)])) == {11}
 
 
@@ -214,9 +217,10 @@ def test_mask_type_error():
 
     evr_paths = data_dir + "x1.evr"
     r2d = er.read_evr(evr_paths)
+    ds = xr.open_dataset(os.path.join(data_dir, "x1_test.nc"))
     with pytest.raises(TypeError):
         empty_tuple = ()
-        _ = r2d.mask(empty_tuple)
+        _ = er.regions2d_mask(ds, r2d, empty_tuple)
     with pytest.raises(TypeError):
         empty_list = []
-        _ = r2d.mask(empty_list)
+        _ = er.regions2d_mask(ds, r2d, empty_list)

@@ -4,13 +4,11 @@ import matplotlib
 import numpy as np
 from numpy import ndarray
 from pandas import DataFrame, Series
-from xarray import DataArray
 import matplotlib.pyplot as plt
 
 from ..utils.time import parse_simrad_fname_time
 from ..utils.io import validate_path
 from .regions2d_parser import parse_regions_file
-from .regions2d_mask import regions2d_mask
 
 
 class Regions2D():
@@ -323,53 +321,3 @@ class Regions2D():
             region = self.Regions2D.close_region(region)
         for _, row in region.iterrows():
             plt.plot(row["time"], row["depth"], **kwargs)
-
-    def mask(
-        self,
-        ds: DataArray,
-        region_ids: List,
-        mask_var: str = None,
-        mask_labels=None,
-    ) -> DataArray:
-        # TODO Does not currently work.
-        """Mask an xarray DataArray.
-
-        Parameters
-        ----------
-        ds : Xarray DataArray
-            calibrated data (Sv or Sp) with range
-        region_ids : list
-            list IDs of regions to create mask for
-        mask_var : str
-            If provided, used to name the output mask array, otherwise `mask`
-        mask_labels:
-            None: assigns labels automatically 0,1,2,...
-
-            "from_ids": uses the region ids
-
-            list: uses a list of integers as labels
-
-        Returns
-        -------
-        A DataArray with the data_var masked by the specified region
-        """
-
-        if isinstance(mask_labels, list) and (len(mask_labels) != len(region_ids)):
-            raise ValueError(
-                "If mask_labels is a list, it should be of same length as region_ids."
-            )
-
-        if not isinstance(ds, DataArray):
-            raise TypeError(
-                f"Invalid ds Type: {type(ds)}. Must be of type\
-                            float, str, list, Series, DataFrame, ``None``"
-            )
-
-        self.replace_nan_depth(inplace=True)
-
-        # dataframe containing region information
-        region_df = self.select_region(region_ids)
-        
-        return regions2d_mask(
-            ds, region_df, mask_var=mask_var, mask_labels=mask_labels
-        )

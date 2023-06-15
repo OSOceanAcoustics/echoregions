@@ -1,6 +1,8 @@
 from pathlib import Path
 import pandas as pd
 import pytest
+import os
+import xarray as xr
 
 import echoregions as er
 
@@ -68,3 +70,15 @@ def test_replace_nan_depth():
     lines.nan_depth_value = 20
     lines.replace_nan_depth(inplace=True)
     assert lines.data.loc[0, "depth"] == 20
+
+def test_lines_mask():
+    """
+    Tests lines_mask on an overlapping (over time) evl file.
+    """
+    lines = er.read_evl(evl_path)
+
+    ds_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc"))
+
+    M = er.lines_mask(ds_Sv, lines)
+    M.plot(yincrease=False)
+    #plt.show()

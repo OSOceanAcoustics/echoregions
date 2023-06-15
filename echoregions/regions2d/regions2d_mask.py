@@ -1,13 +1,50 @@
-from typing import List, Union
+from typing import List
 import matplotlib
 import numpy as np
 import regionmask
 import xarray as xr
-from pandas import DataFrame
-from xarray import DataArray
+from xarray import DataArray, Dataset
 
-def regions2d_mask(ds: DataArray, region_df: DataFrame, mask_var: str = None, 
-         mask_labels: Union[List, str] = None) -> DataArray:
+from .regions2d import Regions2D
+
+def regions2d_mask(ds_Sv: DataArray, regions2d: Regions2D, 
+                   region_ids: List , mask_var: str = None, mask_labels=None) -> DataArray:
+    """Mask an xarray DataArray.
+
+    Parameters
+    ----------
+    ds : Xarray DataArray
+        calibrated data (Sv or Sp) with range
+    region_ids : list
+        list IDs of regions to create mask for
+    mask_var : str
+        If provided, used to name the output mask array, otherwise `mask`
+    mask_labels:
+        None: assigns labels automatically 0,1,2,...
+
+        "from_ids": uses the region ids
+
+        list: uses a list of integers as labels
+
+    Returns
+    -------
+    A DataArray with the data_var masked by the specified region
+    """
+
+    if type(regions2d) != Regions2D:
+        raise TypeError(f"regions2d should be of type Regions2D. regions2d is currently of \
+                        type {type(regions2d)}")
+    
+    if isinstance(mask_labels, list) and (len(mask_labels) != len(region_ids)):
+        raise ValueError("If mask_labels is a list, it should be of same length as region_ids.")
+
+    if not isinstance(ds_Sv, DataArray):
+        raise TypeError(f"Invalid ds Type: {type(ds_Sv)}. Must be of type DataArray")
+
+    regions2d.replace_nan_depth(inplace=True)
+
+     # dataframe containing region information
+    region_df = regions2d.select_region(region_ids)
     
     # select only columns which are important
     region_df = region_df[["region_id", "time", "depth"]]
@@ -28,10 +65,10 @@ def regions2d_mask(ds: DataArray, region_df: DataFrame, mask_var: str = None,
     region_ids = [int(id) for id, region in grouped]
 
     # Convert ping_time to unix_time since the masking does not work on datetime objects
-    ds = ds.assign_coords(
+    ds_Sv = ds_Sv.assign_coords(
         unix_time=(
             "ping_time",
-            matplotlib.dates.date2num(ds.coords["ping_time"].values),
+            matplotlib.dates.date2num(ds_Sv.coords["ping_time"].values),
         )
     )
 
@@ -41,7 +78,7 @@ def regions2d_mask(ds: DataArray, region_df: DataFrame, mask_var: str = None,
             # create mask
             r = regionmask.Regions(outlines=regions_np, numbers=region_ids)
             M = r.mask(
-                ds,
+                ds_Sv,
                 lon_name="unix_time",
                 lat_name="depth",
                 wrap_lon=False,
@@ -51,7 +88,7 @@ def regions2d_mask(ds: DataArray, region_df: DataFrame, mask_var: str = None,
             # create mask
             r = regionmask.Regions(outlines=regions_np)
             M = r.mask(
-                ds,
+                ds_Sv,
                 lon_name="unix_time",
                 lat_name="depth",
                 wrap_lon=False,
@@ -68,7 +105,7 @@ def regions2d_mask(ds: DataArray, region_df: DataFrame, mask_var: str = None,
         # create mask
         r = regionmask.Regions(outlines=regions_np)
         M = r.mask(
-            ds,
+            ds_Sv,
             lon_name="unix_time",
             lat_name="depth",
             wrap_lon=False,
