@@ -1,8 +1,10 @@
 import os
+
 import pandas as pd
 
-from ..utils.time import parse_time
 from ..utils.io import check_file
+from ..utils.time import parse_time
+
 
 def parse_line_file(input_file: str):
     # Check for validity of input_file
@@ -39,9 +41,7 @@ def parse_line_file(input_file: str):
     # Save file metadata for each point
     df = df.assign(**data_dict["metadata"])
     df.loc[:, "time"] = df.loc[:, "time"].apply(parse_time)
-    order = list(data_dict["metadata"].keys()) + list(
-        data_dict["points"][0].keys()
-    )
+    order = list(data_dict["metadata"].keys()) + list(data_dict["points"][0].keys())
     data = df[order]
 
     return data

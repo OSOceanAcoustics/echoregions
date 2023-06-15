@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import Dict
 
+
 def from_JSON(j: str) -> Dict:
     """Opens a JSON file
 
@@ -56,6 +57,7 @@ def validate_path(
         save_path.parent.mkdir(parents=True, exist_ok=True)
 
     return str(save_path)
+
 
 def check_file(file: str, format: str) -> None:
     if file is not None:

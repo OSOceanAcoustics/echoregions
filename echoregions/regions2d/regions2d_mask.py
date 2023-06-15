@@ -1,15 +1,22 @@
 from typing import List
+
 import matplotlib
 import numpy as np
 import regionmask
 import xarray as xr
 from xarray import DataArray
 
-from .regions2d import Regions2D
 from ..sonar.sonar import Sonar
+from .regions2d import Regions2D
 
-def regions2d_mask(sonar: Sonar, regions2d: Regions2D, 
-                   region_ids: List , mask_var: str = None, mask_labels=None) -> DataArray:
+
+def regions2d_mask(
+    sonar: Sonar,
+    regions2d: Regions2D,
+    region_ids: List,
+    mask_var: str = None,
+    mask_labels=None,
+) -> DataArray:
     """Mask data found in a Sonar object based off of a Regions2D object and its regions ids.
 
     Parameters
@@ -33,20 +40,28 @@ def regions2d_mask(sonar: Sonar, regions2d: Regions2D,
     """
 
     if type(sonar) != Sonar:
-        raise TypeError(f"sonar should be of type Sonar. sonar is currently of type {type(sonar)}.")
+        raise TypeError(
+            f"sonar should be of type Sonar. sonar is currently of type {type(sonar)}."
+        )
 
     if type(regions2d) != Regions2D:
-        raise TypeError(f"regions2d should be of type Regions2D. regions2d is currently of \
-                        type {type(regions2d)}")
-    
+        raise TypeError(
+            f"regions2d should be of type Regions2D. regions2d is currently of \
+                        type {type(regions2d)}"
+        )
+
     if type(region_ids) == list:
         if len(region_ids) == 0:
             raise ValueError("region_ids is empty. Cannot be empty.")
     else:
-        raise TypeError(f"region_ids must be of type list. Currently is of type {type(region_ids)}")
-    
+        raise TypeError(
+            f"region_ids must be of type list. Currently is of type {type(region_ids)}"
+        )
+
     if isinstance(mask_labels, list) and (len(mask_labels) != len(region_ids)):
-        raise ValueError("If mask_labels is a list, it should be of same length as region_ids.")
+        raise ValueError(
+            "If mask_labels is a list, it should be of same length as region_ids."
+        )
 
     # Extract sonar data.
     da_Sv = sonar.data
@@ -54,9 +69,9 @@ def regions2d_mask(sonar: Sonar, regions2d: Regions2D,
     # Replace nan depth in regions2d.
     regions2d.replace_nan_depth(inplace=True)
 
-     # Dataframe containing region information.
+    # Dataframe containing region information.
     region_df = regions2d.select_region(region_ids)
-    
+
     # Select only columns which are important.
     region_df = region_df[["region_id", "time", "depth"]]
 

@@ -1,17 +1,18 @@
 from pathlib import Path
 from typing import Dict, Iterable, List, Union
+
 import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 from numpy import ndarray
 from pandas import DataFrame, Series
-import matplotlib.pyplot as plt
 
-from ..utils.time import parse_simrad_fname_time
 from ..utils.io import validate_path
+from ..utils.time import parse_simrad_fname_time
 from .regions2d_parser import parse_regions_file
 
 
-class Regions2D():
+class Regions2D:
     def __init__(
         self,
         input_file: str,
@@ -253,7 +254,7 @@ class Regions2D():
         self,
         points: Union[List, Dict, DataFrame],
         convert_time: bool = True,
-        convert_depth_edges: bool = True
+        convert_depth_edges: bool = True,
     ) -> Union[List, Dict]:
         """Convert x and y values of points from the EV format.
         Returns a copy of points.
@@ -274,6 +275,7 @@ class Regions2D():
         points : list or dict
             single converted point or list/dict of converted points depending on input
         """
+
         def _swap_depth_edge(self, y: Union[int, float]) -> Union[int, float]:
             if float(y) == 9999.99 and self.max_depth is not None:
                 return self.max_depth
@@ -298,8 +300,12 @@ class Regions2D():
 
         return points
 
-    def plot(self, region: Union[str, List, DataFrame] = None, 
-             close_region: bool = False, **kwargs) -> None:
+    def plot(
+        self,
+        region: Union[str, List, DataFrame] = None,
+        close_region: bool = False,
+        **kwargs,
+    ) -> None:
         """Plot a region from data.
         Automatically convert time and range_edges.
 

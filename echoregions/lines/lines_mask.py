@@ -1,8 +1,9 @@
-import xarray as xr
 import pandas as pd
+import xarray as xr
 
-from .lines import Lines
 from ..sonar.sonar import Sonar
+from .lines import Lines
+
 
 def lines_mask(sonar, lines):
     """
@@ -18,20 +19,24 @@ def lines_mask(sonar, lines):
     """
 
     def filter_bottom(bottom, start_date, end_date):
-        """ 
+        """
         Selects the values of the bottom between two dates.
         """
         after_start_date = bottom["time"] > start_date
         before_end_date = bottom["time"] < end_date
         between_two_dates = after_start_date & before_end_date
-        filtered_bottom = bottom.loc[between_two_dates].set_index('time')
-        return(filtered_bottom)
-    
+        filtered_bottom = bottom.loc[between_two_dates].set_index("time")
+        return filtered_bottom
+
     if type(sonar) != Sonar:
-        raise TypeError(f"sonar should be of type Sonar. sonar is currently of type {type(sonar)}.")
+        raise TypeError(
+            f"sonar should be of type Sonar. sonar is currently of type {type(sonar)}."
+        )
 
     if type(lines) != Lines:
-        raise TypeError(f"lines should be of type Lines. lines is currently of type {type(lines)}.")
+        raise TypeError(
+            f"lines should be of type Lines. lines is currently of type {type(lines)}."
+        )
 
     da_Sv = sonar.data
     lines_df = lines.data
@@ -45,34 +50,39 @@ def lines_mask(sonar, lines):
     filtered_bottom = filter_bottom(lines_df, start_time, end_time)
 
     if len(filtered_bottom) > 0:
-
         # create joint index
-        joint_index = list(set(list(pd.DataFrame(sonar_index)[0]) + list(filtered_bottom.index)))
+        joint_index = list(
+            set(list(pd.DataFrame(sonar_index)[0]) + list(filtered_bottom.index))
+        )
 
         # interpolate on the sonar coordinates
         # nearest interpolation has a problem when points are far from each other
-        bottom_interpolated = filtered_bottom.reindex(joint_index).loc[sonar_index]#.interpolate('nearest').loc[sonar_index]
+        bottom_interpolated = filtered_bottom.reindex(joint_index).loc[
+            sonar_index
+        ]  # .interpolate('nearest').loc[sonar_index]
         # max_depth to set the NAs to after interpolation
         max_depth = float(da_Sv.depth.max())
         bottom_interpolated = bottom_interpolated.fillna(max_depth)
 
         # convert to data array for bottom
-        bottom_da = bottom_interpolated['depth'].to_xarray()#.rename({'index':'ping_time'})
-        bottom_da = bottom_da.rename({"time":"ping_time"})
+        bottom_da = bottom_interpolated[
+            "depth"
+        ].to_xarray()  # .rename({'index':'ping_time'})
+        bottom_da = bottom_da.rename({"time": "ping_time"})
 
         # create a data array of depths
-        depth_da = da_Sv['depth']+xr.zeros_like(da_Sv)
-        depth_da = depth_da.drop_vars(['range_sample'])
+        depth_da = da_Sv["depth"] + xr.zeros_like(da_Sv)
+        depth_da = depth_da.drop_vars(["range_sample"])
 
         # create a mask for the bottom:
         # bottom: False, otherwise: True
-        bottom_mask = (depth_da<bottom_da)
-  
+        bottom_mask = depth_da < bottom_da
+
     else:
         # set everything to False
         bottom_mask = xr.full_like(da_Sv, False)
 
     # bottom: False becomes 0, otherwise: True becomes 1
-    bottom_mask = bottom_mask.where(True,1,0)
+    bottom_mask = bottom_mask.where(True, 1, 0)
 
     return bottom_mask

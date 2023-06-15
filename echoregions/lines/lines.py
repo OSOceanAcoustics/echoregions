@@ -1,17 +1,15 @@
-from typing import Dict, Iterable, List, Union
-from pandas import DataFrame, Series, Timestamp
 import json
+from typing import Dict, Iterable, List, Union
+
 import matplotlib.pyplot as plt
+from pandas import DataFrame, Series, Timestamp
 
 from ..utils.io import validate_path
 from .lines_parser import parse_line_file
 
-class Lines():
-    def __init__(
-        self,
-        input_file: str,
-        nan_depth_value: float = None
-    ):
+
+class Lines:
+    def __init__(self, input_file: str, nan_depth_value: float = None):
         self.depth = (
             None  # Single array that can be used to obtain min_depth and max_depth
         )
@@ -42,7 +40,7 @@ class Lines():
     @property
     def nan_depth_value(self) -> Union[int, float]:
         return self._nan_depth_value
-    
+
     @property
     def data(self) -> DataFrame:
         return self._data
@@ -64,6 +62,7 @@ class Lines():
         -------
         DataFrame with depth edges replaced by Lines.nan_depth_value
         """
+
         def replace_depth(row: Series) -> Series:
             def swap_val(val: Union[int, float]) -> Union[int, float]:
                 if val == -10000.99:

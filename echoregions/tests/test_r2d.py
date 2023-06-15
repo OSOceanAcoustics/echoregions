@@ -1,5 +1,6 @@
 import os
 from datetime import timedelta
+
 import numpy as np
 import pytest
 import xarray as xr
@@ -192,8 +193,8 @@ def test_mask_correct_labels():
     M = er.regions2d_mask(sonar, r2d, region_ids, mask_labels=region_ids)
     # it matches only a 11th region becasue x1_test.nc is a chunk around that region only
     M.plot()
-    #from matplotlib import pyplot as plt
-    #plt.show()
+    # from matplotlib import pyplot as plt
+    # plt.show()
     M = M.values
     assert set(np.unique(M[~np.isnan(M)])) == {11}
 

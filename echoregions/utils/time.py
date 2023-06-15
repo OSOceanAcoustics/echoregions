@@ -1,5 +1,6 @@
 import re
 from typing import List, Union
+
 import numpy as np
 import pandas as pd
 from numpy import datetime64
@@ -8,6 +9,7 @@ from pandas import Timestamp
 SIMRAD_FILENAME_MATCHER = re.compile(
     r"(?P<survey>.+)?-?D(?P<date>\w{1,8})-T(?P<time>\w{1,6})-?(?P<postfix>\w+)?\..+"
 )
+
 
 def parse_time(
     ev_time: Union[List[str], str],

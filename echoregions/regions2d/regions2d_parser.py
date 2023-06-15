@@ -1,11 +1,13 @@
 import os
 from typing import Dict, List, Tuple
+
 import numpy as np
 import pandas as pd
 from numpy import ndarray
 
-from ..utils.time import parse_time
 from ..utils.io import check_file
+from ..utils.time import parse_time
+
 
 def parse_regions_file(input_file: str):
     # Check for validity of input_file.
@@ -49,9 +51,7 @@ def parse_regions_file(input_file: str):
         points_x = parse_time(
             [f"{line[idx]} {line[idx + 1]}" for idx in range(0, len(line), 3)]
         ).values
-        points_y = np.array(
-            [float(line[idx + 2]) for idx in range(0, len(line), 3)]
-        )
+        points_y = np.array([float(line[idx + 2]) for idx in range(0, len(line), 3)])
         return points_x, points_y
 
     # Read header containing metadata about the EVR file

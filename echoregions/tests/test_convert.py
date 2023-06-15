@@ -1,8 +1,10 @@
 import os
+
 import pytest
 from pandas import DataFrame, Series
 
 import echoregions as er
+
 from ..utils.api import merge
 
 data_dir = "./echoregions/test_data/"

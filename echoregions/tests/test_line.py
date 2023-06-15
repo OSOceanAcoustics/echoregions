@@ -1,7 +1,8 @@
+import os
 from pathlib import Path
+
 import pandas as pd
 import pytest
-import os
 import xarray as xr
 
 import echoregions as er
@@ -71,6 +72,7 @@ def test_replace_nan_depth():
     lines.replace_nan_depth(inplace=True)
     assert lines.data.loc[0, "depth"] == 20
 
+
 def test_lines_mask():
     """
     Tests lines_mask on an overlapping (over time) evl file.
@@ -81,5 +83,5 @@ def test_lines_mask():
 
     M = er.lines_mask(sonar, lines)
     M.plot(yincrease=False)
-    #from matplotlib import pyplot as plt
-    #plt.show()
+    # from matplotlib import pyplot as plt
+    # plt.show()

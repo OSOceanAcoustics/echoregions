@@ -1,7 +1,8 @@
-from pathlib import Path
-from xarray import DataArray
 import os
+from pathlib import Path
+
 import pytest
+from xarray import DataArray
 
 import echoregions as er
 
@@ -16,6 +17,7 @@ def test_sonar_data():
     sonar = er.read_nc(os.path.join(DATA_DIR, NC_FILE))
 
     assert type(sonar.data) == DataArray
+
 
 def test_sonar_errors():
     """
