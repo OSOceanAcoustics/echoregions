@@ -77,8 +77,9 @@ def test_lines_mask():
     """
     lines = er.read_evl(evl_path)
 
-    ds_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc"))
+    sonar = er.read_nc(os.path.join(data_dir, "x1_test.nc"))
 
-    M = er.lines_mask(ds_Sv, lines)
+    M = er.lines_mask(sonar, lines)
     M.plot(yincrease=False)
+    #from matplotlib import pyplot as plt
     #plt.show()
