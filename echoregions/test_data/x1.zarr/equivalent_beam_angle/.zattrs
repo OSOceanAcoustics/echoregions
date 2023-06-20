@@ -1,0 +1,11 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "channel"
+    ],
+    "long_name": "Equivalent beam angle",
+    "units": "sr",
+    "valid_range": [
+        0.0,
+        12.566370614359172
+    ]
+}

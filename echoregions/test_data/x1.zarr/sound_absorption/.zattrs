@@ -1,0 +1,9 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "channel",
+        "ping_time"
+    ],
+    "long_name": "Indicative acoustic absorption",
+    "units": "dB/m",
+    "valid_min": 0.0
+}

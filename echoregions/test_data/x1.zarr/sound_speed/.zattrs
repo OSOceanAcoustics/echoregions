@@ -1,0 +1,10 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "channel",
+        "ping_time"
+    ],
+    "long_name": "Indicative sound speed",
+    "standard_name": "speed_of_sound_in_sea_water",
+    "units": "m/s",
+    "valid_min": 0.0
+}
