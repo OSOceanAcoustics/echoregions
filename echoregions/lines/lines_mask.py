@@ -5,7 +5,7 @@ from ..sonar.sonar import Sonar
 from .lines import Lines
 
 
-def lines_mask(sonar, lines):
+def lines_mask(sonar: Sonar, lines: Lines, method: str = "nearest", limit_area: str = None):
     """
     Subsets a bottom dataset to the range of an Sv dataset
     Create a mask of same shape as the data found in Sonar object, where bottom: False, otherwise: True
@@ -13,6 +13,8 @@ def lines_mask(sonar, lines):
     Arguments:
         sonar - Sonar object containing DataArray of shape (ping_time, depth).
         lines - Lines object containing bottom values.
+        method - String containing interpolation method.
+        limit_area - String for determining filling restriction for NA values.
 
     Returns:
       bottom_mask - xarray with dimensions: (ping_time, depth) with bottom: False, otherwise: True
@@ -63,6 +65,18 @@ def lines_mask(sonar, lines):
         # max_depth to set the NAs to after interpolation
         max_depth = float(da_Sv.depth.max())
         bottom_interpolated = bottom_interpolated.fillna(max_depth)
+
+        # Interpolate on the sonar coordinates. Note that nearest interpolation has a problem when 
+        # points are far from each other.
+        try:
+            bottom_interpolated = filtered_bottom.reindex(joint_index).\
+                                        interpolate(method=method, 
+                                                    limit_area=limit_area).loc[sonar_index]
+        except:
+            print("")
+            raise ValueError("Interpolation arguments are invalid. Visit the docs at \
+                                https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.interpolate.html \
+                                for more information on what can be placed in said arguments.")
 
         # convert to data array for bottom
         bottom_da = bottom_interpolated[
