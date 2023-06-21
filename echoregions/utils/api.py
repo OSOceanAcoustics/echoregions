@@ -57,18 +57,18 @@ def read_evl(filepath: str, nan_depth_value: float = None) -> Lines:
     return Lines(input_file=str(filepath), nan_depth_value=nan_depth_value)
 
 
-def read_nc(filepath: str) -> Sonar:
+def read_sonar(filepath: str) -> Sonar:
     """Read an NetCDF file into a Lines object.
 
     Parameters
     ----------
     filepath : str, Path object
-        A valid path to an NetCDF .nc file
+        A valid path to an NetCDF .nc or Zarr .zarr file
 
     Returns
     -------
     Sonar
-        Object that contains NetCDF sonar data.
+        Object that contains sonar data.
     """
     return Sonar(input_file=str(filepath))
 

@@ -165,7 +165,7 @@ def test_mask_no_overlap():
     ] + timedelta(minutes=15)
     bbox_right = bbox_left + timedelta(minutes=15)
 
-    sonar = er.read_nc(os.path.join(data_dir, "x1_test.nc"))
+    sonar = er.read_sonar(os.path.join(data_dir, "x1_test.nc"))
     da_Sv = sonar.data
 
     r2d.min_depth = da_Sv.depth.min()
@@ -189,7 +189,7 @@ def test_mask_correct_labels():
 
     region_ids = r2d.data.region_id.values  # Output is that of IntegerArray
     region_ids = list(region_ids)  # Convert to List
-    sonar = er.read_nc(os.path.join(data_dir, "x1_test.nc"))
+    sonar = er.read_sonar(os.path.join(data_dir, "x1_test.nc"))
     M = er.regions2d_mask(sonar, r2d, region_ids, mask_labels=region_ids)
     # it matches only a 11th region becasue x1_test.nc is a chunk around that region only
     M.plot()
@@ -221,7 +221,7 @@ def test_mask_type_error():
 
     evr_paths = data_dir + "x1.evr"
     r2d = er.read_evr(evr_paths)
-    sonar = er.read_nc(os.path.join(data_dir, "x1_test.nc"))
+    sonar = er.read_sonar(os.path.join(data_dir, "x1_test.nc"))
     with pytest.raises(TypeError):
         empty_tuple = ()
         _ = er.regions2d_mask(sonar, r2d, empty_tuple)

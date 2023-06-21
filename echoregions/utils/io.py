@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Union, List
 
 
 def from_JSON(j: str) -> Dict:
@@ -59,11 +59,20 @@ def validate_path(
     return str(save_path)
 
 
-def check_file(file: str, format: str) -> None:
+def check_file(file: str, format: Union[List[str], str]) -> None:
     if file is not None:
-        if not file.upper().endswith(format):
-            raise ValueError(f"Input file {file} is not a {format} file")
+        if isinstance(format, List):
+            within = False
+            for str_value in format:
+                if file.upper().endswith(str_value):
+                    within = True
+            if not within:
+                raise ValueError(f"Input file {file} is not a {format} file")
+        else:
+            if not file.upper().endswith(format):
+                raise ValueError(f"Input file {file} is not a {format} file")
         if not os.path.isfile(file):
-            raise ValueError(f"Input file {file} does not exist")
+            if not os.path.isdir(file):
+                raise ValueError(f"{file} does not exist as file or directory.")
     else:
         raise TypeError("Input file must not be of type None")
