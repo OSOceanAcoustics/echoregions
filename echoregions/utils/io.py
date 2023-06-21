@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Dict, Union, List
+from typing import Dict, List, Union
 
 
 def from_JSON(j: str) -> Dict:
