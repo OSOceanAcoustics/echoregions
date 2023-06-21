@@ -25,7 +25,7 @@ def test_zarr_sonar_data():
     Tests .zarr sonar data type.
     """
     sonar = er.read_sonar(os.path.join(DATA_DIR, ZARR_FILE))
-    
+
     assert type(sonar.data) == DataArray
 
 

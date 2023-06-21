@@ -44,29 +44,31 @@ def check_ds_Sv(ds_Sv: Dataset) -> DataArray:
     try:
         da_Sv = ds_Sv.Sv
     except UnboundLocalError:
-        raise UnboundLocalError("There does not exist a data array Sv in the input sonar file.")
+        raise UnboundLocalError(
+            "There does not exist a data array Sv in the input sonar file."
+        )
     finally:
         # Check if is of type DataArray.
         if type(da_Sv) == DataArray:
             # Checks dimensions of da_Sv.
             if (da_Sv.dims) == ("ping_time", "depth"):
                 return da_Sv
-            elif(da_Sv.dims) == ("channel", "ping_time", "range_sample"):
+            elif (da_Sv.dims) == ("channel", "ping_time", "range_sample"):
                 # create depth coordinate:
-                echo_range = ds_Sv['echo_range'].isel(channel=0, ping_time=0)
+                echo_range = ds_Sv["echo_range"].isel(channel=0, ping_time=0)
                 # assuming water levels are same for different frequencies and location_time
-                depth = ds_Sv['water_level'].isel(channel=0, ping_time=0) + echo_range
-                depth = depth.drop_vars('channel')
+                depth = ds_Sv["water_level"].isel(channel=0, ping_time=0) + echo_range
+                depth = depth.drop_vars("channel")
                 # creating a new depth dimension
-                ds_Sv['depth'] = depth
-                ds_Sv = ds_Sv.swap_dims({'range_sample': 'depth'})
+                ds_Sv["depth"] = depth
+                ds_Sv = ds_Sv.swap_dims({"range_sample": "depth"})
                 manipulated_da_Sv = ds_Sv.Sv
                 return manipulated_da_Sv
             else:
                 raise ValueError(
                     f"Input Sv data array has dimensions {da_Sv.dims}. Must have dimensions \
                     ('ping_time', 'depth) or dimensions ('channel', 'ping_time', 'range_sample')"
-            )
+                )
         else:
             raise TypeError(
                 f"da_Sv.Sv is of type {type(da_Sv)}. Must be of type DataArray."
