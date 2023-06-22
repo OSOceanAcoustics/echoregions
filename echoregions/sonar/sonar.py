@@ -14,7 +14,7 @@ class Sonar:
 
     def __init__(self, input_file: None = str):
         self.input_file = input_file
-        if input_file == None:
+        if input_file is None:
             self._data = None
         else:
             self._data = parse_sonar_file(input_file)

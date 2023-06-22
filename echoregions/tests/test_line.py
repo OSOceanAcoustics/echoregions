@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-import xarray as xr
 
 import echoregions as er
 

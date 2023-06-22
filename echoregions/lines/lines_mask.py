@@ -10,7 +10,7 @@ def lines_mask(
 ):
     """
     Subsets a bottom dataset to the range of an Sv dataset
-    Create a mask of same shape as the data found in Sonar object, where bottom: False, otherwise: True
+    Create a mask of same shape as data found in Sonar object; bottom: False, otherwise: True
 
     Arguments:
         sonar - Sonar object containing DataArray of shape (ping_time, depth).
@@ -80,8 +80,8 @@ def lines_mask(
             print("")
             raise ValueError(
                 "Interpolation arguments are invalid. Visit the docs at \
-                                https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.interpolate.html \
-                                for more information on what can be placed in said arguments."
+                 https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.interpolate.html \
+                 for more information on what can be placed in said arguments."
             )
 
         # convert to data array for bottom
