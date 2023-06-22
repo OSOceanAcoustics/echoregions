@@ -1,8 +1,9 @@
 import os
 from pathlib import Path
-import xarray as xr
+
 import pandas as pd
 import pytest
+import xarray as xr
 
 import echoregions as er
 
@@ -83,4 +84,5 @@ def test_lines_mask():
     M = er.lines_mask(da_Sv, lines)
     M.plot(yincrease=False)
     from matplotlib import pyplot as plt
+
     plt.show()
