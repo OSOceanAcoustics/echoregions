@@ -83,6 +83,5 @@ def test_lines_mask():
 
     M = er.lines_mask(da_Sv, lines)
     M.plot(yincrease=False)
-    from matplotlib import pyplot as plt
-
-    plt.show()
+    #from matplotlib import pyplot as plt
+    #plt.show()
