@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-
+import xarray as xr
 import pandas as pd
 import pytest
 
@@ -78,9 +78,9 @@ def test_lines_mask():
     """
     lines = er.read_evl(evl_path)
 
-    sonar = er.read_sonar(os.path.join(data_dir, "x1_test.nc"))
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv
 
-    M = er.lines_mask(sonar, lines)
+    M = er.lines_mask(da_Sv, lines)
     M.plot(yincrease=False)
-    # from matplotlib import pyplot as plt
-    # plt.show()
+    from matplotlib import pyplot as plt
+    plt.show()

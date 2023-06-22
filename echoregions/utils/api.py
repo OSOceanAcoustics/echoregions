@@ -4,7 +4,6 @@ from numpy import ndarray
 
 from ..lines.lines import Lines
 from ..regions2d.regions2d import Regions2D
-from ..sonar.sonar import Sonar
 
 
 def read_evr(
@@ -55,22 +54,6 @@ def read_evl(filepath: str, nan_depth_value: float = None) -> Lines:
         Object that contains EVL data and metadata with methods for saving to file.
     """
     return Lines(input_file=str(filepath), nan_depth_value=nan_depth_value)
-
-
-def read_sonar(filepath: str) -> Sonar:
-    """Read an NetCDF file into a Lines object.
-
-    Parameters
-    ----------
-    filepath : str, Path object
-        A valid path to an NetCDF .nc or Zarr .zarr file
-
-    Returns
-    -------
-    Sonar
-        Object that contains sonar data.
-    """
-    return Sonar(input_file=str(filepath))
 
 
 def merge(objects: List[Regions2D], reindex_ids: bool = False) -> Regions2D:

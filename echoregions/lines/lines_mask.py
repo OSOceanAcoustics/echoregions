@@ -1,12 +1,12 @@
 import pandas as pd
 import xarray as xr
+from xarray import DataArray
 
-from ..sonar.sonar import Sonar
 from .lines import Lines
 
 
 def lines_mask(
-    sonar: Sonar, lines: Lines, method: str = "nearest", limit_area: str = None
+    da_Sv: DataArray, lines: Lines, method: str = "nearest", limit_area: str = None
 ):
     """
     Subsets a bottom dataset to the range of an Sv dataset
@@ -32,17 +32,11 @@ def lines_mask(
         filtered_bottom = bottom.loc[between_two_dates].set_index("time")
         return filtered_bottom
 
-    if type(sonar) != Sonar:
-        raise TypeError(
-            f"sonar should be of type Sonar. sonar is currently of type {type(sonar)}."
-        )
-
     if type(lines) != Lines:
         raise TypeError(
             f"lines should be of type Lines. lines is currently of type {type(lines)}."
         )
 
-    da_Sv = sonar.data
     lines_df = lines.data
 
     # new index
@@ -75,7 +69,7 @@ def lines_mask(
                 filtered_bottom.reindex(joint_index)
                 .interpolate(method=method, limit_area=limit_area)
                 .loc[sonar_index]
-            )
+            ).fillna(max_depth)
         except:
             print("")
             raise ValueError(

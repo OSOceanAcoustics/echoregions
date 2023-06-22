@@ -1,6 +1,5 @@
 import os
 from datetime import timedelta
-
 import numpy as np
 import pytest
 import xarray as xr
@@ -165,17 +164,15 @@ def test_mask_no_overlap():
     ] + timedelta(minutes=15)
     bbox_right = bbox_left + timedelta(minutes=15)
 
-    sonar = er.read_sonar(os.path.join(data_dir, "x1_test.nc"))
-    da_Sv = sonar.data
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv
 
     r2d.min_depth = da_Sv.depth.min()
     r2d.max_depth = da_Sv.depth.max()
 
     # select a chunk of the dataset after the region so there is no overlap
     Sv_no_overlap = da_Sv.sel(ping_time=slice(bbox_left, bbox_right))
-    sonar.data = Sv_no_overlap
 
-    M = er.regions2d_mask(sonar, r2d, [11])
+    M = er.regions2d_mask(Sv_no_overlap, r2d, [11])
 
     assert isinstance(M, DataArray)
     assert M.isnull().data.all()
@@ -186,11 +183,10 @@ def test_mask_correct_labels():
 
     evr_path = data_dir + "x1.evr"
     r2d = er.read_evr(evr_path)
-
     region_ids = r2d.data.region_id.values  # Output is that of IntegerArray
     region_ids = list(region_ids)  # Convert to List
-    sonar = er.read_sonar(os.path.join(data_dir, "x1_test.nc"))
-    M = er.regions2d_mask(sonar, r2d, region_ids, mask_labels=region_ids)
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv
+    M = er.regions2d_mask(da_Sv, r2d, region_ids, mask_labels=region_ids)
     # it matches only a 11th region becasue x1_test.nc is a chunk around that region only
     M.plot()
     # from matplotlib import pyplot as plt
@@ -221,10 +217,10 @@ def test_mask_type_error():
 
     evr_paths = data_dir + "x1.evr"
     r2d = er.read_evr(evr_paths)
-    sonar = er.read_sonar(os.path.join(data_dir, "x1_test.nc"))
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv
     with pytest.raises(TypeError):
         empty_tuple = ()
-        _ = er.regions2d_mask(sonar, r2d, empty_tuple)
+        _ = er.regions2d_mask(da_Sv, r2d, empty_tuple)
     with pytest.raises(ValueError):
         empty_list = []
-        _ = er.regions2d_mask(sonar, r2d, empty_list)
+        _ = er.regions2d_mask(da_Sv, r2d, empty_list)

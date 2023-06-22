@@ -1,28 +1,26 @@
 from typing import List
-
 import matplotlib
 import numpy as np
 import regionmask
 import xarray as xr
 from xarray import DataArray
 
-from ..sonar.sonar import Sonar
 from .regions2d import Regions2D
 
 
 def regions2d_mask(
-    sonar: Sonar,
+    da_Sv: DataArray,
     regions2d: Regions2D,
     region_ids: List,
     mask_var: str = None,
     mask_labels=None,
 ) -> DataArray:
-    """Mask data found in a Sonar object based off of a Regions2D object and its regions ids.
+    """Mask data found in a Data Array containing Sv data off of a Regions2D object and its regions ids.
 
     Parameters
     ----------
-    sonar : Sonar
-        Sonar object containing DataArray of shape (ping_time, depth).
+    da_Sv : Data Array
+        DataArray of shape (ping_time, depth) containing Sv data.
     regions2d : Regions2D
         Regions2D Object containing polygons corresponding to different regions.
     region_ids : list
@@ -36,13 +34,8 @@ def regions2d_mask(
 
     Returns
     -------
-    A DataArray with the data_var masked by the specified region
+    A DataArray with the data_var masked by the specified region.
     """
-
-    if type(sonar) != Sonar:
-        raise TypeError(
-            f"sonar should be of type Sonar. sonar is currently of type {type(sonar)}."
-        )
 
     if type(regions2d) != Regions2D:
         raise TypeError(
@@ -62,9 +55,6 @@ def regions2d_mask(
         raise ValueError(
             "If mask_labels is a list, it should be of same length as region_ids."
         )
-
-    # Extract sonar data.
-    da_Sv = sonar.data
 
     # Replace nan depth in regions2d.
     regions2d.replace_nan_depth(inplace=True)
