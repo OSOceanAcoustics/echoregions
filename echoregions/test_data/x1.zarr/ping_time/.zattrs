@@ -1,7 +1,0 @@
-{
-    "_ARRAY_DIMENSIONS": [
-        "ping_time"
-    ],
-    "calendar": "proleptic_gregorian",
-    "units": "nanoseconds since 2017-06-25 15:04:30.076000256"
-}

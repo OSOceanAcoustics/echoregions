@@ -1,8 +1,0 @@
-{
-    "_ARRAY_DIMENSIONS": [
-        "channel",
-        "ping_time"
-    ],
-    "long_name": "z-axis distance from the platform coordinate system origin to the sonar transducer",
-    "units": "m"
-}
