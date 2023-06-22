@@ -16,7 +16,8 @@ def regions2d_mask(
     mask_var: str = None,
     mask_labels=None,
 ) -> DataArray:
-    """Mask data found in a Data Array containing Sv data off of a Regions2D object and its regions ids.
+    """Mask data from Data Array containing Sv data based off of a Regions2D object
+    and its regions ids.
 
     Parameters
     ----------
