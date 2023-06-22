@@ -67,7 +67,9 @@ def check_ds_Sv(ds_Sv: Dataset) -> DataArray:
                 # Creating a new depth dimension
                 ds_Sv["depth"] = depth
                 ds_Sv = ds_Sv.swap_dims({"range_sample": "depth"})
-                manipulated_da_Sv = ds_Sv.Sv.isel(channel=0).drop_vars(["channel", "range_sample"])
+                manipulated_da_Sv = ds_Sv.Sv.isel(channel=0).drop_vars(
+                    ["channel", "range_sample"]
+                )
                 # Reorder coords
                 manipulated_da_Sv = manipulated_da_Sv.transpose()
                 return manipulated_da_Sv
