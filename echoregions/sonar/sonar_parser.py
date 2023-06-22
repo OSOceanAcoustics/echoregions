@@ -33,7 +33,7 @@ def check_ds_Sv(ds_Sv: Dataset) -> DataArray:
         input_file: str; represents input sonar file.
 
     Returns:
-        da_Sv: DataArray; represents
+        da_Sv: DataArray; contains ping and depth data.
     """
 
     # Check if file is a Dataset.
@@ -48,21 +48,28 @@ def check_ds_Sv(ds_Sv: Dataset) -> DataArray:
             "There does not exist a data array Sv in the input sonar file."
         )
     finally:
-        # Check if is of type DataArray.
+        # Check if is of type DataArray
         if type(da_Sv) == DataArray:
-            # Checks dimensions of da_Sv.
+            # Checks dimensions of da_Sv
             if (da_Sv.dims) == ("ping_time", "depth"):
+                # Drop unnecessary variables/coordinates
+                da_Sv = da_Sv.drop_vars(["channel", "range_sample"])
+                # Reorder coords
+                da_Sv = da_Sv.transpose()
+                # TODO: Remove mask that exists in plotting? Hidden variable value?
                 return da_Sv
             elif (da_Sv.dims) == ("channel", "ping_time", "range_sample"):
-                # create depth coordinate:
+                # Create depth coordinate:
                 echo_range = ds_Sv["echo_range"].isel(channel=0, ping_time=0)
-                # assuming water levels are same for different frequencies and location_time
+                # Assuming water levels are same for different frequencies and location_time
                 depth = ds_Sv["water_level"].isel(channel=0, ping_time=0) + echo_range
                 depth = depth.drop_vars("channel")
-                # creating a new depth dimension
+                # Creating a new depth dimension
                 ds_Sv["depth"] = depth
                 ds_Sv = ds_Sv.swap_dims({"range_sample": "depth"})
-                manipulated_da_Sv = ds_Sv.Sv
+                manipulated_da_Sv = ds_Sv.Sv.isel(channel=0).drop_vars(["channel", "range_sample"])
+                # Reorder coords
+                manipulated_da_Sv = manipulated_da_Sv.transpose()
                 return manipulated_da_Sv
             else:
                 raise ValueError(

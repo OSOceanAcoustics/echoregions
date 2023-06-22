@@ -92,7 +92,6 @@ def lines_mask(
 
         # create a data array of depths
         depth_da = da_Sv["depth"] + xr.zeros_like(da_Sv)
-        depth_da = depth_da.drop_vars(["range_sample"])
 
         # create a mask for the bottom:
         # bottom: False, otherwise: True
