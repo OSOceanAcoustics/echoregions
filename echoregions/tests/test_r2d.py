@@ -225,3 +225,36 @@ def test_mask_type_error():
     with pytest.raises(ValueError):
         empty_list = []
         _ = er.regions2d_mask(da_Sv, r2d, empty_list)
+
+def test_mask_convert_regions_2d_3d():
+    """testing if converting from 2d regions2d mask to 3d and back to 2d mask works"""
+
+    evr_path = data_dir + "x1.evr"
+    r2d = er.read_evr(evr_path)
+    region_ids = r2d.data.region_id.values  # Output is that of IntegerArray
+    region_ids = list(region_ids)  # Convert to List
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv
+    M = er.regions2d_mask(da_Sv, r2d, region_ids, mask_labels=region_ids)
+
+    # Give mask multiple unique non-nan data points. Necessary for non-trivial one hot encoding
+    np_data = M.data
+    fake_values = [5.0, 8.0]
+    rng = np.random.default_rng(seed=0)
+    for index in np.ndindex(np_data.shape):
+        if np.isnan(np_data[index]):
+            random_float = rng.random()
+            if random_float < 0.0044:
+                if random_float <= 0.0022:
+                    np_data[index] = fake_values[0]
+                else:
+                    np_data[index] = fake_values[1]
+    M.data = np_data
+
+    # Test values from converted 3D array (previous 2D array)
+    mask_3d_ds = er.convert_mask_2d_to_3d(M)
+    assert mask_3d_ds.mask_3d.data.shape == (3, 3957, 232)
+    assert list(mask_3d_ds.mask_dictionary.data) == [5.0, 8.0, 11.0]
+
+    # Test values from converted 2D array (previously 3D array)
+    mask_2d_da = er.convert_mask_3d_to_2d(mask_3d_ds)
+    assert mask_2d_da.equals(M)
