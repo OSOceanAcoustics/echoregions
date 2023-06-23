@@ -1,6 +1,6 @@
 import os
 from datetime import timedelta
-
+import pandas as pd
 import numpy as np
 import pytest
 import xarray as xr
@@ -149,6 +149,30 @@ def test_select_sonar_file():
     raw = r2d.select_sonar_file(raw_files, 11)
     assert raw == ["Summer2017-D20170625-T195927.nc"]
 
+
+def test_select_region():
+    """
+    tests select region functionality
+    """
+    evr_path = data_dir + "x1.evr"
+    r2d = er.read_evr(evr_path)
+    region_id = 2
+    time_range = [pd.to_datetime("2017-06-24T16:31:36.338500000"),
+                  pd.to_datetime("2017-06-26T16:31:40.211500000")]
+    depth_range = [-10000.0, 10000.0]
+    df_1 = r2d.select_region(region_id = region_id)
+    df_2 = r2d.select_region(time_range = time_range)
+    df_3 = r2d.select_region(depth_range = depth_range)
+    for df_region_id in df_1["region_id"]:
+        assert df_region_id == region_id
+    for time_array in df_2["time"]:
+        for time in time_array:
+            assert time >= time_range[0]
+            assert time <= time_range[1]
+    for depth_array in df_3["depth"]:
+        for depth in depth_array:
+            assert depth >= depth_range[0]
+            assert depth <= depth_range[1]
 
 @pytest.mark.filterwarnings("ignore:No gridpoint belongs to any region")
 def test_mask_no_overlap():
