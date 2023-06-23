@@ -111,9 +111,11 @@ class Regions2D:
         """
 
     def select_region(
-        self, region_id: Union[float, str, list, Series, DataFrame] = None,
-        time_range: List[Timestamp] = None, depth_range: List[Union[float, int]] = None,
-        copy=False
+        self,
+        region_id: Union[float, str, list, Series, DataFrame] = None,
+        time_range: List[Timestamp] = None,
+        depth_range: List[Union[float, int]] = None,
+        copy=False,
     ) -> DataFrame:
         """Selects a subset of this region object's dataframe.
 
@@ -162,65 +164,83 @@ class Regions2D:
         if time_range is not None:
             if isinstance(time_range, List):
                 if len(time_range) == 2:
-                    if isinstance(time_range[0], Timestamp) and isinstance(time_range[1],
-                                                                           Timestamp):
-                        if (time_range[0] < time_range[1]):
+                    if isinstance(time_range[0], Timestamp) and isinstance(
+                        time_range[1], Timestamp
+                    ):
+                        if time_range[0] < time_range[1]:
                             if region is None:
                                 region = self.data
                             for index, row in region.iterrows():
                                 remove_row = False
                                 for time in row["time"]:
-                                    if time_range[0] > Timestamp(time) or \
-                                        time_range[1] < Timestamp(time):
+                                    if time_range[0] > Timestamp(time) or time_range[
+                                        1
+                                    ] < Timestamp(time):
                                         remove_row = True
                                 if remove_row:
                                     region.drop(index, inplace=True)
                             untouched = False
                         else:
-                            raise ValueError(f"1st index value must be later than 0th index \
+                            raise ValueError(
+                                f"1st index value must be later than 0th index \
                                              value. Currently 0th index value is {time_range[0]} \
-                                             and 1st index value is {time_range[1]}")
+                                             and 1st index value is {time_range[1]}"
+                            )
                     else:
-                        raise TypeError(f"Invalid time_range value types: \
+                        raise TypeError(
+                            f"Invalid time_range value types: \
                                         {type(time_range[0])} and {type(time_range[1])}. Must \
-                                        be both of type Timestamp.")
+                                        be both of type Timestamp."
+                        )
                 else:
-                    raise ValueError(f"Invalid time_range size: {len(time_range)}. \
-                        Must be of size 2.")
+                    raise ValueError(
+                        f"Invalid time_range size: {len(time_range)}. \
+                        Must be of size 2."
+                    )
             else:
-                raise TypeError(f"Invalid time_range type: {type(time_range)}. Must be \
-                                of type List.")
+                raise TypeError(
+                    f"Invalid time_range type: {type(time_range)}. Must be \
+                                of type List."
+                )
         if depth_range is not None:
             if isinstance(depth_range, List):
                 if len(depth_range) == 2:
-                    if isinstance(depth_range[0], (float, int)) and \
-                        isinstance(depth_range[1], (float, int)):
-                        if (depth_range[0] < depth_range[1]):
+                    if isinstance(depth_range[0], (float, int)) and isinstance(
+                        depth_range[1], (float, int)
+                    ):
+                        if depth_range[0] < depth_range[1]:
                             if region is None:
                                 region = self.data
                             for index, row in region.iterrows():
                                 remove_row = False
                                 for depth in row["depth"]:
-                                    if depth_range[0] > depth or \
-                                        depth_range[1] < depth:
+                                    if depth_range[0] > depth or depth_range[1] < depth:
                                         remove_row = True
                                 if remove_row:
                                     region.drop(index, inplace=True)
                             untouched = False
                         else:
-                            raise ValueError(f"1st index value must be later than 0th index \
+                            raise ValueError(
+                                f"1st index value must be later than 0th index \
                                              value. Currently 0th index value is {depth_range[0]} \
-                                             and 1st index value is {depth_range[1]}")
+                                             and 1st index value is {depth_range[1]}"
+                            )
                     else:
-                        raise TypeError(f"Invalid depth_range value types: \
+                        raise TypeError(
+                            f"Invalid depth_range value types: \
                                         {type(depth_range[0])} and {type(depth_range[1])}. Must \
-                                        be both of type either float or int.")
+                                        be both of type either float or int."
+                        )
                 else:
-                    raise ValueError(f"Invalid depth_range size: {len(depth_range)}. \
-                        Must be of size 2.")
+                    raise ValueError(
+                        f"Invalid depth_range size: {len(depth_range)}. \
+                        Must be of size 2."
+                    )
             else:
-                raise TypeError(f"Invalid depth_range type: {type(depth_range)}. Must be \
-                                of type List.")
+                raise TypeError(
+                    f"Invalid depth_range type: {type(depth_range)}. Must be \
+                                of type List."
+                )
         if untouched:
             region = self.data
         if copy:

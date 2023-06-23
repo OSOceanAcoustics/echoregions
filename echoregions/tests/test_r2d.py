@@ -1,7 +1,8 @@
 import os
 from datetime import timedelta
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 from xarray import DataArray, Dataset
@@ -157,12 +158,14 @@ def test_select_region():
     evr_path = data_dir + "x1.evr"
     r2d = er.read_evr(evr_path)
     region_id = 2
-    time_range = [pd.to_datetime("2017-06-24T16:31:36.338500000"),
-                  pd.to_datetime("2017-06-26T16:31:40.211500000")]
+    time_range = [
+        pd.to_datetime("2017-06-24T16:31:36.338500000"),
+        pd.to_datetime("2017-06-26T16:31:40.211500000"),
+    ]
     depth_range = [-10000.0, 10000.0]
-    df_1 = r2d.select_region(region_id = region_id)
-    df_2 = r2d.select_region(time_range = time_range)
-    df_3 = r2d.select_region(depth_range = depth_range)
+    df_1 = r2d.select_region(region_id=region_id)
+    df_2 = r2d.select_region(time_range=time_range)
+    df_3 = r2d.select_region(depth_range=depth_range)
     for df_region_id in df_1["region_id"]:
         assert df_region_id == region_id
     for time_array in df_2["time"]:
@@ -173,6 +176,7 @@ def test_select_region():
         for depth in depth_array:
             assert depth >= depth_range[0]
             assert depth <= depth_range[1]
+
 
 @pytest.mark.filterwarnings("ignore:No gridpoint belongs to any region")
 def test_mask_no_overlap():
