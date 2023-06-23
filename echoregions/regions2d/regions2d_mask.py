@@ -135,6 +135,7 @@ def regions2d_mask(
 
     return M
 
+
 def convert_mask_2d_to_3d(M: DataArray):
     """Convert 2D Mask data into its 3D one-hot encoded form.
 
@@ -181,6 +182,7 @@ def convert_mask_2d_to_3d(M: DataArray):
 
     return mask_3d_ds
 
+
 def convert_mask_3d_to_2d(mask_3d_ds: DataArray):
     """Convert 2D Mask data into its 3D one-hot encoded form.
 
@@ -197,7 +199,7 @@ def convert_mask_3d_to_2d(mask_3d_ds: DataArray):
         A 2D Data Array with appropriate mask values from mask_3d_ds.
     """
     # Get unique non nan values from the 2d mask
-    unique_non_nan= list(mask_3d_ds.mask_dictionary.data)
+    unique_non_nan = list(mask_3d_ds.mask_dictionary.data)
 
     # Create copies and placeholder values for 2D and 3D mask objects
     mask_3d_da = mask_3d_ds.mask_3d.copy()
@@ -220,9 +222,7 @@ def convert_mask_3d_to_2d(mask_3d_ds: DataArray):
 
     # Set new 2D mask data array
     mask_2d_da = xr.DataArray(
-        data=np_mask_2d_da,
-        dims=["depth", "ping_time"],
-        coords=mask_3d_da.coords
+        data=np_mask_2d_da, dims=["depth", "ping_time"], coords=mask_3d_da.coords
     )
 
     return mask_2d_da
