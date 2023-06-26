@@ -64,12 +64,17 @@ def test_plot_type_error():
 
 def test_replace_nan_depth():
     """
-    Test replacing NaN values in line.
+    Test replacing NaN values in line for both inplace=True and inplace=False.
     """
-    lines = er.read_evl(evl_path, nan_depth_value=20)
-    lines.data.loc[0, "depth"] = -10000.99  # Replace a value with the one used for nans
-    lines.replace_nan_depth(inplace=True)
-    assert lines.data.loc[0, "depth"] == 20
+    lines_1 = er.read_evl(evl_path, nan_depth_value=20)
+    lines_1.data.loc[0, "depth"] = -10000.99  # Replace a value with the one used for nans
+    lines_1.replace_nan_depth(inplace=True)
+    assert lines_1.data.loc[0, "depth"] == 20
+
+    lines_2 = er.read_evl(evl_path, nan_depth_value=20)
+    lines_2.data.loc[0, "depth"] = -10000.99  # Replace a value with the one used for nans
+    regions = lines_2.replace_nan_depth(inplace=False)
+    assert regions.loc[0, "depth"] == 20
 
 
 def test_lines_mask():

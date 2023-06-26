@@ -36,7 +36,7 @@ class Lines:
     def data(self) -> DataFrame:
         return self._data
 
-    def replace_nan_depth(self, inplace: bool = False) -> DataFrame:
+    def replace_nan_depth(self, inplace: bool = False) -> Union[DataFrame, None]:
         """Replace -10000.99 depth values with user-specified _nan_depth_value
 
         Parameters
@@ -55,7 +55,10 @@ class Lines:
         regions["depth"] = regions["depth"].apply(
             lambda x: self._nan_depth_value if x == ECHOVIEW_NAN_DEPTH_VALUE else x
         )
-        return regions
+        if inplace:
+            return
+        else:
+            return regions
 
     def to_csv(self, save_path: bool = None) -> None:
         """Save a Dataframe to a .csv file
