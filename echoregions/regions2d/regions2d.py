@@ -1,12 +1,13 @@
 from pathlib import Path
 from typing import Dict, Iterable, List, Union
-from xarray import DataArray
-import xarray as xr
-import regionmask
+
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import regionmask
+import xarray as xr
 from pandas import DataFrame, Series
+from xarray import DataArray
 
 from ..utils.io import validate_path
 from ..utils.time import parse_simrad_fname_time
@@ -18,7 +19,7 @@ class Regions2D:
         self,
         input_file: str,
         min_depth: Union[int, float] = None,
-        max_depth: Union[int, float] = None
+        max_depth: Union[int, float] = None,
     ):
         self._min_depth = (
             None  # Set to replace -9999.99 depth values which are EVR min range

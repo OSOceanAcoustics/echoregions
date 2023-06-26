@@ -1,15 +1,17 @@
 import json
 from typing import Dict, Iterable, List, Union
-import xarray as xr
-from xarray import DataArray
+
 import matplotlib.pyplot as plt
-from pandas import DataFrame, Timestamp
 import pandas as pd
+import xarray as xr
+from pandas import DataFrame, Timestamp
+from xarray import DataArray
 
 from ..utils.io import validate_path
 from .lines_parser import parse_line_file
 
 ECHOVIEW_NAN_DEPTH_VALUE = -10000.99
+
 
 class Lines:
     def __init__(self, input_file: str, nan_depth_value: float = None):
@@ -50,8 +52,9 @@ class Lines:
             return
 
         regions = self._data if inplace else self._data.copy()
-        regions["depth"] = regions["depth"].apply(lambda x: self._nan_depth_value
-                                        if x == ECHOVIEW_NAN_DEPTH_VALUE else x)
+        regions["depth"] = regions["depth"].apply(
+            lambda x: self._nan_depth_value if x == ECHOVIEW_NAN_DEPTH_VALUE else x
+        )
         return regions
 
     def to_csv(self, save_path: bool = None) -> None:
@@ -149,9 +152,7 @@ class Lines:
         else:
             plt.plot(df.time, df.depth, fmt, **kwargs)
 
-    def mask(
-        self, da_Sv: DataArray, method: str = "nearest", limit_area: str = None
-    ):
+    def mask(self, da_Sv: DataArray, method: str = "nearest", limit_area: str = None):
         """
         Subsets a bottom dataset to the range of an Sv dataset
         Create a mask of same shape as data found in Sonar object; bottom: False, otherwise: True
@@ -199,16 +200,33 @@ class Lines:
             bottom_interpolated = bottom_interpolated.fillna(max_depth)
 
             # Check for correct interpolation inputs.
-            if method not in [None, "linear", "time", "index", "pad", "nearest", "zero", "slinear",
-                              "quadratic", "cubic", "barycentric", "polynomial", "krogh",
-                              "from_derivatives"]:
-                raise ValueError(f"Input method is {method}. Must be of value None, linear, \
+            if method not in [
+                None,
+                "linear",
+                "time",
+                "index",
+                "pad",
+                "nearest",
+                "zero",
+                "slinear",
+                "quadratic",
+                "cubic",
+                "barycentric",
+                "polynomial",
+                "krogh",
+                "from_derivatives",
+            ]:
+                raise ValueError(
+                    f"Input method is {method}. Must be of value None, linear, \
                                 time, index, pad, nearest, zero, slinear, quadratic, \
                                 cubic, barycentric, polynomial, krogh, \
-                                from_derivatives.")
+                                from_derivatives."
+                )
             if limit_area not in [None, "inside", "outside"]:
-                raise ValueError(f"Input limit_area is {limit_area}. Must be of value None, \
-                                inside, outside.")
+                raise ValueError(
+                    f"Input limit_area is {limit_area}. Must be of value None, \
+                                inside, outside."
+                )
 
             # Interpolate on the sonar coordinates. Note that nearest interpolation has a problem when
             # points are far from each other.

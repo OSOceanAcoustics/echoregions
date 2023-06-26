@@ -3,9 +3,7 @@ from .regions2d.regions2d import Regions2D
 
 
 def read_evr(
-    filepath: str,
-    min_depth: float = None,
-    max_depth: float = None
+    filepath: str, min_depth: float = None, max_depth: float = None
 ) -> Regions2D:
     """Read an EVR file into a Regions2D object.
 
@@ -23,11 +21,7 @@ def read_evr(
     Regions2D
         Object that contains the EVR data and metadata with methods for saving to file.
     """
-    return Regions2D(
-        input_file=str(filepath),
-        min_depth=min_depth,
-        max_depth=max_depth
-    )
+    return Regions2D(input_file=str(filepath), min_depth=min_depth, max_depth=max_depth)
 
 
 def read_evl(filepath: str, nan_depth_value: float = None) -> Lines:
