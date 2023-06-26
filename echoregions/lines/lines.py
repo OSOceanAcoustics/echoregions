@@ -228,8 +228,8 @@ class Lines:
                                 inside, outside."
                 )
 
-            # Interpolate on the sonar coordinates. Note that nearest interpolation has a problem when
-            # points are far from each other.
+            # Interpolate on the sonar coordinates. Note that nearest interpolation has a problem
+            # when points are far from each other.
             try:
                 bottom_interpolated = (
                     filtered_bottom.reindex(joint_index)
