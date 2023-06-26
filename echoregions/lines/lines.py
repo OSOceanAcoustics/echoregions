@@ -1,33 +1,26 @@
 import json
 from typing import Dict, Iterable, List, Union
-
+import xarray as xr
+from xarray import DataArray
 import matplotlib.pyplot as plt
-from pandas import DataFrame, Series, Timestamp
+from pandas import DataFrame, Timestamp
+import pandas as pd
 
 from ..utils.io import validate_path
 from .lines_parser import parse_line_file
 
+ECHOVIEW_NAN_DEPTH_VALUE = -10000.99
 
 class Lines:
     def __init__(self, input_file: str, nan_depth_value: float = None):
-        self.depth = (
-            None  # Single array that can be used to obtain min_depth and max_depth
-        )
-        self._min_depth = (
-            None  # Set to replace -9999.99 depth values which are EVR min range
-        )
-        self._max_depth = (
-            None  # Set to replace 9999.99 depth values which are EVR max range
-        )
-        self._nan_depth_value = (
-            None  # Set to replace -10000.99 depth values with (EVL only)
-        )
-
         self.input_file = input_file
         self._data = parse_line_file(input_file)
         self.output_file = []
 
-        self.nan_depth_value = nan_depth_value
+        self._nan_depth_value = (
+            None  # Set to replace -10000.99 depth values with (EVL only)
+        )
+        self._nan_depth_value = nan_depth_value
 
     def __iter__(self) -> Iterable:
         """Get points as an iterable. Allows looping over Lines object."""
@@ -38,20 +31,11 @@ class Lines:
         return self.points[idx]
 
     @property
-    def nan_depth_value(self) -> Union[int, float]:
-        return self._nan_depth_value
-
-    @property
     def data(self) -> DataFrame:
         return self._data
 
-    @nan_depth_value.setter
-    def nan_depth_value(self, val: Union[int, float]) -> None:
-        """Set the depth in meters that the -10000.99 depth value will be set to"""
-        self._nan_depth_value = float(val) if val is not None else None
-
     def replace_nan_depth(self, inplace: bool = False) -> DataFrame:
-        """Replace -10000.99 depth values with user-specified nan_depth_value
+        """Replace -10000.99 depth values with user-specified _nan_depth_value
 
         Parameters
         ----------
@@ -60,24 +44,14 @@ class Lines:
 
         Returns
         -------
-        DataFrame with depth edges replaced by Lines.nan_depth_value
+        DataFrame with depth edges replaced by Lines._nan_depth_value
         """
-
-        def replace_depth(row: Series) -> Series:
-            def swap_val(val: Union[int, float]) -> Union[int, float]:
-                if val == -10000.99:
-                    return self.nan_depth_value
-                else:
-                    return val
-
-            row.at["depth"] = swap_val(row["depth"])
-            return row
-
-        if self.nan_depth_value is None:
+        if self._nan_depth_value is None:
             return
 
         regions = self._data if inplace else self._data.copy()
-        regions.loc[:] = regions.apply(replace_depth, axis=1)
+        regions["depth"] = regions["depth"].apply(lambda x: self._nan_depth_value
+                                        if x == ECHOVIEW_NAN_DEPTH_VALUE else x)
         return regions
 
     def to_csv(self, save_path: bool = None) -> None:
@@ -88,11 +62,6 @@ class Lines:
         save_path : str
             path to save the CSV file to
         """
-        if not isinstance(self._data, DataFrame):
-            raise TypeError(
-                f"Invalid ds Type: {type(self._data)}. Must be of type DataFrame."
-            )
-
         # Check if the save directory is safe
         save_path = validate_path(
             save_path=save_path, input_file=self.input_file, ext=".csv"
@@ -158,10 +127,15 @@ class Lines:
             Additional arguments passed to matplotlib `plot` or `fill_between`.
             Useful arguments include `color`, `lw`, and `marker`.
         """
-        if not (isinstance(start_time, Timestamp) and isinstance(end_time, Timestamp)):
+        if not (isinstance(start_time, Timestamp)):
             raise TypeError(
-                f"start and end times are of type {type(start_time)} and {type(end_time)}. \
-                            They must be of of type Pandas Timestamp."
+                f"start time is of type {type(start_time)} \
+                            It must be of of type Pandas Timestamp."
+            )
+        if not (isinstance(end_time, Timestamp)):
+            raise TypeError(
+                f"end time is of type {type(end_time)} \
+                            It must be of of type Pandas Timestamp."
             )
 
         df = self._data
@@ -174,3 +148,89 @@ class Lines:
             plt.fill_between(df.time, df.depth, max_depth, **kwargs)
         else:
             plt.plot(df.time, df.depth, fmt, **kwargs)
+
+    def mask(
+        self, da_Sv: DataArray, method: str = "nearest", limit_area: str = None
+    ):
+        """
+        Subsets a bottom dataset to the range of an Sv dataset
+        Create a mask of same shape as data found in Sonar object; bottom: False, otherwise: True
+
+        Arguments:
+            sonar - Sonar object containing DataArray of shape (ping_time, depth).
+            method - String containing interpolation method.
+            limit_area - String for determining filling restriction for NA values.
+
+        Returns:
+        bottom_mask - xarray with dimensions: (ping_time, depth) with bottom: False, otherwise: True
+        """
+
+        def filter_bottom(bottom, start_date, end_date):
+            """
+            Selects the values of the bottom between two dates.
+            """
+            after_start_date = bottom["time"] > start_date
+            before_end_date = bottom["time"] < end_date
+            between_two_dates = after_start_date & before_end_date
+            filtered_bottom = bottom.loc[between_two_dates].set_index("time")
+            return filtered_bottom
+
+        lines_df = self.data
+
+        # new index
+        sonar_index = list(da_Sv.ping_time.data)
+
+        # filter bottom within start and end time
+        start_time = da_Sv.ping_time.data.min()
+        end_time = da_Sv.ping_time.data.max()
+        filtered_bottom = filter_bottom(lines_df, start_time, end_time)
+
+        if len(filtered_bottom) > 0:
+            # create joint index
+            joint_index = list(
+                set(list(pd.DataFrame(sonar_index)[0]) + list(filtered_bottom.index))
+            )
+
+            # interpolate on the sonar coordinates
+            # nearest interpolation has a problem when points are far from each other
+            bottom_interpolated = filtered_bottom.reindex(joint_index).loc[sonar_index]
+            # max_depth to set the NAs to after interpolation
+            max_depth = float(da_Sv.depth.max())
+            bottom_interpolated = bottom_interpolated.fillna(max_depth)
+
+            # Interpolate on the sonar coordinates. Note that nearest interpolation has a problem when
+            # points are far from each other.
+            try:
+                bottom_interpolated = (
+                    filtered_bottom.reindex(joint_index)
+                    .interpolate(method=method, limit_area=limit_area)
+                    .loc[sonar_index]
+                ).fillna(max_depth)
+            except:
+                raise ValueError(
+                    "Interpolation arguments are invalid. Visit the docs at \
+                    https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.interpolate.html \
+                    for more information on what can be placed in said arguments."
+                )
+
+            # convert to data array for bottom
+            bottom_da = bottom_interpolated[
+                "depth"
+            ].to_xarray()  # .rename({'index':'ping_time'})
+            bottom_da = bottom_da.rename({"time": "ping_time"})
+
+            # create a data array of depths
+            depth_da = da_Sv["depth"] + xr.zeros_like(da_Sv)
+
+            # create a mask for the bottom:
+            # bottom: False, otherwise: True
+            bottom_mask = depth_da < bottom_da
+
+        else:
+            # set everything to False
+            bottom_mask = xr.full_like(da_Sv, False)
+
+        # bottom: False becomes 0, otherwise: True becomes 1
+        bottom_mask = bottom_mask.where(True, 1, 0)
+
+        return bottom_mask
