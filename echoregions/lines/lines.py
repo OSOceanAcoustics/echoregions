@@ -198,6 +198,18 @@ class Lines:
             max_depth = float(da_Sv.depth.max())
             bottom_interpolated = bottom_interpolated.fillna(max_depth)
 
+            # Check for correct interpolation inputs.
+            if method not in [None, "linear", "time", "index", "pad", "nearest", "zero", "slinear",
+                              "quadratic", "cubic", "barycentric", "polynomial", "krogh",
+                              "from_derivatives"]:
+                raise ValueError(f"Input method is {method}. Must be of value None, linear, \
+                                time, index, pad, nearest, zero, slinear, quadratic, \
+                                cubic, barycentric, polynomial, krogh, \
+                                from_derivatives.")
+            if limit_area not in [None, "inside", "outside"]:
+                raise ValueError(f"Input limit_area is {limit_area}. Must be of value None, \
+                                inside, outside.")
+
             # Interpolate on the sonar coordinates. Note that nearest interpolation has a problem when
             # points are far from each other.
             try:
@@ -206,12 +218,10 @@ class Lines:
                     .interpolate(method=method, limit_area=limit_area)
                     .loc[sonar_index]
                 ).fillna(max_depth)
-            except:
-                raise ValueError(
-                    "Interpolation arguments are invalid. Visit the docs at \
-                    https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.interpolate.html \
-                    for more information on what can be placed in said arguments."
-                )
+            except Exception as e:
+                # For all other such errors that may not necessarily deal with
+                # the specific values of method and limit_area.
+                print(e)
 
             # convert to data array for bottom
             bottom_da = bottom_interpolated[
