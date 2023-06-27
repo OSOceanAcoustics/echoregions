@@ -2,13 +2,13 @@ import os
 
 import pandas as pd
 
-from ..utils.io import check_file
+from ..utils.io import check_file_extension_existence
 from ..utils.time import parse_time
 
 
 def parse_line_file(input_file: str):
     # Check for validity of input_file
-    check_file(input_file, "EVL")
+    check_file_extension_existence(input_file, "EVL")
     fid = open(input_file, encoding="utf-8-sig")
     # Read header containing metadata about the EVL file
     file_type, file_format_number, ev_version = fid.readline().strip().split()

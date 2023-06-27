@@ -1,7 +1,8 @@
 import json
 import os
 from pathlib import Path
-from typing import Dict, List, Union
+import re
+from typing import Dict
 
 
 def from_JSON(j: str) -> Dict:
@@ -59,20 +60,18 @@ def validate_save_path(
     return str(save_path)
 
 
-def check_file(file: str, format: Union[List[str], str]) -> None:
+def check_file_extension_existence(file: str, format: str) -> None:
+    """
+    Checks if file extension is correct and if file exists.
+
+    Arguments:
+        file: str; filename for file to be checked.
+        format: str; desired value for file extension of input file.
+    """
     if file is not None:
-        if isinstance(format, List):
-            within = False
-            for str_value in format:
-                if file.upper().endswith(str_value):
-                    within = True
-            if not within:
-                raise ValueError(f"Input file {file} is not a {format} file")
-        else:
-            if not file.upper().endswith(format):
+        if not re.search(rf".{format}$", file, flags=re.IGNORECASE):
                 raise ValueError(f"Input file {file} is not a {format} file")
         if not os.path.isfile(file):
-            if not os.path.isdir(file):
-                raise ValueError(f"{file} does not exist as file or directory.")
+            raise ValueError(f"{file} does not exist as file.")
     else:
-        raise TypeError("Input file must not be of type None")
+        raise TypeError("Input file must not be None")

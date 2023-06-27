@@ -5,13 +5,13 @@ import numpy as np
 import pandas as pd
 from numpy import ndarray
 
-from ..utils.io import check_file
+from ..utils.io import check_file_extension_existence
 from ..utils.time import parse_time
 
 
 def parse_regions_file(input_file: str):
     # Check for validity of input_file.
-    check_file(input_file, "EVR")
+    check_file_extension_existence(input_file, "EVR")
 
     # Read file.
     fid = open(input_file, encoding="utf-8-sig")
