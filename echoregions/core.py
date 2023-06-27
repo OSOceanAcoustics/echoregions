@@ -1,5 +1,6 @@
 import os
 from typing import Union
+
 import s3fs
 
 from .lines.lines import Lines
@@ -45,12 +46,15 @@ def read_evl(filepath: str, nan_depth_value: float = None) -> Lines:
     """
     return Lines(input_file=str(filepath), nan_depth_value=nan_depth_value)
 
-def read_cloud_evr(s3_path: str,
-                s3_key: str,
-                s3_secret: str,
-                target_directory_path: str,
-                min_depth: float = None,
-                max_depth: float = None) -> Regions2D:
+
+def read_cloud_evr(
+    s3_path: str,
+    s3_key: str,
+    s3_secret: str,
+    target_directory_path: str,
+    min_depth: float = None,
+    max_depth: float = None,
+) -> Regions2D:
     """Read an EVR file from the cloud into a Regions2D object.
 
     Parameters
@@ -76,20 +80,24 @@ def read_cloud_evr(s3_path: str,
         with methods for saving to file.
     """
 
-    return read_cloud(file_type="evr",
-                        s3_path=s3_path,
-                        s3_key=s3_key,
-                        s3_secret=s3_secret,
-                        target_directory_path=target_directory_path,
-                        min_depth=min_depth,
-                        max_depth=max_depth
+    return read_cloud(
+        file_type="evr",
+        s3_path=s3_path,
+        s3_key=s3_key,
+        s3_secret=s3_secret,
+        target_directory_path=target_directory_path,
+        min_depth=min_depth,
+        max_depth=max_depth,
     )
 
-def read_cloud_evl(s3_path: str,
-                s3_key: str,
-                s3_secret: str,
-                target_directory_path: str,
-                nan_depth_value: float = None) -> Regions2D:
+
+def read_cloud_evl(
+    s3_path: str,
+    s3_key: str,
+    s3_secret: str,
+    target_directory_path: str,
+    nan_depth_value: float = None,
+) -> Regions2D:
     """Read an EVR file from the cloud into a Regions2D object.
 
     Parameters
@@ -113,22 +121,26 @@ def read_cloud_evl(s3_path: str,
         with methods for saving to file.
     """
 
-    return read_cloud(file_type="evl",
-                        s3_path=s3_path,
-                        s3_key=s3_key,
-                        s3_secret=s3_secret,
-                        target_directory_path=target_directory_path,
-                        nan_depth_value=nan_depth_value
+    return read_cloud(
+        file_type="evl",
+        s3_path=s3_path,
+        s3_key=s3_key,
+        s3_secret=s3_secret,
+        target_directory_path=target_directory_path,
+        nan_depth_value=nan_depth_value,
     )
 
-def read_cloud(file_type: str,
-                s3_path: str,
-                s3_key: str,
-                s3_secret: str,
-                target_directory_path: str = os.getcwd()+"/echoregions/tmp/",
-                min_depth: float = None,
-                max_depth: float = None,
-                nan_depth_value: float = None) -> Union["Regions2D", "Lines"]:
+
+def read_cloud(
+    file_type: str,
+    s3_path: str,
+    s3_key: str,
+    s3_secret: str,
+    target_directory_path: str = os.getcwd() + "/echoregions/tmp/",
+    min_depth: float = None,
+    max_depth: float = None,
+    nan_depth_value: float = None,
+) -> Union["Regions2D", "Lines"]:
     """Read an EVR file from the cloud into a Regions2D object.
 
     Parameters
@@ -163,11 +175,15 @@ def read_cloud(file_type: str,
 
     # Ensure correct variables are being passed in.
     if file_type == "evl" and (min_depth != None or max_depth != None):
-        raise ValueError(f"file_type evl does not use min_depth or max_depth values. \
-                         Please clear input for mentioned variables.")
+        raise ValueError(
+            f"file_type evl does not use min_depth or max_depth values. \
+                         Please clear input for mentioned variables."
+        )
     elif file_type == "evr" and nan_depth_value != None:
-        raise ValueError(f"file_type evr does not use nan_depth_values. \
-                         Please clear input for nan_depth_values.")
+        raise ValueError(
+            f"file_type evr does not use nan_depth_values. \
+                         Please clear input for nan_depth_values."
+        )
 
     if isinstance(s3_key, str) and isinstance(s3_secret, str):
         try:
@@ -183,28 +199,33 @@ def read_cloud(file_type: str,
         if not os.path.exists(target_directory_path):
             os.makedirs(target_directory_path)
         else:
-            raise ValueError(f"Directory {target_directory_path} already exists. Please \
-                             choose a path for a directory that does not current exist.")
+            raise ValueError(
+                f"Directory {target_directory_path} already exists. Please \
+                             choose a path for a directory that does not current exist."
+            )
 
         # Download File
         try:
             fs.download(s3_path, target_directory_path)
 
             # Check which file it is in.
-            file_name = os.listdir(target_directory_path)[0] # Should be only file in directory.
+            file_name = os.listdir(target_directory_path)[
+                0
+            ]  # Should be only file in directory.
             target_path = target_directory_path + "/" + file_name
 
             # Check if filetype is evr or evl and create object based off of filetype.
             if file_type == "evr":
                 from echoregions import read_evr
-                r2d = read_evr(filepath = target_path,
-                            min_depth = min_depth,
-                            max_depth = max_depth)
+
+                r2d = read_evr(
+                    filepath=target_path, min_depth=min_depth, max_depth=max_depth
+                )
                 return_object = r2d
             else:
                 from echoregions import read_evl
-                lines = read_evl(filepath = target_path,
-                            nan_depth_value = nan_depth_value)
+
+                lines = read_evl(filepath=target_path, nan_depth_value=nan_depth_value)
                 return_object = lines
 
             # Remove target path and target_directory path.

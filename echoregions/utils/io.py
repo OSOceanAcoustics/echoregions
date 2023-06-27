@@ -1,7 +1,7 @@
 import json
 import os
-from pathlib import Path
 import re
+from pathlib import Path
 from typing import Dict
 
 
@@ -70,7 +70,7 @@ def check_file_extension_existence(file: str, format: str) -> None:
     """
     if file is not None:
         if not re.search(rf".{format}$", file, flags=re.IGNORECASE):
-                raise ValueError(f"Input file {file} is not a {format} file")
+            raise ValueError(f"Input file {file} is not a {format} file")
         if not os.path.isfile(file):
             raise ValueError(f"{file} does not exist as file.")
     else:
