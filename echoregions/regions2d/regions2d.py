@@ -9,7 +9,7 @@ import xarray as xr
 from pandas import DataFrame, Series
 from xarray import DataArray
 
-from ..utils.io import validate_path
+from ..utils.io import validate_save_path
 from ..utils.time import parse_simrad_fname_time
 from .regions2d_parser import parse_regions_file
 
@@ -53,7 +53,7 @@ class Regions2D:
             path to save the CSV file to
         """
         # Check if the save directory is safe
-        save_path = validate_path(
+        save_path = validate_save_path(
             save_path=save_path, input_file=self.input_file, ext=".csv"
         )
         # Reorder columns and export to csv

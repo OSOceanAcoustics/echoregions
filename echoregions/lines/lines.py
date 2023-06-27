@@ -7,7 +7,7 @@ import xarray as xr
 from pandas import DataFrame, Timestamp
 from xarray import DataArray
 
-from ..utils.io import validate_path
+from ..utils.io import validate_save_path
 from .lines_parser import parse_line_file
 
 ECHOVIEW_NAN_DEPTH_VALUE = -10000.99
@@ -66,7 +66,7 @@ class Lines:
             path to save the CSV file to
         """
         # Check if the save directory is safe
-        save_path = validate_path(
+        save_path = validate_save_path(
             save_path=save_path, input_file=self.input_file, ext=".csv"
         )
         # Reorder columns and export to csv
@@ -87,7 +87,7 @@ class Lines:
             keyword arguments passed into `parse_file`
         """
         # Check if the save directory is safe
-        save_path = validate_path(
+        save_path = validate_save_path(
             save_path=save_path, input_file=self.input_file, ext=".json"
         )
         indent = 4 if pretty else None

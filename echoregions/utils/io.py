@@ -23,7 +23,7 @@ def from_JSON(j: str) -> Dict:
     return data_dict
 
 
-def validate_path(
+def validate_save_path(
     save_path: str = None, input_file: str = None, ext: str = ".json"
 ) -> str:
     # Check if save_path is specified.
