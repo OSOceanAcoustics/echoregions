@@ -6,3 +6,4 @@ shapely>=2.0.0
 zarr
 netcdf4
 scipy
+s3fs
