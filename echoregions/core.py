@@ -174,14 +174,14 @@ def read_cloud(
         raise ValueError(f"file_type is {file_type}. Must be evl or evr. ")
 
     # Ensure correct variables are being passed in.
-    if file_type == "evl" and (min_depth != None or max_depth != None):
+    if file_type == "evl" and (min_depth is not None or max_depth is not None):
         raise ValueError(
-            f"file_type evl does not use min_depth or max_depth values. \
+            "file_type evl does not use min_depth or max_depth values. \
                          Please clear input for mentioned variables."
         )
-    elif file_type == "evr" and nan_depth_value != None:
+    elif file_type == "evr" and nan_depth_value is not None:
         raise ValueError(
-            f"file_type evr does not use nan_depth_values. \
+            "file_type evr does not use nan_depth_values. \
                          Please clear input for nan_depth_values."
         )
 
