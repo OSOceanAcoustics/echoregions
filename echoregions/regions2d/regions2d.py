@@ -495,6 +495,30 @@ class Regions2D:
             :, "region_bbox_left"
         ].shift(-1)
 
+        # Check if for all transects, there exists 1 start_str transect type.
+        if not (
+            transect_df.groupby("file_name").apply(
+                lambda x: x[x["transect_type"] == start_str].count()
+            )["file_name"]
+            == 1
+        ).all():
+            raise ValueError(
+                f"Each transect must contain a single {start_str} transect_type. \
+                             There exists transect that does not contain a single {start_str}."
+            )
+
+        # Check if for all transects, there exists 1 end_str transect type.
+        if not (
+            transect_df.groupby("file_name").apply(
+                lambda x: x[x["transect_type"] == end_str].count()
+            )["file_name"]
+            == 1
+        ).all():
+            raise ValueError(
+                f"Each transect must contain 1 {end_str} transect_type. \
+                             There exists transect that does not contain a single {end_str}."
+            )
+
         # Check if start_str followed by break_str/end_str.
         start_transect_rows = transect_df[transect_df["transect_type"] == start_str]
         start_transect_type_next_list = list(
@@ -546,30 +570,6 @@ class Regions2D:
                         f"Transect end string is followed by invalid value \
                                 {transect_type_next}. Must be followed by {start_str}."
                     )
-
-        # Check if for all transects, there exists 1 start_str transect type.
-        if not (
-            transect_df.groupby("file_name").apply(
-                lambda x: x[x["transect_type"] == start_str].count()
-            )["file_name"]
-            == 1
-        ).all():
-            raise ValueError(
-                f"Each transect must contain a single {start_str} transect_type. \
-                             There exists transect that does not contain a single {start_str}."
-            )
-
-        # Check if for all transects, there exists 1 end_str transect type.
-        if not (
-            transect_df.groupby("file_name").apply(
-                lambda x: x[x["transect_type"] == end_str].count()
-            )["file_name"]
-            == 1
-        ).all():
-            raise ValueError(
-                f"Each transect must contain 1 {end_str} transect_type. \
-                             There exists transect that does not contain a single {end_str}."
-            )
 
         # Create binary variable indicating within transect segments.
         transect_df["within_transect"] = False
