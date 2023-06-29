@@ -242,3 +242,37 @@ def test_within_transect():
     # be 1s.
     assert len(list(np.unique(M.data))) == 1
     assert list(np.unique(M.data))[0] == 1
+
+
+def test_within_transect_no_ET_ST():
+    """
+    Tests functionality for evr file with no ET and for evr file with no ST.
+    """
+
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv.T
+    transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
+    with pytest.raises(ValueError):
+        evr_path = data_dir + "x1_no_ST.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+    with pytest.raises(ValueError):
+        evr_path = data_dir + "x1_no_ET.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+
+
+def test_within_transect_bad_dict():
+    """
+    Tests functionality for transect_mask with invalid dictionary values.
+    """
+    evr_path = data_dir + "x1.evr"
+    r2d = er.read_evr(evr_path)
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv.T
+
+    transect_dict = {"start": "ST1", "break": "BT", "resume": "RT", "end": "ET"}
+    with pytest.raises(ValueError):
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+
+    transect_dict = {"start": "BT", "break": "BT", "resume": "RT", "end": "ET"}
+    with pytest.raises(ValueError):
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
