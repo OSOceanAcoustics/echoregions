@@ -112,7 +112,7 @@ class Regions2D:
 
     def select_region(
         self,
-        region_id: Union[float, str, list, Series, DataFrame] = None,
+        region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
         time_range: List[Timestamp] = None,
         depth_range: List[Union[float, int]] = None,
         copy=False,
@@ -121,7 +121,7 @@ class Regions2D:
 
         Parameters
         ----------
-        region_id : float, str, list, Series, DataFrame, ``None``
+        region_id : float, int, str, list, ``None``
             A region id provided as a number, string, list of these,
             or a DataFrame/Series containing the region_id column name.
         time_range: List of 2 Pandas Timestamps.
@@ -143,11 +143,7 @@ class Regions2D:
         region = None
         untouched = True
         if region_id is not None:
-            if isinstance(region_id, DataFrame):
-                region = list(region_id.region_id)
-            elif isinstance(region_id, Series):
-                region = [region_id.region_id]
-            elif (
+            if (
                 isinstance(region_id, float)
                 or isinstance(region_id, int)
                 or isinstance(region_id, str)
@@ -156,9 +152,16 @@ class Regions2D:
             elif not isinstance(region_id, list):
                 raise TypeError(
                     f"Invalid region_id type: {type(region_id)}. Must be \
-                                of type float, str, list, Series, DataFrame, ``None``"
+                                of type float, int, str, list, ``None``."
                 )
             # Select row by column id
+            for value in region_id:
+                if not isinstance(value, (float, int, str)):
+                    raise TypeError(
+                        f"Invalid element in list region_id. Is of \
+                            type: {type(value)}Must be \
+                            of type float, int, str."
+                    )
             region = self.data[self.data["region_id"].isin(region_id)]
             untouched = False
         if time_range is not None:

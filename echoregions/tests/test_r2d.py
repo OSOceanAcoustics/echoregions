@@ -215,6 +215,12 @@ def test_mask_correct_labels():
     region_ids = r2d.data.region_id.values  # Output is that of IntegerArray
     region_ids = list(region_ids)  # Convert to List
     da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv
+    # Region IDs contains numpy ints, which aren't accepted so should raise type error.
+    with pytest.raises(TypeError):
+        _ = er.regions2d_mask(da_Sv, r2d, region_ids, mask_labels=region_ids)
+    # Create value region_ids to that of an integer
+    for index, value in enumerate(region_ids):
+        region_ids[index] = value.item()
     M = er.regions2d_mask(da_Sv, r2d, region_ids, mask_labels=region_ids)
     # it matches only a 11th region becasue x1_test.nc is a chunk around that region only
     M.plot()
