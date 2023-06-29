@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import regionmask
 import xarray as xr
-from pandas import DataFrame, Series
+from pandas import DataFrame, Series, isna
 from xarray import DataArray
 
 from ..utils.io import validate_path
@@ -404,5 +404,228 @@ class Regions2D:
         # Assign specific name to mask array, otherwise 'mask'.
         if mask_var:
             M = M.rename(mask_var)
+
+        return M
+
+    def transect_mask(
+        self,
+        da_Sv: DataArray,
+        transect_dict: dict = {
+            "start": "ST",
+            "break": "BT",
+            "resume": "RT",
+            "end": "ET",
+        },
+        file_names: List[str] = None,
+    ) -> DataArray:
+        """Mask data from Data Array containing Sv data based off of a Regions2D object
+        and its transect_values.
+
+        Parameters
+        ----------
+        da_Sv : Data Array
+            DataArray of shape (ping_time, depth) containing Sv data.
+        transect_dict : dict
+            Dictionary for transect values. Values must be unique and must be of same length.
+        file_names : list
+            List for file names to do the transect querying on.
+        Returns
+        -------
+        M : Data Array
+            A DataArray masked by the transect values from the Regions2d.data dataframe.
+        """
+
+        # Get transect strings
+        start_str = transect_dict["start"]
+        break_str = transect_dict["break"]
+        resume_str = transect_dict["resume"]
+        end_str = transect_dict["end"]
+        transect_strs = [start_str, break_str, resume_str, end_str]
+
+        # Check that there are 4 unique transect strings
+        if len(transect_strs) != len(set(transect_strs)):
+            raise ValueError(
+                "There exist duplicate values in transect_dict. \
+                             All values must be unique"
+            )
+
+        # Check that transect strings are of same length
+        for transect_str in transect_strs:
+            if len(transect_strs[0]) != len(transect_str):
+                raise ValueError("Transect strings must be of same length.")
+
+        # Create transect_df
+        region_df = self.data.copy()
+        transect_df = region_df.loc[
+            region_df.loc[:, "region_name"].str.startswith(start_str)
+            | region_df.loc[:, "region_name"].str.startswith(break_str)
+            | region_df.loc[:, "region_name"].str.startswith(resume_str)
+            | region_df.loc[:, "region_name"].str.startswith(end_str)
+        ].copy()
+
+        # Create a new column which stores the transect_type without the transect number
+        transect_df.loc[:, "transect_type"] = transect_df.loc[:, "region_name"].str[
+            : len(transect_str)
+        ]
+
+        # Checking the maximum width of a transect log region bbox.
+        # If over an hour, throw an error.
+        max_time = (
+            transect_df["region_bbox_right"] - transect_df["region_bbox_left"]
+        ).max()
+        max_time_hours = max_time.total_seconds() / (60 * 60)
+        if max_time_hours > 1.0:
+            raise ValueError(
+                "Maximum width in time of transect log region bboxs is \
+                             too large i.e. over an hour."
+            )
+
+        # Drop time duplicates
+        transect_df = transect_df.drop_duplicates(subset=["region_bbox_left"])
+
+        # Sort the dataframe by datetime
+        transect_df = transect_df.sort_values(by="region_bbox_left")
+
+        # Create new shifted columns with the next transect log type and next region
+        # bbox left datetime value.
+        transect_df.loc[:, "transect_type_next"] = transect_df.loc[
+            :, "transect_type"
+        ].shift(-1)
+        transect_df.loc[:, "region_bbox_left_next"] = transect_df.loc[
+            :, "region_bbox_left"
+        ].shift(-1)
+
+        # Check if start_str followed by break_str/end_str.
+        start_transect_rows = transect_df[transect_df["transect_type"] == start_str]
+        start_transect_type_next_list = list(
+            start_transect_rows["transect_type_next"].values
+        )
+        for transect_type_next in start_transect_type_next_list:
+            if transect_type_next not in [break_str, end_str]:
+                raise ValueError(
+                    f"Transect start string is followed by invalid value \
+                            {transect_type_next}. Must be followed by either \
+                            {break_str} or {end_str}"
+                )
+
+        # Check if break_str followed by resume_str.
+        break_transect_rows = transect_df[transect_df["transect_type"] == break_str]
+        break_transect_type_next_list = list(
+            break_transect_rows["transect_type_next"].values
+        )
+        for transect_type_next in break_transect_type_next_list:
+            if transect_type_next != resume_str:
+                raise ValueError(
+                    f"Transect break string is followed by invalid value \
+                            {transect_type_next}. Must be followed by {resume_str}."
+                )
+
+        # Check if resume_str followed by break_str/end_str.
+        resume_transect_rows = transect_df[transect_df["transect_type"] == resume_str]
+        resume_transect_type_next_list = list(
+            resume_transect_rows["transect_type_next"].values
+        )
+        for transect_type_next in resume_transect_type_next_list:
+            if transect_type_next not in [break_str, end_str]:
+                raise ValueError(
+                    f"Transect resume string is followed by invalid value \
+                            {transect_type_next}. Must be followed by either \
+                            {break_str} or {end_str}"
+                )
+
+        # Check if end_str followed by start_str or if NA.
+        end_transect_rows = transect_df[transect_df["transect_type"] == end_str]
+        end_transect_type_next_list = list(
+            end_transect_rows["transect_type_next"].values
+        )
+        for transect_type_next in end_transect_type_next_list:
+            # If this value is not NA, check if it is start_str.
+            if not isna(transect_type_next):
+                if transect_type_next != start_str:
+                    raise ValueError(
+                        f"Transect end string is followed by invalid value \
+                                {transect_type_next}. Must be followed by {start_str}."
+                    )
+
+        # Check if for all transects, there exists 1 start_str transect type.
+        if not (
+            transect_df.groupby("file_name").apply(
+                lambda x: x[x["transect_type"] == start_str].count()
+            )["file_name"]
+            == 1
+        ).all():
+            raise ValueError(
+                f"Each transect must contain a single {start_str} transect_type. \
+                             There exists transect that does not contain a single {start_str}."
+            )
+
+        # Check if for all transects, there exists 1 end_str transect type.
+        if not (
+            transect_df.groupby("file_name").apply(
+                lambda x: x[x["transect_type"] == end_str].count()
+            )["file_name"]
+            == 1
+        ).all():
+            raise ValueError(
+                f"Each transect must contain 1 {end_str} transect_type. \
+                             There exists transect that does not contain a single {end_str}."
+            )
+
+        # Create binary variable indicating within transect segments.
+        transect_df["within_transect"] = False
+
+        # Indices where start_str followed by break_str/end_str
+        st_indices = (transect_df["transect_type"] == start_str) & transect_df[
+            "transect_type_next"
+        ].isin([break_str, end_str])
+        transect_df.loc[st_indices, "within_transect"] = True
+
+        # Indices where resume_str followed by break_str/end_str
+        rt_indices = (transect_df["transect_type"] == resume_str) & transect_df[
+            "transect_type_next"
+        ].isin([break_str, end_str])
+        transect_df.loc[rt_indices, "within_transect"] = True
+
+        # Get all unique file_names in transect_df.
+        default_transect_querying_list = list(transect_df["file_name"].unique())
+
+        if file_names is None:
+            # If no input for file_names for transect querying, query all such
+            # unique file names in transect_df.
+            transect_querying_list = default_transect_querying_list
+        else:
+            # If there exists a input for file_names, check these file_names
+            # to be in the unique file_names of transect_df and select these
+            # names to query.
+            transect_querying_list = []
+            for file_name in file_names:
+                if file_name not in default_transect_querying_list:
+                    raise ValueError(
+                        f"{file_name} is not in the unique file_names \
+                                     of transect_df."
+                    )
+                else:
+                    transect_querying_list.apend(file_name)
+
+        # Create list of masks for each file name to be queried.
+        mask_list = []
+        for transect_querying_file_name in transect_querying_list:
+            within_transect_df = transect_df.query(
+                f'file_name == "{transect_querying_file_name}" and within_transect == True'
+            )
+            T = xr.zeros_like(da_Sv)
+            for _, row in within_transect_df.iterrows():
+                T = T + xr.where(
+                    (T.ping_time > row["region_bbox_left"])
+                    & (T.ping_time < row["region_bbox_left_next"]),
+                    1,
+                    0,
+                )
+            mask_list.append(T)
+
+        # Combine masks.
+        M = xr.zeros_like(da_Sv)
+        for _, T in enumerate(mask_list):
+            M = M + T
 
         return M

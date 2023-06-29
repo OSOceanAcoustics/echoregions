@@ -225,3 +225,20 @@ def test_mask_type_error():
     with pytest.raises(ValueError):
         empty_list = []
         _ = r2d.mask(da_Sv, empty_list)
+
+
+def test_within_transect():
+    """
+    Tests functionality for transect_mask.
+    """
+    evr_path = data_dir + "x1.evr"
+    r2d = er.read_evr(evr_path)
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv.T
+    transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
+    M = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+
+    # This entire .nc file should be covered by the Resume Transect at 2017-06-25 21:23:54.735000
+    # and End Transect at 2017-06-25 21:47:59.609000 time period, so the transect mask should all
+    # be 1s.
+    assert len(list(np.unique(M.data))) == 1
+    assert list(np.unique(M.data))[0] == 1
