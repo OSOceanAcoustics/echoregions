@@ -276,3 +276,31 @@ def test_within_transect_bad_dict():
     transect_dict = {"start": "BT", "break": "BT", "resume": "RT", "end": "ET"}
     with pytest.raises(ValueError):
         _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+
+
+def test_within_transect_invalid_next():
+    """
+    Tests functionality for evr file with invalid next transect type values.
+    """
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv.T
+    transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
+    # Should raise value error as ST is followed by ST
+    with pytest.raises(ValueError):
+        evr_path = data_dir + "x1_ST_ST.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+    # Should raise value error as RT is followed by RT
+    with pytest.raises(ValueError):
+        evr_path = data_dir + "x1_RT_RT.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+    # Should raise value error as BT is followed by ET
+    with pytest.raises(ValueError):
+        evr_path = data_dir + "x1_BT_ET.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+    # Should raise value error as ET is followed by RT
+    with pytest.raises(ValueError):
+        evr_path = data_dir + "x1_ET_RT.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
