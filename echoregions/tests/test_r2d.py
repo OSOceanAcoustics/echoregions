@@ -173,7 +173,7 @@ def test_mask_no_overlap():
     # select a chunk of the dataset after the region so there is no overlap
     Sv_no_overlap = da_Sv.sel(ping_time=slice(bbox_left, bbox_right))
 
-    M = er.regions2d_mask(Sv_no_overlap, r2d, [11])
+    M = r2d.mask(Sv_no_overlap, [11])
 
     assert isinstance(M, DataArray)
     assert M.isnull().data.all()
@@ -187,7 +187,7 @@ def test_mask_correct_labels():
     region_ids = r2d.data.region_id.values  # Output is that of IntegerArray
     region_ids = list(region_ids)  # Convert to List
     da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv
-    M = er.regions2d_mask(da_Sv, r2d, region_ids, mask_labels=region_ids)
+    M = r2d.mask(da_Sv, region_ids, mask_labels=region_ids)
     # it matches only a 11th region becasue x1_test.nc is a chunk around that region only
     M.plot()
     # from matplotlib import pyplot as plt
@@ -221,11 +221,10 @@ def test_mask_type_error():
     da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv
     with pytest.raises(TypeError):
         empty_tuple = ()
-        _ = er.regions2d_mask(da_Sv, r2d, empty_tuple)
+        _ = r2d.mask(da_Sv, empty_tuple)
     with pytest.raises(ValueError):
         empty_list = []
-        _ = er.regions2d_mask(da_Sv, r2d, empty_list)
-
+        _ = r2d.mask(da_Sv, empty_list)
 
 def test_mask_convert_regions_2d_3d():
     """testing if converting from 2d regions2d mask to 3d and back to 2d mask works"""
