@@ -214,6 +214,8 @@ def test_mask_correct_labels():
     r2d = er.read_evr(evr_path)
     region_ids = r2d.data.region_id.values  # Output is that of IntegerArray
     region_ids = list(region_ids)  # Convert to List
+    # Convert numpy numeric values to basic Python float values
+    region_ids = [region_id.item() for region_id in region_ids]
     da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv
     M = r2d.mask(da_Sv, region_ids, mask_labels=region_ids)
     # it matches only a 11th region becasue x1_test.nc is a chunk around that region only
