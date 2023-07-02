@@ -234,7 +234,7 @@ def test_mask_convert_regions_2d_3d():
     region_ids = r2d.data.region_id.values  # Output is that of IntegerArray
     region_ids = list(region_ids)  # Convert to List
     da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv
-    M = er.regions2d_mask(da_Sv, r2d, region_ids, mask_labels=region_ids)
+    M = r2d.mask(da_Sv, region_ids, mask_labels=region_ids)
 
     # Give mask multiple unique non-nan data points. Necessary for non-trivial one hot encoding
     np_data = M.data
