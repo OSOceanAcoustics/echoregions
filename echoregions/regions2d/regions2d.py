@@ -1,12 +1,12 @@
 from pathlib import Path
 from typing import Dict, Iterable, List, Union
-from pandas import Timestamp
+
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import regionmask
 import xarray as xr
-from pandas import DataFrame, Series
+from pandas import DataFrame, Series, Timestamp
 from xarray import DataArray
 
 from ..utils.io import validate_path
