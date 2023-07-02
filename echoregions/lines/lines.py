@@ -160,13 +160,20 @@ class Lines:
         Subsets a bottom dataset to the range of an Sv dataset
         Create a mask of same shape as data found in Sonar object; bottom: False, otherwise: True
 
-        Arguments:
-            sonar - Sonar object containing DataArray of shape (ping_time, depth).
-            method - String containing interpolation method.
-            limit_area - String for determining filling restriction for NA values.
+        Parameters
+        ----------
+        da_Sv : Xarray DataArray
+            Matrix of coordinates (ping_time, depth) that contains Sv values.
+        method : str
+            Contains Pandas/Scipy parameter for interpolation method.
+        limit_area : str
+            Contains Pandas parameter for determining filling restriction for NA values.
 
-        Returns:
-        bottom_mask - xarray with dimensions: (ping_time, depth) with bottom: False, otherwise: True
+        Returns
+        -------
+        bottom_mask : Xarray DataArray
+            Matrix of coordinates (ping_time, depth) with values such that bottom: False,
+            otherwise: True
         """
 
         def filter_bottom(bottom, start_date, end_date):
@@ -197,6 +204,9 @@ class Lines:
 
             # interpolate on the sonar coordinates
             # nearest interpolation has a problem when points are far from each other
+            # TODO There exists a problem where when we use .loc prior to reindexing
+            # we are hit with a key not found error. Potentially investigate this
+            # after major changes have been completed.
             bottom_interpolated = filtered_bottom.reindex(joint_index).loc[sonar_index]
             # max_depth to set the NAs to after interpolation
             max_depth = float(da_Sv.depth.max())
