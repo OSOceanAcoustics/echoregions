@@ -4,8 +4,10 @@ from typing import Dict, Iterable, List, Union
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy import ndarray
-from pandas import DataFrame, Series, Timestamp
+import regionmask
+import xarray as xr
+from pandas import DataFrame, Series
+from xarray import DataArray
 
 from ..utils.io import validate_path
 from ..utils.time import parse_simrad_fname_time
@@ -18,11 +20,7 @@ class Regions2D:
         input_file: str,
         min_depth: Union[int, float] = None,
         max_depth: Union[int, float] = None,
-        depth: ndarray = None,
     ):
-        self.depth = (
-            None  # Single array that can be used to obtain min_depth and max_depth
-        )
         self._min_depth = (
             None  # Set to replace -9999.99 depth values which are EVR min range
         )
@@ -37,7 +35,6 @@ class Regions2D:
         self.data = parse_regions_file(input_file)
         self.output_file = []
 
-        self.depth = depth
         self.max_depth = max_depth
         self.min_depth = min_depth
 
@@ -47,36 +44,6 @@ class Regions2D:
     def __getitem__(self, val: int) -> Series:
         return self.data.iloc[val]
 
-    @property
-    def max_depth(self) -> Union[int, float]:
-        """Get the depth value that the 9999.99 edge will be set to"""
-        if self._max_depth is None and self.depth is not None:
-            self._max_depth = self.depth.max()
-        return self._max_depth
-
-    @max_depth.setter
-    def max_depth(self, val: Union[int, float]) -> Union[int, float]:
-        """Set the depth value that the 9999.99 edge will be set to"""
-        if self.min_depth is not None:
-            if val <= self.min_depth:
-                raise ValueError("max_depth cannot be less than min_depth")
-        self._max_depth = float(val) if val is not None else val
-
-    @property
-    def min_depth(self) -> Union[int, float]:
-        """Get the depth value that the -9999.99 edge will be set to"""
-        if self._min_depth is None and self.depth is not None:
-            self._min_depth = self.depth.min()
-        return self._min_depth
-
-    @min_depth.setter
-    def min_depth(self, val: Union[int, float]) -> None:
-        """Set the depth value that the -9999.99 edge will be set to"""
-        if self.max_depth is not None:
-            if val >= self.max_depth:
-                raise ValueError("min_depth cannot be greater than max_depth")
-        self._min_depth = float(val) if val is not None else val
-
     def to_csv(self, save_path: bool = None) -> None:
         """Save a Dataframe to a .csv file
 
@@ -85,11 +52,6 @@ class Regions2D:
         save_path : str
             path to save the CSV file to
         """
-        if not isinstance(self.data, DataFrame):
-            raise TypeError(
-                f"Invalid ds Type: {type(self.data)}. Must be of type DataFrame."
-            )
-
         # Check if the save directory is safe
         save_path = validate_path(
             save_path=save_path, input_file=self.input_file, ext=".csv"
@@ -278,7 +240,7 @@ class Regions2D:
 
     def select_sonar_file(
         self,
-        files: List[str],
+        sonar_file_names: List[str],
         region: Union[float, str, list, Series, DataFrame] = None,
     ) -> List:
         """Finds sonar files in the time domain that encompasses region or list of regions
@@ -296,9 +258,9 @@ class Regions2D:
         files: list
             list of raw file(s) spanning the encompassing region or list of regions.
         """
-        files.sort()
+        sonar_file_names.sort()
         filetimes = parse_simrad_fname_time(
-            [Path(fname).name for fname in files]
+            [Path(fname).name for fname in sonar_file_names]
         ).values
 
         # Ensure that region is a DataFrame
@@ -310,8 +272,8 @@ class Regions2D:
 
         lower_idx = 0 if lower_idx < 0 else lower_idx
 
-        files = files[lower_idx:upper_idx]
-        return files
+        sonar_file_names = sonar_file_names[lower_idx:upper_idx]
+        return sonar_file_names
 
     def replace_nan_depth(self, inplace: bool = False) -> DataFrame:
         """Replace 9999.99 or -9999.99 depth values with user-specified min_depth and max_depth
@@ -425,3 +387,120 @@ class Regions2D:
             region = self.Regions2D.close_region(region)
         for _, row in region.iterrows():
             plt.plot(row["time"], row["depth"], **kwargs)
+
+    def mask(
+        self,
+        da_Sv: DataArray,
+        region_ids: List,
+        mask_var: str = None,
+        mask_labels=None,
+    ) -> DataArray:
+        """Mask data from Data Array containing Sv data based off of a Regions2D object
+        and its regions ids.
+
+        Parameters
+        ----------
+        da_Sv : Data Array
+            DataArray of shape (ping_time, depth) containing Sv data.
+        region_ids : list
+            list IDs of regions to create mask for
+        mask_var : str
+            If provided, used to name the output mask array, otherwise `mask`
+        mask_labels:
+            None: assigns labels automatically 0,1,2,...
+            "from_ids": uses the region ids
+            list: uses a list of integers as labels
+
+        Returns
+        -------
+        A DataArray with the data_var masked by the specified region.
+        """
+        if type(region_ids) == list:
+            if len(region_ids) == 0:
+                raise ValueError("region_ids is empty. Cannot be empty.")
+        else:
+            raise TypeError(
+                f"region_ids must be of type list. Currently is of type {type(region_ids)}"
+            )
+
+        if isinstance(mask_labels, list) and (len(mask_labels) != len(region_ids)):
+            raise ValueError(
+                "If mask_labels is a list, it should be of same length as region_ids."
+            )
+
+        # Replace nan depth in regions2d.
+        self.replace_nan_depth(inplace=True)
+
+        # Dataframe containing region information.
+        region_df = self.select_region(region_ids)
+
+        # Select only columns which are important.
+        region_df = region_df[["region_id", "time", "depth"]]
+
+        # Organize the regions in a format for region mask.
+        df = region_df.explode(["time", "depth"])
+
+        # Convert region time to integer timestamp.
+        df["time"] = matplotlib.dates.date2num(df["time"])
+
+        # Create a list of dataframes for each regions.
+        grouped = list(df.groupby("region_id"))
+
+        # Convert to list of numpy arrays which is an acceptable format to create region mask.
+        regions_np = [np.array(region[["time", "depth"]]) for id, region in grouped]
+
+        # Corresponding region ids converted to int.
+        region_ids = [int(id) for id, region in grouped]
+
+        # Convert ping_time to unix_time since the masking does not work on datetime objects.
+        da_Sv = da_Sv.assign_coords(
+            unix_time=(
+                "ping_time",
+                matplotlib.dates.date2num(da_Sv.coords["ping_time"].values),
+            )
+        )
+
+        # Set up mask labels.
+        if mask_labels:
+            if mask_labels == "from_ids":
+                # Create mask.
+                r = regionmask.Regions(outlines=regions_np, numbers=region_ids)
+                M = r.mask(
+                    da_Sv,
+                    lon_name="unix_time",
+                    lat_name="depth",
+                    wrap_lon=False,
+                )
+
+            elif isinstance(mask_labels, list):
+                # Create mask.
+                r = regionmask.Regions(outlines=regions_np)
+                M = r.mask(
+                    da_Sv,
+                    lon_name="unix_time",
+                    lat_name="depth",
+                    wrap_lon=False,
+                )
+                # Convert default labels to mask_labels.
+                S = xr.where(~M.isnull(), 0, M)
+                S = M
+                for idx, label in enumerate(mask_labels):
+                    S = xr.where(M == idx, label, S)
+                M = S
+            else:
+                raise ValueError("mask_labels must be None, 'from_ids', or a list.")
+        else:
+            # Create mask.
+            r = regionmask.Regions(outlines=regions_np)
+            M = r.mask(
+                da_Sv,
+                lon_name="unix_time",
+                lat_name="depth",
+                wrap_lon=False,
+            )
+
+        # Assign specific name to mask array, otherwise 'mask'.
+        if mask_var:
+            M = M.rename(mask_var)
+
+        return M
