@@ -1,7 +1,8 @@
 from typing import List
+
+import numpy as np
 import xarray as xr
 from xarray import DataArray
-import numpy as np
 
 from ..regions2d.regions2d import Regions2D
 
@@ -92,6 +93,7 @@ def convert_mask_3d_to_2d(mask_3d_ds: DataArray):
     )
 
     return mask_2d_da
+
 
 def merge(objects: List[Regions2D], reindex_ids: bool = False) -> Regions2D:
     # TODO currently deprecated must be fixed before further tests.
