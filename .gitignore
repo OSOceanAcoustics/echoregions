@@ -142,3 +142,4 @@ __main__.py
 *.csv
 *.json
 *.png
+!x1.zarr

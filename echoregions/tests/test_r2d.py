@@ -111,7 +111,7 @@ def test_plot():
     Test region plotting.
     """
     evr_path = data_dir + "x1.evr"
-    r2d = er.read_evr(evr_path, min_depth=0, max_depth=100, offset=5)
+    r2d = er.read_evr(evr_path, min_depth=0, max_depth=100)
     df = r2d.data.loc[r2d.data["region_name"] == "Chicken nugget"]
     r2d.plot([11], color="k")
     assert df["depth"][10][0] == 102.2552007996
@@ -150,6 +150,7 @@ def test_select_sonar_file():
     assert raw == ["Summer2017-D20170625-T195927.nc"]
 
 
+@pytest.mark.filterwarnings("ignore:No gridpoint belongs to any region")
 def test_mask_no_overlap():
     """
     test if mask is empty when there is no overlap
@@ -164,13 +165,13 @@ def test_mask_no_overlap():
     ] + timedelta(minutes=15)
     bbox_right = bbox_left + timedelta(minutes=15)
 
-    ds = xr.open_dataset(os.path.join(data_dir, "x1_test.nc"))
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv
 
-    r2d.min_depth = ds.Sv.depth.min()
-    r2d.max_depth = ds.Sv.depth.max()
+    r2d.min_depth = da_Sv.depth.min()
+    r2d.max_depth = da_Sv.depth.max()
 
     # select a chunk of the dataset after the region so there is no overlap
-    Sv_no_overlap = ds.Sv.sel(ping_time=slice(bbox_left, bbox_right))
+    Sv_no_overlap = da_Sv.sel(ping_time=slice(bbox_left, bbox_right))
 
     M = r2d.mask(Sv_no_overlap, [11])
 
@@ -183,12 +184,15 @@ def test_mask_correct_labels():
 
     evr_path = data_dir + "x1.evr"
     r2d = er.read_evr(evr_path)
-
     region_ids = r2d.data.region_id.values  # Output is that of IntegerArray
     region_ids = list(region_ids)  # Convert to List
-    ds = xr.open_dataset(os.path.join(data_dir, "x1_test.nc"))
-    M = r2d.mask(ds.Sv, region_ids, mask_labels=region_ids).values
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv
+    M = r2d.mask(da_Sv, region_ids, mask_labels=region_ids)
     # it matches only a 11th region becasue x1_test.nc is a chunk around that region only
+    M.plot()
+    # from matplotlib import pyplot as plt
+    # plt.show()
+    M = M.values
     assert set(np.unique(M[~np.isnan(M)])) == {11}
 
 
@@ -209,14 +213,15 @@ def test_select_type_error():
 
 def test_mask_type_error():
     """
-    Tests select error functionality for regions.
+    Tests mask error functionality for regions.
     """
 
     evr_paths = data_dir + "x1.evr"
     r2d = er.read_evr(evr_paths)
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv
     with pytest.raises(TypeError):
         empty_tuple = ()
-        _ = r2d.mask(empty_tuple)
-    with pytest.raises(TypeError):
+        _ = r2d.mask(da_Sv, empty_tuple)
+    with pytest.raises(ValueError):
         empty_list = []
-        _ = r2d.mask(empty_list)
+        _ = r2d.mask(da_Sv, empty_list)
