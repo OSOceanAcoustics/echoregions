@@ -129,15 +129,16 @@ class Regions2D:
                         time_range[1], Timestamp
                     ):
                         if time_range[0] < time_range[1]:
-                            for index, row in region.iterrows():
-                                remove_row = False
-                                for time in row["time"]:
-                                    if time_range[0] > Timestamp(time) or time_range[
-                                        1
-                                    ] < Timestamp(time):
-                                        remove_row = True
-                                if remove_row:
-                                    region.drop(index, inplace=True)
+                            # Select rows with time values that are all within time range
+                            region = region[
+                                region["time"].apply(
+                                    lambda time_array: all(
+                                        time_range[0] <= Timestamp(x)
+                                        or time_range[1] >= Timestamp(x)
+                                        for x in time_array
+                                    )
+                                )
+                            ]
                         else:
                             raise ValueError(
                                 f"1st index value must be later than 0th index \
@@ -167,13 +168,16 @@ class Regions2D:
                         depth_range[1], (float, int)
                     ):
                         if depth_range[0] < depth_range[1]:
-                            for index, row in region.iterrows():
-                                remove_row = False
-                                for depth in row["depth"]:
-                                    if depth_range[0] > depth or depth_range[1] < depth:
-                                        remove_row = True
-                                if remove_row:
-                                    region.drop(index, inplace=True)
+                            # Select rows with depth values that are all within depth range
+                            region = region[
+                                region["time"].apply(
+                                    lambda depth_array: all(
+                                        depth_range[0] <= float(x)
+                                        or depth_range[1] >= float(x)
+                                        for x in depth_array
+                                    )
+                                )
+                            ]
                         else:
                             raise ValueError(
                                 f"1st index value must be later than 0th index \
