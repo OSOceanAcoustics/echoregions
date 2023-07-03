@@ -379,6 +379,7 @@ class Regions2D:
             )
         except ValueError as ve:
             import warnings
+
             warnings.warn(
                 "Most likely using deprecated regionmask version."
                 "Make sure to use regionmask==0.8.0 or more recent versions.",
