@@ -26,10 +26,10 @@ def parse_line_file(input_file: str):
     # Check if there is a correct matching of points and file lines.
     if (len(file_lines) - 2) != n_points:
         raise ValueError(
-            f"There exists a mismatch between number of file lines and the\n\
-                         number of points. There should be 2 less file lines then the number\n\
-                         of points, however we have {len(file_lines)} number of file lines and\n\
-                         {n_points} number of points."
+            "There exists a mismatch between the expected number of lines in the file"
+            "and the actual number of points. There should be 2 less lines in the file than"
+            f"the number of points, however we have {len(file_lines)} number of lines in the file"
+            f"and {n_points} number of points."
         )
     for i in range(n_points):
         date, time, depth, status = file_lines[i + 2].strip().split()

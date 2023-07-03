@@ -31,7 +31,8 @@ def test_convert_evl():
 
 def test_convert_evl_too_short():
     """
-    Test converting an Echoview lines file (.EVL) that has too few lines.
+    Test converting an Echoview lines file (.EVL) that has too few lines
+    than those shown in the header.
     """
     evl_path = data_dir + "x1_too_few.evl"
     with pytest.raises(ValueError):
