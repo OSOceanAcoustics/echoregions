@@ -77,7 +77,7 @@ class Regions2D:
         region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
         time_range: List[Timestamp] = None,
         depth_range: List[Union[float, int]] = None,
-        copy=False,
+        copy=True,
     ) -> DataFrame:
         """Selects a subset of this Region2D object's dataframe.
 
@@ -100,8 +100,11 @@ class Regions2D:
             and each row has time and depth within or on the boundaries passed
             in by the ``time_range`` and ``depth_range`` values.
         """
-        region = None
-        untouched = True
+        # Make copy of original dataframe; else, use original dataframe in selection.
+        if copy:
+            region = self.data.copy()
+        else:
+            region = self.data
         if region_id is not None:
             if isinstance(region_id, (float, int, str)):
                 region_id = [region_id]
@@ -119,7 +122,6 @@ class Regions2D:
                             of type float, int, str."
                     )
             region = self.data[self.data["region_id"].isin(region_id)]
-            untouched = False
         if time_range is not None:
             if isinstance(time_range, List):
                 if len(time_range) == 2:
@@ -127,8 +129,6 @@ class Regions2D:
                         time_range[1], Timestamp
                     ):
                         if time_range[0] < time_range[1]:
-                            if region is None:
-                                region = self.data
                             for index, row in region.iterrows():
                                 remove_row = False
                                 for time in row["time"]:
@@ -138,7 +138,6 @@ class Regions2D:
                                         remove_row = True
                                 if remove_row:
                                     region.drop(index, inplace=True)
-                            untouched = False
                         else:
                             raise ValueError(
                                 f"1st index value must be later than 0th index \
@@ -168,8 +167,6 @@ class Regions2D:
                         depth_range[1], (float, int)
                     ):
                         if depth_range[0] < depth_range[1]:
-                            if region is None:
-                                region = self.data
                             for index, row in region.iterrows():
                                 remove_row = False
                                 for depth in row["depth"]:
@@ -177,7 +174,6 @@ class Regions2D:
                                         remove_row = True
                                 if remove_row:
                                     region.drop(index, inplace=True)
-                            untouched = False
                         else:
                             raise ValueError(
                                 f"1st index value must be later than 0th index \
@@ -200,12 +196,7 @@ class Regions2D:
                     f"Invalid depth_range type: {type(depth_range)}. Must be \
                                 of type List."
                 )
-        if untouched:
-            region = self.data
-        if copy:
-            return region.copy()
-        else:
-            return region
+        return region
 
     def close_region(
         self, region: Union[float, str, List, Series, DataFrame] = None
