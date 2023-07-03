@@ -14,6 +14,10 @@ ECHOVIEW_NAN_DEPTH_VALUE = -10000.99
 
 
 class Lines:
+    """
+    Class that contains and performs operations with Depth/Lines data from Echoview EVL files.
+    """
+
     def __init__(self, input_file: str, nan_depth_value: float = None):
         self.input_file = input_file
         self.data = parse_line_file(input_file)
