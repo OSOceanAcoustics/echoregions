@@ -18,13 +18,13 @@ EchoRegions Core Functions
 
 EchoRegions Lines
 -----------------
-.. automodapi:: echoregions.lines
+.. automodule:: echoregions.lines
    :no-inheritance-diagram:
    :no-heading:
 
 EchoRegions Regions2D
 ---------------------
-.. automodapi:: echoregions.regions2d
+.. automodule:: echoregions.regions2d
    :no-inheritance-diagram:
    :no-heading:
 
