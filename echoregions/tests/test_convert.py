@@ -14,7 +14,7 @@ output_json = data_dir + "output_JSON/"
 
 def test_convert_evl():
     """
-    Test converting an Echoview lines files (.EVL).
+    Test converting an Echoview lines file (.EVL).
     """
     evl_path = data_dir + "x1.evl"
     evl = er.read_evl(evl_path)
@@ -27,6 +27,16 @@ def test_convert_evl():
 
     os.rmdir(output_csv)
     os.rmdir(output_json)
+
+
+def test_convert_evl_too_short():
+    """
+    Test converting an Echoview lines file (.EVL) that has too few lines
+    than those shown in the header.
+    """
+    evl_path = data_dir + "x1_too_few.evl"
+    with pytest.raises(ValueError):
+        _ = er.read_evl(evl_path)
 
 
 def test_convert_evr():

@@ -58,8 +58,8 @@ def parse_regions_file(input_file: str):
     file_type, file_format_number, echoview_version = fid.readline().strip().split()
     file_metadata = pd.Series(
         {
-            # TODO: add back the trailing ".evr" in filename for completeness
-            "file_name": os.path.splitext(os.path.basename(input_file))[0],
+            "file_name": os.path.splitext(os.path.basename(input_file))[0]
+            + os.path.splitext(os.path.basename(input_file))[1],
             "file_type": file_type,
             "evr_file_format_number": file_format_number,
             "echoview_version": echoview_version,
@@ -71,8 +71,7 @@ def parse_regions_file(input_file: str):
     for r in range(n_regions):
         # Unpack region data
         fid.readline()  # blank line separates each region
-
-        # TODO: consider using fid.readlines() directly for code readability
+        # Get region metadata
         r_metadata = _region_metadata_to_dict(fid.readline().strip().split())
         # Add notes to region data
         n_note_lines = int(fid.readline().strip())

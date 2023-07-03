@@ -8,24 +8,31 @@ from ..utils.time import parse_time
 
 def parse_line_file(input_file: str):
     # Check for validity of input_file
-    check_file_extension_existence(input_file, "EVL")
+    check_file(input_file, "EVL")
+    # Read file and read all lines
     fid = open(input_file, encoding="utf-8-sig")
+    file_lines = fid.readlines()
     # Read header containing metadata about the EVL file
-    file_type, file_format_number, ev_version = fid.readline().strip().split()
+    file_type, file_format_number, ev_version = file_lines[0].strip().split()
     file_metadata = {
-        # TODO: add back the trailing ".evl" in filename for completeness
-        "file_name": os.path.splitext(os.path.basename(input_file))[0],
+        "file_name": os.path.splitext(os.path.basename(input_file))[0]
+        + os.path.splitext(os.path.basename(input_file))[1],
         "file_type": file_type,
         "evl_file_format_version": file_format_number,
         "echoview_version": ev_version,
     }
-    # TODO: below is better implemented as reading to EOF
-    # and check if the total number of lines read equals to n_points;
-    # if the number of lines don't match, return error
     points = []
-    n_points = int(fid.readline().strip())
+    n_points = int(file_lines[1].strip())
+    # Check if there is a correct matching of points and file lines.
+    if (len(file_lines) - 2) != n_points:
+        raise ValueError(
+            "There exists a mismatch between the expected number of lines in the file"
+            "and the actual number of points. There should be 2 less lines in the file than"
+            f"the number of points, however we have {len(file_lines)} number of lines in the file"
+            f"and {n_points} number of points."
+        )
     for i in range(n_points):
-        date, time, depth, status = fid.readline().strip().split()
+        date, time, depth, status = file_lines[i + 2].strip().split()
         points.append(
             {
                 "time": f"{date} {time}",  # Format: CCYYMMDD HHmmSSssss
