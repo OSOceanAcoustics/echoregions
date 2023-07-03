@@ -16,7 +16,7 @@ ECHOVIEW_NAN_DEPTH_VALUE = -10000.99
 class Lines:
     def __init__(self, input_file: str, nan_depth_value: float = None):
         self.input_file = input_file
-        self._data = parse_line_file(input_file)
+        self.data = parse_line_file(input_file)
         self.output_file = []
 
         self._nan_depth_value = (
@@ -31,10 +31,6 @@ class Lines:
     def __getitem__(self, idx: int) -> Union[Dict, List]:
         """Indexing lines object will return the point at that index"""
         return self.points[idx]
-
-    @property
-    def data(self) -> DataFrame:
-        return self._data
 
     def replace_nan_depth(self, inplace: bool = False) -> Union[DataFrame, None]:
         """Replace -10000.99 depth values with user-specified _nan_depth_value
@@ -51,7 +47,7 @@ class Lines:
         if self._nan_depth_value is None:
             return
 
-        regions = self._data if inplace else self._data.copy()
+        regions = self.data if inplace else self.data.copy()
         regions["depth"] = regions["depth"].apply(
             lambda x: self._nan_depth_value if x == ECHOVIEW_NAN_DEPTH_VALUE else x
         )
@@ -73,7 +69,7 @@ class Lines:
             save_path=save_path, input_file=self.input_file, ext=".csv"
         )
         # Reorder columns and export to csv
-        self._data.to_csv(save_path, index=False)
+        self.data.to_csv(save_path, index=False)
         self.output_file.append(save_path)
 
     def to_json(self, save_path: str = None, pretty: bool = True, **kwargs) -> None:
@@ -97,7 +93,7 @@ class Lines:
 
         # Save the entire parsed EVR dictionary as a JSON file
         with open(save_path, "w") as f:
-            f.write(json.dumps(self._data.to_json(), indent=indent))
+            f.write(json.dumps(self.data.to_json(), indent=indent))
         self.output_file.append(save_path)
 
     def plot(
@@ -144,7 +140,7 @@ class Lines:
                             It must be of of type Pandas Timestamp."
             )
 
-        df = self._data
+        df = self.data
         if start_time is not None:
             df = df[df["time"] > start_time]
         if end_time is not None:
