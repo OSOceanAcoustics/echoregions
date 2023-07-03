@@ -51,9 +51,7 @@ class Lines:
         regions["depth"] = regions["depth"].apply(
             lambda x: self._nan_depth_value if x == ECHOVIEW_NAN_DEPTH_VALUE else x
         )
-        if inplace:
-            return
-        else:
+        if not inplace:
             return regions
 
     def to_csv(self, save_path: bool = None) -> None:
