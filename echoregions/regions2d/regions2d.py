@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import regionmask
 import xarray as xr
-from pandas import DataFrame, Series
+from pandas import DataFrame, Series, Timestamp
 from xarray import DataArray
 
 from ..utils.io import validate_save_path
@@ -73,47 +73,134 @@ class Regions2D:
         """
 
     def select_region(
-        self, region: Union[float, str, list, Series, DataFrame] = None, copy=False
+        self,
+        region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
+        time_range: List[Timestamp] = None,
+        depth_range: List[Union[float, int]] = None,
+        copy=True,
     ) -> DataFrame:
-        """Ensure that region is a DataFrame.
+        """Selects a subset of this Region2D object's dataframe.
 
         Parameters
         ----------
-        region : float, str, list, Series, DataFrame, ``None``
-            A region id provided as a number, string, list of these,
-            or a DataFrame/Series containing the region_id column name.
+        region_id : float, int, str, list, ``None``
+            A region id provided as a number, a string, or list of these.
+        time_range: List of 2 Pandas Timestamps.
+            Datetime range for expected output of subselected DataFrame. 1st
+            index value must be later than 0th index value.
+        depth_range: List of 2 floats.
+            Depth range for expected output of subselected DataFrame. 1st
+            index value must be larger than 0th index value.
         copy : bool
             Return a copy of the `data` DataFrame
         Returns
         -------
         DataFrame
-            A DataFrame subselected from Regions2D.data.
-            There is a row for each region id provided by the region parameter.
+            There is a row for each region id provided by the ``region_id`` parameter,
+            and each row has time and depth within or on the boundaries passed
+            in by the ``time_range`` and ``depth_range`` values.
         """
-        if region is not None:
-            if isinstance(region, DataFrame):
-                region = list(region.region_id)
-            elif isinstance(region, Series):
-                region = [region.region_id]
-            elif (
-                isinstance(region, float)
-                or isinstance(region, int)
-                or isinstance(region, str)
-            ):
-                region = [region]
-            elif not isinstance(region, list):
-                raise TypeError(
-                    f"Invalid Region Type: {type(region)}. Must be \
-                                of type float, str, list, Series, DataFrame, ``None``"
-                )
-            # Select row by column id
-            region = self.data[self.data["region_id"].isin(region)]
+        # Make copy of original dataframe; else, use original dataframe in selection.
+        if copy:
+            region = self.data.copy()
         else:
             region = self.data
-        if copy:
-            return region.copy()
-        else:
-            return region
+        if region_id is not None:
+            if isinstance(region_id, (float, int, str)):
+                region_id = [region_id]
+            elif not isinstance(region_id, list):
+                raise TypeError(
+                    f"Invalid region_id type: {type(region_id)}. Must be \
+                                of type float, int, str, list, ``None``."
+                )
+            # Select row by column id
+            for value in region_id:
+                if not isinstance(value, (float, int, str)):
+                    raise TypeError(
+                        f"Invalid element in list region_id. Is of \
+                            type: {type(value)}Must be \
+                            of type float, int, str."
+                    )
+            region = self.data[self.data["region_id"].isin(region_id)]
+        if time_range is not None:
+            if isinstance(time_range, List):
+                if len(time_range) == 2:
+                    if isinstance(time_range[0], Timestamp) and isinstance(
+                        time_range[1], Timestamp
+                    ):
+                        if time_range[0] < time_range[1]:
+                            # Select rows with time values that are all within time range
+                            region = region[
+                                region["time"].apply(
+                                    lambda time_array: all(
+                                        time_range[0] <= Timestamp(x)
+                                        or time_range[1] >= Timestamp(x)
+                                        for x in time_array
+                                    )
+                                )
+                            ]
+                        else:
+                            raise ValueError(
+                                f"1st index value must be later than 0th index \
+                                             value. Currently 0th index value is {time_range[0]} \
+                                             and 1st index value is {time_range[1]}"
+                            )
+                    else:
+                        raise TypeError(
+                            f"Invalid time_range value types: \
+                                        {type(time_range[0])} and {type(time_range[1])}. Must \
+                                        be both of type Timestamp."
+                        )
+                else:
+                    raise ValueError(
+                        f"Invalid time_range size: {len(time_range)}. \
+                        Must be of size 2."
+                    )
+            else:
+                raise TypeError(
+                    f"Invalid time_range type: {type(time_range)}. Must be \
+                                of type List."
+                )
+        if depth_range is not None:
+            if isinstance(depth_range, List):
+                if len(depth_range) == 2:
+                    if isinstance(depth_range[0], (float, int)) and isinstance(
+                        depth_range[1], (float, int)
+                    ):
+                        if depth_range[0] < depth_range[1]:
+                            # Select rows with depth values that are all within depth range
+                            region = region[
+                                region["time"].apply(
+                                    lambda depth_array: all(
+                                        depth_range[0] <= float(x)
+                                        or depth_range[1] >= float(x)
+                                        for x in depth_array
+                                    )
+                                )
+                            ]
+                        else:
+                            raise ValueError(
+                                f"1st index value must be later than 0th index \
+                                             value. Currently 0th index value is {depth_range[0]} \
+                                             and 1st index value is {depth_range[1]}"
+                            )
+                    else:
+                        raise TypeError(
+                            f"Invalid depth_range value types: \
+                                        {type(depth_range[0])} and {type(depth_range[1])}. Must \
+                                        be both of type either float or int."
+                        )
+                else:
+                    raise ValueError(
+                        f"Invalid depth_range size: {len(depth_range)}. \
+                        Must be of size 2."
+                    )
+            else:
+                raise TypeError(
+                    f"Invalid depth_range type: {type(depth_range)}. Must be \
+                                of type List."
+                )
+        return region
 
     def close_region(
         self, region: Union[float, str, List, Series, DataFrame] = None
