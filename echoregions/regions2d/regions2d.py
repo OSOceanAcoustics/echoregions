@@ -79,13 +79,12 @@ class Regions2D:
         depth_range: List[Union[float, int]] = None,
         copy=False,
     ) -> DataFrame:
-        """Selects a subset of this region object's dataframe.
+        """Selects a subset of this Region2D object's dataframe.
 
         Parameters
         ----------
         region_id : float, int, str, list, ``None``
-            A region id provided as a number, string, list of these,
-            or a DataFrame/Series containing the region_id column name.
+            A region id provided as a number, a string, or list of these.
         time_range: List of 2 Pandas Timestamps.
             Datetime range for expected output of subselected DataFrame. 1st
             index value must be later than 0th index value.
@@ -97,19 +96,14 @@ class Regions2D:
         Returns
         -------
         DataFrame
-            A DataFrame subselected from Regions2D.data.
-            There is a row for each region id provided by the region_id parameter,
+            There is a row for each region id provided by the ``region_id`` parameter,
             and each row has time and depth within or on the boundaries passed
-            in by the time_range and depth_range values.
+            in by the ``time_range`` and ``depth_range`` values.
         """
         region = None
         untouched = True
         if region_id is not None:
-            if (
-                isinstance(region_id, float)
-                or isinstance(region_id, int)
-                or isinstance(region_id, str)
-            ):
+            if isinstance(region_id, (float, int, str)):
                 region_id = [region_id]
             elif not isinstance(region_id, list):
                 raise TypeError(
