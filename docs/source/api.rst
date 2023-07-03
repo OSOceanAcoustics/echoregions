@@ -1,7 +1,7 @@
 API reference
 ==============
 
-This page provides a summary of echoregions’ API components.
+API components that most users will interact with.
 
 **Content**
 
@@ -25,11 +25,5 @@ EchoRegions Lines
 EchoRegions Regions2D
 ---------------------
 .. automodapi:: echoregions.regions2d
-   :no-inheritance-diagram:
-   :no-heading:
-
-EchoRegions Utils
------------------
-.. automodapi:: echoregions.utils
    :no-inheritance-diagram:
    :no-heading:
