@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import regionmask
 import xarray as xr
-from pandas import DataFrame, Series, Timestamp
+from pandas import DataFrame, Series, Timestamp, isna
 from xarray import DataArray
 
 from ..utils.io import validate_path
