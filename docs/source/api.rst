@@ -8,7 +8,6 @@ API components that most users will interact with.
 * `EchoRegions Core Functions`_
 * `EchoRegions Lines`_
 * `EchoRegions Regions2D`_
-* `EchoRegions Utils`_
 
 EchoRegions Core Functions
 ---------------
