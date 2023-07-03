@@ -363,51 +363,37 @@ class Regions2D:
         )
 
         # Set up mask labels.
-        if mask_labels:
-            if mask_labels == "from_ids":
-                # Create mask.
-                r = regionmask.Regions(outlines=regions_np, numbers=region_ids)
-                M = r.mask(
-                    da_Sv["unix_time"],
-                    da_Sv["depth"],
-                    wrap_lon=False,
-                )
-
-            elif isinstance(mask_labels, list):
-                # Create mask.
-                r = regionmask.Regions(outlines=regions_np)
-                M = r.mask(
-                    da_Sv["unix_time"],
-                    da_Sv["depth"],
-                    wrap_lon=False,
-                )
-                # Convert default labels to mask_labels.
-                S = xr.where(~M.isnull(), 0, M)
-                S = M
-                for idx, label in enumerate(mask_labels):
-                    S = xr.where(M == idx, label, S)
-                M = S
-            else:
-                raise ValueError("mask_labels must be None, 'from_ids', or a list.")
-        else:
-            # Create mask.
+        if mask_labels == "from_ids":
+            r = regionmask.Regions(outlines=regions_np, numbers=region_ids)
+        elif isinstance(mask_labels, list) or mask_labels is None:
             r = regionmask.Regions(outlines=regions_np)
-            try:
-                M = r.mask(
-                    da_Sv["unix_time"],
-                    da_Sv["depth"],
-                    wrap_lon=False,
-                )
-            except ValueError as ve:
-                import warnings
+        else:
+            raise ValueError("mask_labels must be None, 'from_ids', or a list.")
 
-                warnings.warn(
-                    "Most likely using deprecated regionmask version."
-                    "Make sure to use regionmask==0.8.0 or more recent versions.",
-                    DeprecationWarning,
-                    stacklevel=2,
-                )
-                raise ve
+        # Create mask
+        try:
+            M = r.mask(
+                da_Sv["unix_time"],
+                da_Sv["depth"],
+                wrap_lon=False,
+            )
+        except ValueError as ve:
+            import warnings
+            warnings.warn(
+                "Most likely using deprecated regionmask version."
+                "Make sure to use regionmask==0.8.0 or more recent versions.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            raise ve
+
+        if isinstance(mask_labels, list):
+            # Convert default labels to mask_labels.
+            S = xr.where(~M.isnull(), 0, M)
+            S = M
+            for idx, label in enumerate(mask_labels):
+                S = xr.where(M == idx, label, S)
+            M = S
 
         # Assign specific name to mask array, otherwise 'mask'.
         if mask_var:
