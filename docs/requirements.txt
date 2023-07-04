@@ -1,3 +1,8 @@
 sphinx==2.3.1
 sphinx-automodapi
+sphinx-automodapi
+sphinx-panels
+sphinxcontrib-mermaid
+jupyter-book
 numpydoc
+docutils<0.18
