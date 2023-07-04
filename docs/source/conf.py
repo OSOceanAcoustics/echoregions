@@ -36,11 +36,11 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['**.ipynb_checkpoints', '.DS_Store', 'Thumbs.db', '_build']
+exclude_patterns = ["**.ipynb_checkpoints", ".DS_Store", "Thumbs.db", "_build"]
 
 # Set toc values (for doc structure)
 external_toc_exclude_missing = False
-external_toc_path = '_toc.yml'
+external_toc_path = "_toc.yml"
 
 # -- Options for HTML output -------------------------------------------------
 
