@@ -10,6 +10,17 @@ from ..utils.time import parse_time
 
 
 def parse_regions_file(input_file: str):
+    """Parse EVR Regions2D File and place data in Pandas Dataframe.
+
+    Parameters
+    ----------
+    input_file : str
+        Input EVR file to be parsed.
+
+    Returns
+    -------
+    DataFrame with parsed data from input EVR file.
+    """
     # Check for validity of input_file.
     check_file(input_file, "EVR")
 

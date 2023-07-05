@@ -26,6 +26,3 @@ The data is stored as a Pandas DataFrame, which allows users to leverage the pow
 and computational tools that Pandas provides.
 
 Please see the [API documentation](https://echoregions.readthedocs.io/en/latest/api.html) for all of the classes and functions available in echoregions.
-
-Or, you can jump right into plotting regions on echograms using the provided
-[example notebook](https://github.com/ngkavin/echoregions/blob/regions-restructure/notebooks/Regions2D_plotting.ipynb)!
