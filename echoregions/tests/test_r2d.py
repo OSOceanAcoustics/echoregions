@@ -257,8 +257,10 @@ def test_mask_type_error():
         _ = r2d.mask(da_Sv, empty_list)
 
 
-def test_mask_convert_regions_2d_3d():
-    """testing if converting from 2d regions2d mask to 3d and back to 2d mask works"""
+def test_mask_2d_3d_2d_3d():
+    """
+    Testing if converting 2d-3d-2d-3d masks works.
+    """
 
     evr_path = data_dir + "x1.evr"
     r2d = er.read_evr(evr_path)
@@ -291,3 +293,115 @@ def test_mask_convert_regions_2d_3d():
     # Test values from converted 2D array (previously 3D array)
     mask_2d_da = er.convert_mask_3d_to_2d(mask_3d_ds)
     assert mask_2d_da.equals(M)
+
+    # Test values from 3D array (previously 2D array)
+    second_mask_3d_ds = er.convert_mask_2d_to_3d(mask_2d_da)
+    assert second_mask_3d_ds.equals(mask_3d_ds)
+
+
+@pytest.mark.filterwarnings("ignore:No gridpoint belongs to any region")
+def test_nan_mask_2d_3d_2d_3d():
+    """
+    Testing if converting 2d-3d-2d-3d masks works for nan mask.
+    """
+    evr_path = data_dir + "x1.evr"
+    r2d = er.read_evr(evr_path)
+
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv
+
+    M = r2d.mask(da_Sv, [10])
+
+    assert isinstance(M, DataArray)
+    assert M.isnull().data.all()
+
+    # Test values from converted 3D array (previous 2D array)
+    mask_3d_ds = er.convert_mask_2d_to_3d(M)
+    assert np.unique(mask_3d_ds.mask_3d.data)[0] == 0
+
+    # Test values from converted 2D array (previously 3D array)
+    mask_2d_da = er.convert_mask_3d_to_2d(mask_3d_ds)
+    assert mask_2d_da.equals(M)
+    assert mask_2d_da.isnull().data.all()
+
+    # Test values from 3D array (previously 2D array)
+    second_mask_3d_ds = er.convert_mask_2d_to_3d(mask_2d_da)
+    assert second_mask_3d_ds.equals(mask_3d_ds)
+
+
+def test_one_label_mask_2d_3d_2d_3d():
+    """
+    Testing if converting 2d-3d-2d-3d masks works for 1 label mask.
+    """
+    # Create Regions2d Object
+    evr_path = data_dir + "x1.evr"
+    r2d = er.read_evr(evr_path)
+
+    # Open Dataset and extract DataArray
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv
+
+    # Extract region_ids
+    region_ids = r2d.data.region_id.values  # Output is that of IntegerArray
+    region_ids = list(region_ids)  # Convert to List
+    # Convert numpy numeric values to basic Python float values
+    region_ids = [region_id.item() for region_id in region_ids]
+    # Create mask
+    M = r2d.mask(da_Sv, region_ids, mask_labels=region_ids)
+
+    # Test values of 2D Mask
+    M_values = M.values
+    assert set(np.unique(M_values[~np.isnan(M_values)])) == {11}
+
+    # Test values from converted 3D array (previous 2D array)
+    mask_3d_ds = er.convert_mask_2d_to_3d(M)
+    assert list(mask_3d_ds.mask_dictionary.data) == [11.0]
+
+    # Test values from converted 2D array (previously 3D array)
+    mask_2d_da = er.convert_mask_3d_to_2d(mask_3d_ds)
+    assert mask_2d_da.equals(M)
+
+    # Test values from 3D array (previously 2D array)
+    second_mask_3d_ds = er.convert_mask_2d_to_3d(mask_2d_da)
+    assert second_mask_3d_ds.equals(mask_3d_ds)
+
+
+def test_overlapping_mask3d_2d():
+    """
+    Testing if converting 3d to 2d with overlapping mask produces error.
+    """
+
+    evr_path = data_dir + "x1.evr"
+    r2d = er.read_evr(evr_path)
+    region_ids = r2d.data.region_id.values  # Output is that of IntegerArray
+    region_ids = list(region_ids)  # Convert to List
+    # Convert numpy numeric values to basic Python float values
+    region_ids = [region_id.item() for region_id in region_ids]
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv
+    M = r2d.mask(da_Sv, region_ids, mask_labels=region_ids)
+
+    # Give mask multiple unique non-nan data points. Necessary for non-trivial one hot encoding
+    np_data = M.data
+    fake_values = [5.0, 8.0]
+    rng = np.random.default_rng(seed=0)
+    for index in np.ndindex(np_data.shape):
+        if np.isnan(np_data[index]):
+            random_float = rng.random()
+            if random_float < 0.0044:
+                if random_float <= 0.0022:
+                    np_data[index] = fake_values[0]
+                else:
+                    np_data[index] = fake_values[1]
+    M.data = np_data
+
+    # Test values from converted 3D array (previous 2D array)
+    mask_3d_ds = er.convert_mask_2d_to_3d(M)
+    assert mask_3d_ds.mask_3d.data.shape == (3, 3957, 232)
+    assert list(mask_3d_ds.mask_dictionary.data) == [5.0, 8.0, 11.0]
+
+    # Turn first (0th index) array into all 1s to guarantee overlap
+    np_mask_3d = mask_3d_ds.mask_3d.data
+    np_mask_3d[0] = np.ones(np_mask_3d[0].shape)
+    mask_3d_ds.mask_3d.data = np_mask_3d
+
+    # Trying to convert 3d mask to 2d should raise ValueError
+    with pytest.raises(ValueError):
+        er.convert_mask_3d_to_2d(mask_3d_ds)

@@ -2,40 +2,58 @@ from typing import List
 
 import numpy as np
 import xarray as xr
-from xarray import DataArray
+from xarray import DataArray, Dataset
 
 from ..regions2d.regions2d import Regions2D
 
 
-def convert_mask_2d_to_3d(M: DataArray):
-    """Convert 2D Mask data into its 3D one-hot encoded form.
+def convert_mask_2d_to_3d(mask_2d_da: DataArray) -> Dataset:
+    """Convert 2D multi-labeled mask data into its 3D one-hot encoded form.
     Parameters
     ----------
-    M : Data Array
-        A DataArray with the data_var masked by a specified region.
+    mask_2d_da: DataArray
+        A DataArray with the data_var masked by a specified region. This data will
+        be in the form of integer, demarking labels of masked regions, and nan values,
+        demarking non-masked areas.
     Returns
     -------
-    A Dataset with a 3D DataArray with the data_var masked by the specified
-    region in one-hot encoded form and a dictionary to remember original
-    non-nan values.
+    mask_3d_ds : Dataset
+        A Dataset with a 3D DataArray/mask and each layer of the 3D mask will contain
+        a 1s/0s mask for each unique label in the 2D mask. The layers will be labeled
+        by a dictionary that maps the individual label layers of the 3D mask to an integer
+        label in the 2D mask.
+    Notes
+    -----
+    -1 in the dictionary of mask_3d_ds means that there exists no masked
+    values.
     """
     # Get unique non nan values from the 2d mask
-    unique_non_nan = list(np.unique(M.data[~np.isnan(M.data)]))
+    unique_non_nan = list(np.unique(mask_2d_da.data[~np.isnan(mask_2d_da.data)]))
+    if len(unique_non_nan) == 0:
+        unique_non_nan = [-1]
+
+    # Get numpy data of 2d mask
+    original_coords = mask_2d_da.coords
+    original_dims = mask_2d_da.dims
+    original_mask_data_np = mask_2d_da.data
 
     # Create a list of mask objects from one-hot encoding M.data non-nan values
     # and a dictionary to remember said values from one-hot encoded data arrays.
     mask_list = []
     mask_dictionary = {"dims": "label", "data": []}
     for index, value in enumerate(unique_non_nan):
-        mask_data = M.copy()
-        mask_data_np = mask_data.data
-        for index in np.ndindex(mask_data_np.shape):
-            if mask_data_np[index] == value:
-                mask_data_np[index] = 1
+        # Create zeros with same shape as mask_data_np
+        new_mask_data_np = np.zeros_like(original_mask_data_np)
+        for index in np.ndindex(original_mask_data_np.shape):
+            if original_mask_data_np[index] == value:
+                new_mask_data_np[index] = 1
             else:
-                mask_data_np[index] = 0
-        mask_data.data = mask_data_np
-        mask_list.append(mask_data)
+                new_mask_data_np[index] = 0
+        # Create new data array
+        new_mask_data = xr.DataArray(
+            data=new_mask_data_np, dims=original_dims, coords=original_coords
+        )
+        mask_list.append(new_mask_data)
         mask_dictionary_list = mask_dictionary["data"]
         mask_dictionary_list.append(value)
         mask_dictionary["data"] = mask_dictionary_list
@@ -48,22 +66,29 @@ def convert_mask_2d_to_3d(M: DataArray):
     mask_3d_ds["mask_3d"] = mask_3d_da
     mask_dictionary_da = xr.DataArray.from_dict(mask_dictionary)
     mask_3d_ds["mask_dictionary"] = mask_dictionary_da
-
     return mask_3d_ds
 
 
-def convert_mask_3d_to_2d(mask_3d_ds: DataArray):
-    """Convert 2D Mask data into its 3D one-hot encoded form.
+def convert_mask_3d_to_2d(mask_3d_ds: Dataset) -> DataArray:
+    """Convert 3D one-hot encoded mask data into its 2D multi-labeled form.
     Parameters
     ----------
     mask_3d_ds : Dataset
         A Dataset with a 3D DataArray with the data_var masked by the specified
-        region in one-hot encoded form and a dictionary to remember original
-        non-nan values.
+        region in one-hot encoded form and a dictionary that will be used to map
+        the individual label layers of the 3D mask to an integer label in the 2D mask.
+        The 3D DataArray will be in the form of 1s/0s: masked areas, and
+        non-masked areas.
     Returns
     -------
-    mask_2d_da: Data Array
-        A 2D Data Array with appropriate mask values from mask_3d_ds.
+    mask_2d_da: DataArray
+        A DataArray with the data_var masked by a specified region. This data will
+        be in the form of integer, demarking labels of masked regions, and nan values,
+        demarking non-masked areas.
+    Notes
+    -----
+    -1 in the dictionary of mask_3d_ds means that there exists no masked
+    values.
     """
     # Get unique non nan values from the 2d mask
     unique_non_nan = list(mask_3d_ds.mask_dictionary.data)
@@ -72,6 +97,26 @@ def convert_mask_3d_to_2d(mask_3d_ds: DataArray):
     mask_3d_da = mask_3d_ds.mask_3d.copy()
     np_mask_3d_da = mask_3d_da.data
     np_mask_2d_da = None
+
+    # Check if there is overlap between layers.
+    # TODO For now, overlap between layers will not be allowed.
+    # Allowing overlapping layers can be explored in later development.
+    if len(np_mask_3d_da) > 1:
+        non_zero_indices_list = [
+            np.transpose(np.nonzero(np_mask)) for np_mask in np_mask_3d_da
+        ]
+        for index_main, non_zero_indices_main in enumerate(non_zero_indices_list):
+            main_set = set([tuple(x) for x in non_zero_indices_main])
+            for index_sub, non_zero_indices_sub in enumerate(non_zero_indices_list):
+                if index_main != index_sub:
+                    # Compare non zero indice arrays and check for overlap
+                    sub_set = set([tuple(x) for x in non_zero_indices_sub])
+                    overlap = [x for x in main_set & sub_set]
+                    if len(overlap) > 0:
+                        raise ValueError(
+                            "There exists overlapping values in the 3D mask."
+                            " Overlapping values are not allowed."
+                        )
 
     # Iterate through 3D numpy array layers and set 1.0 to associated label values
     # dependent on which layer is being worked on, and sequentially add layers
