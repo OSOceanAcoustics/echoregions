@@ -121,7 +121,7 @@ def test_plot(lines_fixture: Lines) -> None:
 
 
 @pytest.mark.lines
-def test_plot_type_error(lines_fixture):
+def test_plot_type_error(lines_fixture: Lines) -> None:
     """
     Test plotting lines errors.
 
@@ -180,7 +180,7 @@ def test_replace_nan_depth() -> None:
 
 
 @pytest.mark.lines
-def test_lines_mask(lines_fixture, da_Sv_fixture) -> None:
+def test_lines_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
     """
     Tests lines_mask on an overlapping (over time) evl file.
     Parameters
@@ -209,7 +209,7 @@ def test_lines_mask(lines_fixture, da_Sv_fixture) -> None:
 
 
 @pytest.mark.lines
-def test_lines_mask_empty(lines_fixture, da_Sv_fixture) -> None:
+def test_lines_mask_empty(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
     """
     Tests lines_mask on an empty evl file.
     Parameters
@@ -240,7 +240,7 @@ def test_lines_mask_empty(lines_fixture, da_Sv_fixture) -> None:
 
 
 @pytest.mark.lines
-def test_lines_mask_errors(lines_fixture, da_Sv_fixture) -> None:
+def test_lines_mask_errors(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
     """
     Tests lines_mask on an overlapping (over time) evl file with improper
     input arguments.
