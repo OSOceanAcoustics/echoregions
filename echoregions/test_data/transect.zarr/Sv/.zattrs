@@ -1,0 +1,14 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "depth",
+        "ping_time",
+        "channel"
+    ],
+    "actual_range": [
+        -156.0,
+        37.68
+    ],
+    "coordinates": "range_sample",
+    "long_name": "Volume backscattering strength (Sv re 1 m-1)",
+    "units": "dB"
+}
