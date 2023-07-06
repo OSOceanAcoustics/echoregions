@@ -92,7 +92,7 @@ def test_lines_mask():
     # from matplotlib import pyplot as plt
     # plt.show()
     M.plot(yincrease=False)
-    unique_values = np.unique(M.data.compute(), return_counts=True)
+    unique_values = np.unique(M.data, return_counts=True)
     values = unique_values[0]
     counts = unique_values[1]
     assert values[0] == 0 and values[1] == 1
