@@ -84,17 +84,20 @@ def test_evl_to_file(lines_fixture: Lines) -> None:
         Object containing data of test EVL file.
     """
 
-    data_dir = "./echoregions/test_data/"
-    output_csv = data_dir + "output_CSV/"
-    output_json = data_dir + "output_JSON/"
+    # Get output paths
+    output_csv = DATA_DIR / "output_CSV/"
+    output_json = DATA_DIR / "output_JSON/"
 
+    # Create CSV and JSON files
     lines_fixture.to_csv(output_csv)
     lines_fixture.to_json(output_json)
 
+    # Remove files
     for path in lines_fixture.output_file:
         assert os.path.exists(path)
         os.remove(path)
 
+    # Remove directories
     os.rmdir(output_csv)
     os.rmdir(output_json)
 
