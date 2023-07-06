@@ -89,10 +89,8 @@ def test_lines_mask():
     lines = er.read_evl(data_dir / "transect.evl")
     da_Sv = xr.open_zarr(os.path.join(data_dir, "transect.zarr")).Sv
     M = lines.mask(da_Sv.isel(channel=0))
-    # from matplotlib import pyplot as plt
-    # plt.show()
     M.plot(yincrease=False)
-    unique_values = np.unique(M.data, return_counts=True)
+    unique_values = np.unique(M.data.compute(), return_counts=True)
     values = unique_values[0]
     counts = unique_values[1]
     assert values[0] == 0 and values[1] == 1
