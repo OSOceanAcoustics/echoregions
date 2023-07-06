@@ -90,7 +90,10 @@ def test_lines_mask():
     da_Sv = xr.open_zarr(os.path.join(data_dir, "transect.zarr")).Sv
     M = lines.mask(da_Sv.isel(channel=0))
     M.plot(yincrease=False)
-    unique_values = np.unique(M.data.compute(), return_counts=True)
+    try:
+        unique_values = np.unique(M.data.compute(), return_counts=True)
+    except AttributeError:
+        unique_values = np.unique(M.data, return_counts=True)
     values = unique_values[0]
     counts = unique_values[1]
     assert values[0] == 0 and values[1] == 1
