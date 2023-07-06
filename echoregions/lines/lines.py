@@ -170,6 +170,12 @@ class Lines:
             otherwise: True
         """
 
+        if not isinstance(da_Sv, DataArray):
+            raise TypeError(
+                "Input da_Sv must be of type DataArray. da_Sv was instead"
+                f" of type {type(da_Sv)}"
+            )
+
         def filter_bottom(bottom, start_date, end_date):
             """
             Selects the values of the bottom between two dates.
