@@ -134,7 +134,7 @@ class Regions2D:
                                 region["time"].apply(
                                     lambda time_array: all(
                                         time_range[0] <= Timestamp(x)
-                                        or time_range[1] >= Timestamp(x)
+                                        and time_range[1] >= Timestamp(x)
                                         for x in time_array
                                     )
                                 )
