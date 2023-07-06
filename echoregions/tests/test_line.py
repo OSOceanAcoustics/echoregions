@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
@@ -8,7 +9,7 @@ import xarray as xr
 import echoregions as er
 
 data_dir = Path("./echoregions/test_data/")
-evl_path = data_dir / "x1.evl"
+evl_path = data_dir / "transect.evl"
 
 
 # TODO: Make a new EVL file with only 1 line,
@@ -19,8 +20,8 @@ def test_plot():
     """
     Test plotting Lines with options.
     """
-    start_date = pd.to_datetime("2017-06-25")
-    end_date = pd.to_datetime("2017-06-26")
+    start_date = pd.to_datetime("2019-07-02")
+    end_date = pd.to_datetime("2019-07-03")
     lines = er.read_evl(evl_path)
     lines.plot(
         start_time=start_date,
@@ -34,8 +35,8 @@ def test_plot_type_error():
     """
     Test plotting Lines with options.
     """
-    start_date = pd.to_datetime("2017-06-25")
-    end_date = pd.to_datetime("2017-06-26")
+    start_date = pd.to_datetime("2019-07-02")
+    end_date = pd.to_datetime("2019-07-03")
     bad_start_date = "2017-06-25"
     bad_end_date = "2017-06-26"
     lines = er.read_evl(evl_path)
@@ -85,11 +86,14 @@ def test_lines_mask():
     """
     Tests lines_mask on an overlapping (over time) evl file.
     """
-    lines = er.read_evl(evl_path)
-
-    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv
-
-    M = lines.mask(da_Sv)
-    M.plot(yincrease=False)
+    lines = er.read_evl(data_dir / "transect.evl")
+    da_Sv = xr.open_zarr(os.path.join(data_dir, "transect.zarr")).Sv
+    M = lines.mask(da_Sv.isel(channel=0))
     # from matplotlib import pyplot as plt
     # plt.show()
+    M.plot(yincrease=False)
+    unique_values = np.unique(M.data.compute(), return_counts=True)
+    values = unique_values[0]
+    counts = unique_values[1]
+    assert values[0] == 0 and values[1] == 1
+    assert counts[1] > counts[0]
