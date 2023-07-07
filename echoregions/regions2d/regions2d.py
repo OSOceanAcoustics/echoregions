@@ -15,6 +15,10 @@ from .regions2d_parser import parse_regions_file
 
 
 class Regions2D:
+    """
+    Class that contains and performs operations with Regions2D data from Echoview EVR files.
+    """
+
     def __init__(
         self,
         input_file: str,
@@ -62,7 +66,7 @@ class Regions2D:
 
     def to_json(self, save_path: str = None) -> None:
         # TODO: Implement this function
-        """Convert EVR to a JSON file.
+        """Convert EVR to a JSON file. Currently Deprecated.
 
         Parameters
         ----------

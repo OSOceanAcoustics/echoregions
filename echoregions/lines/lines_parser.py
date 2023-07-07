@@ -7,6 +7,17 @@ from ..utils.time import parse_time
 
 
 def parse_line_file(input_file: str):
+    """Parse EVL Line File and place data in Pandas Dataframe.
+
+    Parameters
+    ----------
+    input_file : str
+        Input EVL file to be parsed.
+
+    Returns
+    -------
+    DataFrame with parsed data from input EVL file.
+    """
     # Check for validity of input_file
     check_file(input_file, "EVL")
     # Read file and read all lines
