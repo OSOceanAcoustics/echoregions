@@ -274,6 +274,79 @@ def test_select_region(regions2d_fixture: Regions2D) -> None:
             assert depth <= depth_range[1]
 
 
+@pytest.mark.regions2d
+def test_select_region_errors(regions2d_fixture: Regions2D) -> None:
+    """
+    Tests select region error functionality.
+
+    Parameters
+    ----------
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
+    """
+
+    # Check incorrect region_id type
+    with pytest.raises(TypeError):
+        regions2d_fixture.select_region(region_id=())
+    with pytest.raises(TypeError):
+        regions2d_fixture.select_region(region_id=[1, []])
+
+    # Check time range type:
+    with pytest.raises(TypeError):
+        regions2d_fixture.select_region(
+            time_range=(
+                pd.to_datetime("2019-07-02T19:00:00.000000000"),
+                pd.to_datetime("2019-07-02T20:00:00.000000000"),
+            )
+        )
+    # Check time range list size
+    with pytest.raises(ValueError):
+        regions2d_fixture.select_region(
+            time_range=[
+                pd.to_datetime("2019-07-02T19:00:00.000000000"),
+                pd.to_datetime("2019-07-02T20:00:00.000000000"),
+                pd.to_datetime("2019-07-02T21:00:00.000000000"),
+            ]
+        )
+    # Check time range value types
+    with pytest.raises(TypeError):
+        regions2d_fixture.select_region(
+            time_range=[pd.to_datetime("2019-07-02T20:00:00.000000000"), 10]
+        )
+    # Check time range second index bigger than first index
+    with pytest.raises(ValueError):
+        regions2d_fixture.select_region(
+            time_range=[
+                pd.to_datetime("2019-07-02T20:00:00.000000000"),
+                pd.to_datetime("2019-07-02T19:00:00.000000000"),
+            ]
+        )
+
+    # Check depth range type:
+    with pytest.raises(TypeError):
+        regions2d_fixture.select_region(depth_range=(-10000.0, 10000.0))
+    # Check depth range list size
+    with pytest.raises(ValueError):
+        regions2d_fixture.select_region(
+            depth_range=[
+                -10000.0,
+                0.0,
+                10000.0,
+            ]
+        )
+    # Check depth range value types
+    with pytest.raises(TypeError):
+        regions2d_fixture.select_region(depth_range=[-10000.0, []])
+    # Check depth range second index bigger than first index
+    with pytest.raises(ValueError):
+        regions2d_fixture.select_region(
+            depth_range=[
+                10000.0,
+                -10000.0,
+            ]
+        )
+
+
 @pytest.mark.filterwarnings("ignore:No gridpoint belongs to any region")
 @pytest.mark.regions2d
 def test_mask_no_overlap(
