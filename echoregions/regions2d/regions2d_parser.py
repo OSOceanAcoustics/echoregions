@@ -9,6 +9,15 @@ from ..utils.io import check_file
 from ..utils.time import parse_time
 
 
+COLUMNS = ['file_name', 'file_type', 'evr_file_format_number', 'echoview_version',
+       'region_id', 'region_structure_version', 'region_point_count',
+       'region_selected', 'region_creation_type', 'dummy',
+       'region_bbox_calculated', 'region_bbox_left', 'region_bbox_right',
+       'region_bbox_top', 'region_bbox_bottom', 'region_class', 'region_type',
+       'region_name', 'time', 'depth', 'region_notes',
+       'region_detection_settings']
+
+
 def parse_regions_file(input_file: str):
     """Parse EVR Regions2D File and place data in Pandas Dataframe.
 
@@ -115,6 +124,9 @@ def parse_regions_file(input_file: str):
         row = row.to_frame().T
         rows.append(row)
 
-    df = pd.concat(rows, ignore_index=True)
-    data = df[rows[0].keys()].convert_dtypes()
+    if len(rows) == 0:
+        data = pd.DataFrame(columns=COLUMNS)
+    else:
+        df = pd.concat(rows, ignore_index=True)
+        data = df[rows[0].keys()].convert_dtypes()
     return data

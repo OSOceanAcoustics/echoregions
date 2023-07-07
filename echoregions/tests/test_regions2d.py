@@ -47,6 +47,16 @@ def da_Sv_fixture() -> DataArray:
 
 
 @pytest.mark.regions2d
+def test_empty_regions2d_parsing() -> None:
+    """
+    Tests empty EVR parsing.
+    """
+
+    r2d = er.read_evr(DATA_DIR / "transect_empty.evr")
+    assert r2d.select_region([11]).shape == (0, 22)
+
+
+@pytest.mark.regions2d
 def test_regions2d_parsing(regions2d_fixture: Regions2D) -> None:
     """
     Test parsing of Regions2D object via checking individual values and aggregate values.
