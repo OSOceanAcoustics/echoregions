@@ -1,13 +1,28 @@
 API reference
 ==============
 
-This page provides an auto-generated summary of echoregions’ API.
+API components that most users will interact with.
 
+**Content**
+
+* `EchoRegions Core Functions`_
+* `EchoRegions Lines`_
+* `EchoRegions Regions2D`_
+
+EchoRegions Core Functions
+---------------
 .. automodapi:: echoregions
    :no-inheritance-diagram:
+   :no-heading:
 
-.. automodapi:: echoregions.formats
+EchoRegions Lines
+-----------------
+.. automodapi:: echoregions.lines
    :no-inheritance-diagram:
+   :no-heading:
 
-.. automodapi:: echoregions.convert
+EchoRegions Regions2D
+---------------------
+.. automodapi:: echoregions.regions2d
    :no-inheritance-diagram:
+   :no-heading:

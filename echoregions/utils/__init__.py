@@ -1,4 +1,8 @@
-from .io import check_file_extension_existence, from_JSON, validate_save_path
+"""
+Utility functions that facilitate file and time processing.
+"""
+
+from .io import check_file, from_JSON
 from .time import parse_simrad_fname_time, parse_time
 
 __all__ = [

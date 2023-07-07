@@ -1,0 +1,18 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: index
+parts:
+- caption: Getting Started
+  chapters:
+  - file: installation
+- caption: User guide
+  chapters:
+  - file: Lines_plotting
+  - file: Regions2D_functions
+  - file: Regions2D_masking
+  - file: Regions2D_plotting
+- caption: Help & reference
+  chapters:
+  - file: api

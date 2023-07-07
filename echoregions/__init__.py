@@ -1,3 +1,9 @@
-from .core import read_cloud_evl, read_cloud_evr, read_evl, read_evr
+"""
+These core functions are what users will call on
+at the beginning of their programming and will produce objects
+that contain the majority of the functionality within echoregions.
+"""
+
+from .core import read_evl, read_evr
 
 __all__ = ["read_evl", "read_evr", "read_cloud_evr", "read_cloud_evl"]
