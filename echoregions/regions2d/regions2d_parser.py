@@ -8,14 +8,30 @@ from numpy import ndarray
 from ..utils.io import check_file
 from ..utils.time import parse_time
 
-
-COLUMNS = ['file_name', 'file_type', 'evr_file_format_number', 'echoview_version',
-       'region_id', 'region_structure_version', 'region_point_count',
-       'region_selected', 'region_creation_type', 'dummy',
-       'region_bbox_calculated', 'region_bbox_left', 'region_bbox_right',
-       'region_bbox_top', 'region_bbox_bottom', 'region_class', 'region_type',
-       'region_name', 'time', 'depth', 'region_notes',
-       'region_detection_settings']
+COLUMNS = [
+    "file_name",
+    "file_type",
+    "evr_file_format_number",
+    "echoview_version",
+    "region_id",
+    "region_structure_version",
+    "region_point_count",
+    "region_selected",
+    "region_creation_type",
+    "dummy",
+    "region_bbox_calculated",
+    "region_bbox_left",
+    "region_bbox_right",
+    "region_bbox_top",
+    "region_bbox_bottom",
+    "region_class",
+    "region_type",
+    "region_name",
+    "time",
+    "depth",
+    "region_notes",
+    "region_detection_settings",
+]
 
 
 def parse_regions_file(input_file: str):
@@ -38,16 +54,17 @@ def parse_regions_file(input_file: str):
 
     def _region_metadata_to_dict(line: List) -> Dict:
         """Assigns a name to each value in the metadata line for each region"""
-        top = float(line[9])
-        bottom = float(line[12])
         bound_calculated = int(line[6])
         if bound_calculated:
             left = parse_time(f"{line[7]} {line[8]}", unix=False)
             right = parse_time(f"{line[10]} {line[11]}", unix=False)
+            top = float(line[9])
+            bottom = float(line[12])
         else:
-            left = f"D{line[7]} {line[8]}"
-            right = f"D{line[10]} {line[11]}"
-
+            left = None
+            right = None
+            top = None
+            bottom = None
         return {
             "region_id": int(line[2]),
             "region_structure_version": line[0],  # 13 currently
@@ -60,10 +77,10 @@ def parse_regions_file(input_file: str):
             # Date encoded as CCYYMMDD and times in HHmmSSssss
             # Where CC=Century, YY=Year, MM=Month, DD=Day, HH=Hour,
             # mm=minute, SS=second, ssss=0.1 milliseconds
-            "region_bbox_left": left,  # Time and date of bounding box left x
-            "region_bbox_right": right,  # Time and date of bounding box right x
-            "region_bbox_top": top,  # Top of bounding box
-            "region_bbox_bottom": bottom,  # Bottom of bounding box
+            "region_bbox_left": left,  # Time and date of bounding box left x; none if not valid.
+            "region_bbox_right": right,  # Time and date of bounding box right x; none if not valid.
+            "region_bbox_top": top,  # Top of bounding box; none if not valid.
+            "region_bbox_bottom": bottom,  # Bottom of bounding box; none if not valid.
         }
 
     def _parse_points(line: str) -> Tuple[ndarray]:

@@ -52,8 +52,61 @@ def test_empty_regions2d_parsing() -> None:
     Tests empty EVR parsing.
     """
 
+    # Read evr into regions2d
     r2d = er.read_evr(DATA_DIR / "transect_empty.evr")
+
+    # Check shapes
+    assert r2d.data.shape == (0, 22)
     assert r2d.select_region([11]).shape == (0, 22)
+
+
+@pytest.mark.regions2d
+def test_missing_bbox_regions2d_parsing() -> None:
+    """
+    Tests missing bbox EVR parsing.
+    """
+
+    # Read evr into regions2d
+    r2d = er.read_evr(DATA_DIR / "transect_missing_bbox.evr")
+
+    # Test shape
+    assert r2d.data.shape == (2, 22)
+
+    # Test selected region good bbox
+    df_select_good = r2d.select_region([1])
+    assert df_select_good.shape == (1, 22)
+    df_select_good_columns = df_select_good[
+        [
+            "region_bbox_left",
+            "region_bbox_right",
+            "region_bbox_top",
+            "region_bbox_bottom",
+        ]
+    ]
+    assert df_select_good_columns.iloc[0]["region_bbox_left"] == pd.to_datetime(
+        "2019-07-02 03:50:54.629500"
+    )
+    assert df_select_good_columns.iloc[0]["region_bbox_right"] == pd.to_datetime(
+        "2019-07-02 08:10:09.425500"
+    )
+    assert df_select_good_columns.iloc[0]["region_bbox_top"] == -9999.99
+    assert df_select_good_columns.iloc[0]["region_bbox_bottom"] == 9999.99
+
+    # Test selected region bad bbox
+    df_select_bad = r2d.select_region([2])
+    assert df_select_bad.shape == (1, 22)
+    df_select_bad_columns = df_select_bad[
+        [
+            "region_bbox_left",
+            "region_bbox_right",
+            "region_bbox_top",
+            "region_bbox_bottom",
+        ]
+    ]
+    assert pd.isna(df_select_bad_columns.iloc[0]["region_bbox_left"])
+    assert pd.isna(df_select_bad_columns.iloc[0]["region_bbox_right"])
+    assert pd.isna(df_select_bad_columns.iloc[0]["region_bbox_top"])
+    assert pd.isna(df_select_bad_columns.iloc[0]["region_bbox_bottom"])
 
 
 @pytest.mark.regions2d
