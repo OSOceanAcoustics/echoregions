@@ -1,26 +1,6 @@
-import json
 import os
 from pathlib import Path
-from typing import Dict, List, Union
-
-
-def from_JSON(j: str) -> Dict:
-    """Opens a JSON file
-
-    Parameters
-    ----------
-    j : str
-        Valid JSON string or path to JSON file
-    """
-    if os.path.isfile(j):
-        with open(j, "r") as f:
-            data_dict = json.load(f)
-    else:
-        try:
-            data_dict = json.loads(j)
-        except json.decoder.JSONDecodeError:
-            raise ValueError("Invalid JSON string")
-    return data_dict
+from typing import List, Union
 
 
 def validate_path(
