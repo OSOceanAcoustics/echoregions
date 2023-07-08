@@ -195,12 +195,9 @@ def test_lines_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
     """
 
     M = lines_fixture.mask(da_Sv_fixture.isel(channel=0))
-    M.plot(yincrease=False)
-    try:
-        unique_values = np.unique(M.data.compute(), return_counts=True)
-    except AttributeError:
-        # In the case where M.data has already been computed
-        unique_values = np.unique(M.data, return_counts=True)
+
+    # Compute unique values
+    unique_values = np.unique(M.compute().data, return_counts=True)
 
     # Extract counts and values
     values = unique_values[0]
@@ -208,7 +205,8 @@ def test_lines_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
 
     # Assert that there are more masked points then there are unmasked points
     assert values[0] == 0 and values[1] == 1
-    assert counts[1] > counts[0]
+    assert counts[0].item() == 1488939
+    assert counts[1].item() == 5159416
 
 
 @pytest.mark.lines
@@ -225,13 +223,11 @@ def test_lines_mask_empty(lines_fixture: Lines, da_Sv_fixture: DataArray) -> Non
 
     # Create empty lines object
     lines_fixture.data = lines_fixture.data[0:0]
+
     M = lines_fixture.mask(da_Sv_fixture.isel(channel=0))
 
-    try:
-        unique_values = np.unique(M.data.compute(), return_counts=True)
-    except AttributeError:
-        # In the case where M.data has already been computed
-        unique_values = np.unique(M.data, return_counts=True)
+    # Compute unique values
+    unique_values = np.unique(M.compute().data, return_counts=True)
 
     # Extract counts and values
     values = unique_values[0]
@@ -240,6 +236,7 @@ def test_lines_mask_empty(lines_fixture: Lines, da_Sv_fixture: DataArray) -> Non
     # Assert that the only unique value is 0
     assert len(values) == 1 and len(counts) == 1
     assert values[0] == 0
+    assert counts[0] == 6648355
 
 
 @pytest.mark.lines
