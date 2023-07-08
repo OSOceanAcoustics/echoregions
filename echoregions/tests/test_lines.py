@@ -205,8 +205,8 @@ def test_lines_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
 
     # Assert that there are more masked points then there are unmasked points
     assert values[0] == 0 and values[1] == 1
-    assert counts[0].item() == 1488939
-    assert counts[1].item() == 5159416
+    assert counts[0] == 1488939
+    assert counts[1] == 5159416
 
 
 @pytest.mark.lines
