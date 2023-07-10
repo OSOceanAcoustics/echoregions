@@ -367,7 +367,7 @@ def test_mask_no_overlap(
     M = regions2d_fixture.mask(da_Sv_fixture.isel(channel=0), [8])
 
     # Check that all values are null
-    assert M.isnull().data.all()
+    assert M.isnull().all()
 
 
 @pytest.mark.regions2d
@@ -386,13 +386,7 @@ def test_mask_correct_labels(
     """
 
     # Extract Region IDs and convert to Python float values
-    region_ids = (
-        regions2d_fixture.data.region_id.values
-    )  # Output is that of IntegerArray
-    region_ids = list(region_ids)  # Convert to List
-    region_ids = [
-        region_id.item() for region_id in region_ids  # Convert to basic python values
-    ]
+    region_ids = regions2d_fixture.data.region_id.astype(float).to_list()
 
     # Create mask.
     M = regions2d_fixture.mask(
