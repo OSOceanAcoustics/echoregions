@@ -24,47 +24,37 @@ def convert_mask_2d_to_3d(mask_2d_da: DataArray) -> Dataset:
         label in the 2D mask.
     Notes
     -----
-    -1 in the dictionary of mask_3d_ds means that there exists no masked
+    Emtpy dictionary data of mask_3d_ds means that there exists no masked
     values.
     """
     # Get unique non nan values from the 2d mask
     unique_non_nan = list(np.unique(mask_2d_da.data[~np.isnan(mask_2d_da.data)]))
     if len(unique_non_nan) == 0:
-        unique_non_nan = [-1]
-
-    # Get numpy data of 2d mask
-    original_coords = mask_2d_da.coords
-    original_dims = mask_2d_da.dims
-    original_mask_data_np = mask_2d_da.data
+        unique_non_nan = None
 
     # Create a list of mask objects from one-hot encoding M.data non-nan values
     # and a dictionary to remember said values from one-hot encoded data arrays.
+    # If unique_non_nan is None, make mask_dictionary None.
     mask_list = []
     mask_dictionary = {"dims": "label", "data": []}
-    for index, value in enumerate(unique_non_nan):
-        # Create zeros with same shape as mask_data_np
-        new_mask_data_np = np.zeros_like(original_mask_data_np)
-        for index in np.ndindex(original_mask_data_np.shape):
-            if original_mask_data_np[index] == value:
-                new_mask_data_np[index] = 1
-            else:
-                new_mask_data_np[index] = 0
-        # Create new data array
-        new_mask_data = xr.DataArray(
-            data=new_mask_data_np, dims=original_dims, coords=original_coords
-        )
-        mask_list.append(new_mask_data)
-        mask_dictionary_list = mask_dictionary["data"]
-        mask_dictionary_list.append(value)
-        mask_dictionary["data"] = mask_dictionary_list
-
-    # Initialize empty Dataset
-    mask_3d_ds = xr.Dataset()
-
-    # Place one-hot encoded masks and dictionary in dataset
-    mask_3d_da = xr.concat(mask_list, dim="label")
-    mask_3d_ds["mask_3d"] = mask_3d_da
+    if unique_non_nan is not None:
+        mask_dictionary = {"dims": "label", "data": []}
+        for _, value in enumerate(unique_non_nan):
+            # Create new 1d mask
+            new_mask_data = xr.where(mask_2d_da == value, 1.0, 0.0)
+            # Append data to mask_list and mask_dictionary
+            mask_list.append(new_mask_data)
+            mask_dictionary_list = mask_dictionary["data"]
+            mask_dictionary_list.append(value)
+            mask_dictionary["data"] = mask_dictionary_list
+        mask_3d_da = xr.concat(mask_list, dim="label")
+    else:
+        mask_3d_da = xr.zeros_like(mask_2d_da)
     mask_dictionary_da = xr.DataArray.from_dict(mask_dictionary)
+
+    # Initialize Dataset
+    mask_3d_ds = xr.Dataset()
+    mask_3d_ds["mask_3d"] = mask_3d_da
     mask_3d_ds["mask_dictionary"] = mask_dictionary_da
     return mask_3d_ds
 
@@ -87,7 +77,7 @@ def convert_mask_3d_to_2d(mask_3d_ds: Dataset) -> DataArray:
         demarking non-masked areas.
     Notes
     -----
-    -1 in the dictionary of mask_3d_ds means that there exists no masked
+    Emtpy dictionary data of mask_3d_ds means that there exists no masked
     values.
     """
     # Get unique non nan values from the 2d mask
@@ -95,15 +85,13 @@ def convert_mask_3d_to_2d(mask_3d_ds: Dataset) -> DataArray:
 
     # Create copies and placeholder values for 2D and 3D mask objects
     mask_3d_da = mask_3d_ds.mask_3d.copy()
-    np_mask_3d_da = mask_3d_da.data
-    np_mask_2d_da = None
 
     # Check if there is overlap between layers.
     # TODO For now, overlap between layers will not be allowed.
     # Allowing overlapping layers can be explored in later development.
-    if len(np_mask_3d_da) > 1:
+    if len(unique_non_nan) > 1:
         non_zero_indices_list = [
-            np.transpose(np.nonzero(np_mask)) for np_mask in np_mask_3d_da
+            np.transpose(np.nonzero(np_mask)) for np_mask in mask_3d_da.data
         ]
         for index_main, non_zero_indices_main in enumerate(non_zero_indices_list):
             main_set = set([tuple(x) for x in non_zero_indices_main])
@@ -118,25 +106,21 @@ def convert_mask_3d_to_2d(mask_3d_ds: Dataset) -> DataArray:
                             " Overlapping values are not allowed."
                         )
 
-    # Iterate through 3D numpy array layers and set 1.0 to associated label values
-    # dependent on which layer is being worked on, and sequentially add layers
-    # together to form 2D numpy mask array.
-    for index, label_value in enumerate(unique_non_nan):
-        label_layer = np_mask_3d_da[index]
-        label_layer[label_layer == 1.0] = label_value
-        if index == 0:
-            np_mask_2d_da = label_layer
-        else:
-            np_mask_2d_da = label_layer + np_mask_2d_da
-
-    # Convert all such 0.0 values in 2D numpy mask array into NaN values.
-    np_mask_2d_da[np_mask_2d_da == 0.0] = np.nan
-
-    # Set new 2D mask data array
-    mask_2d_da = xr.DataArray(
-        data=np_mask_2d_da, dims=["depth", "ping_time"], coords=mask_3d_da.coords
-    )
-
+    if len(unique_non_nan) > 0:
+        # Iterate through 3D array layers and set 1.0 to associated label values
+        # dependent on which layer is being worked on and create append layers to
+        # form 2D mask array.
+        for index, label_value in enumerate(unique_non_nan):
+            label_layer = mask_3d_da[index]
+            label_layer = xr.where(label_layer == 1.0, label_value, 0.0)
+            if index == 0:
+                mask_2d_da = label_layer
+            else:
+                mask_2d_da = label_layer + mask_2d_da
+        mask_2d_da = xr.where(mask_2d_da == 0.0, np.nan, mask_2d_da)
+    else:
+        # In the case where unique_non_nan is empty, create all zeroes DataArray
+        mask_2d_da = xr.full_like(mask_3d_da, np.nan)
     return mask_2d_da
 
 
