@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Iterable, List, Union
+from typing import Iterable, List, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -97,6 +97,7 @@ class Regions2D:
             index value must be larger than 0th index value.
         copy : bool
             Return a copy of the `data` DataFrame
+
         Returns
         -------
         DataFrame
@@ -302,56 +303,6 @@ class Regions2D:
         regions = self.data if inplace else self.data.copy()
         regions.loc[:] = regions.apply(replace_depth, axis=1)
         return regions
-
-    def convert_points(
-        self,
-        points: Union[List, Dict, DataFrame],
-        convert_time: bool = True,
-        convert_depth_edges: bool = True,
-    ) -> Union[List, Dict]:
-        """Convert x and y values of points from the EV format.
-        Returns a copy of points.
-        Parameters
-        ----------
-        points : list, dict
-            point in [x, y] format or list/dict of these
-        convert_time : bool
-            Whether to convert EV time to datetime64, defaults `True`
-        convert_depth_edges : bool
-            Whether to convert -9999.99 edges to real range values.
-            Min and max ranges must be set manually or by calling `set_range_edge_from_raw`
-        unix : bool
-            unix : bool
-            Whether or not to output the time in the unix time format
-        Returns
-        -------
-        points : list or dict
-            single converted point or list/dict of converted points depending on input
-        """
-
-        def _swap_depth_edge(self, y: Union[int, float]) -> Union[int, float]:
-            if float(y) == 9999.99 and self.max_depth is not None:
-                return self.max_depth
-            elif float(y) == -9999.99 and self.min_depth is not None:
-                return self.min_depth
-            else:
-                return float(y)
-
-        def _convert_single(point: List) -> None:
-            if convert_time:
-                point[0] = matplotlib.dates.date2num(point[0])
-
-            if convert_depth_edges:
-                point[1] = _swap_depth_edge(point[1])
-
-        if isinstance(points, dict):
-            for point in points.values():
-                _convert_single(point)
-        else:
-            for point in points:
-                _convert_single(point)
-
-        return points
 
     def plot(
         self,
