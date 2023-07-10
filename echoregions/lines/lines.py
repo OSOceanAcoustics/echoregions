@@ -217,6 +217,7 @@ class Lines:
             bottom_interpolated = bottom_interpolated.fillna(max_depth)
 
             # Check for correct interpolation inputs.
+            # TODO Add spline and krogh and their associated kwargs.
             if method not in [
                 None,
                 "linear",
@@ -230,8 +231,11 @@ class Lines:
                 "cubic",
                 "barycentric",
                 "polynomial",
-                "krogh",
-                "from_derivatives",
+                "piecewise_polynomial",
+                "pchip",
+                "akima",
+                "cubicspline",
+                "from_derivatives"
             ]:
                 raise ValueError(
                     f"Input method is {method}. Must be of value None, linear, \
