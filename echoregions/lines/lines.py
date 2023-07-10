@@ -235,7 +235,7 @@ class Lines:
                 "pchip",
                 "akima",
                 "cubicspline",
-                "from_derivatives"
+                "from_derivatives",
             ]:
                 raise ValueError(
                     f"Input method is {method}. Must be of value None, linear, \
