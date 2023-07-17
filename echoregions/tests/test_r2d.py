@@ -334,6 +334,8 @@ def test_within_transect_invalid_next():
         evr_path = data_dir + "x1_ET_RT.evr"
         r2d = er.read_evr(evr_path)
         _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+
+
 def test_mask_2d_3d_2d_3d():
     """
     Testing if converting 2d-3d-2d-3d masks works.
