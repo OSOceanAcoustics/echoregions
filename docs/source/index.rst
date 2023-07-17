@@ -10,22 +10,3 @@ file formats including EVR and EVL files.
 It is designed to work well with echopype_, a package for ocean sonar data processing.
 
 .. _echopype: https://echopype.readthedocs.io/en/latest/
-
-
-
-This current iteration of echoregions focuses on providing a wide range of tools for working with 2D region (EVR) files.
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-   api
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

@@ -26,9 +26,23 @@ def from_JSON(j: str) -> Dict:
 def validate_path(
     save_path: str = None, input_file: str = None, ext: str = ".json"
 ) -> str:
-    # Check if save_path is specified.
-    # If not try to create one with the input_file and ext
+    """
+    Checks if save_path is specified. If not try to create one with the input_file and ext.
 
+    Parameters
+    ----------
+    save_path : str
+        Target path to save file to.
+    input_file : str
+        Input path to find possible location for save path if no inputted save path.
+    ext: str
+        Save path extension.
+
+    Returns
+    -------
+    str
+        File path for which data was saved to.
+    """
     if save_path is None:
         if input_file is None:
             raise ValueError("No paths given")
@@ -60,6 +74,16 @@ def validate_path(
 
 
 def check_file(file: str, format: Union[List[str], str]) -> None:
+    """
+    Checks file name format and file existence.
+
+    Parameters
+    ----------
+    file : str
+        File name to check for format and existence.
+    format : str, list
+        File format.
+    """
     if file is not None:
         if isinstance(format, List):
             within = False
