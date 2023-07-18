@@ -276,16 +276,18 @@ def test_within_transect():
 
 def test_within_transect_no_ET_ST():
     """
-    Tests functionality for evr file with no ET and for evr file with no ST.
+    Tests functionality for evr file with no ST and for evr file with no ET.
+    Should raise appropriate UserWarning and should use first row for ST
+    and last row for ET.
     """
 
     da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv.T
     transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
-    with pytest.raises(ValueError):
+    with pytest.warns(UserWarning):
         evr_path = data_dir + "x1_no_ST.evr"
         r2d = er.read_evr(evr_path)
         _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
-    with pytest.raises(ValueError):
+    with pytest.warns(UserWarning):
         evr_path = data_dir + "x1_no_ET.evr"
         r2d = er.read_evr(evr_path)
         _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
@@ -299,13 +301,17 @@ def test_within_transect_bad_dict():
     r2d = er.read_evr(evr_path)
     da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv.T
 
-    transect_dict = {"start": "ST1", "break": "BT", "resume": "RT", "end": "ET"}
+    transect_dict_duplicate = {
+        "start": "BT",
+        "break": "BT",
+        "resume": "RT",
+        "end": "ET",
+    }
     with pytest.raises(ValueError):
-        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
-
-    transect_dict = {"start": "BT", "break": "BT", "resume": "RT", "end": "ET"}
-    with pytest.raises(ValueError):
-        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict_duplicate)
+    transect_dict_int = {"start": "ST", "break": "BT", "resume": "RT", "end": 4}
+    with pytest.raises(TypeError):
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict_int)
 
 
 def test_within_transect_invalid_next():
@@ -334,6 +340,8 @@ def test_within_transect_invalid_next():
         evr_path = data_dir + "x1_ET_RT.evr"
         r2d = er.read_evr(evr_path)
         _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+
+
 def test_mask_2d_3d_2d_3d():
     """
     Testing if converting 2d-3d-2d-3d masks works.

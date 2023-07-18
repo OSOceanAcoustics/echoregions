@@ -1,9 +1,11 @@
+import warnings
 from pathlib import Path
 from typing import Dict, Iterable, List, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import regionmask
 import xarray as xr
 from pandas import DataFrame, Series, Timestamp, isna
@@ -469,8 +471,6 @@ class Regions2D:
                 wrap_lon=False,
             )
         except ValueError as ve:
-            import warnings
-
             warnings.warn(
                 "Most likely using deprecated regionmask version."
                 "Make sure to use regionmask==0.8.0 or more recent versions.",
@@ -502,23 +502,30 @@ class Regions2D:
             "resume": "RT",
             "end": "ET",
         },
-        file_names: List[str] = None,
+        bbox_distance_threshold: float = 1.0,
     ) -> DataArray:
         """Mask data from Data Array containing Sv data based off of a Regions2D object
         and its transect_values.
+
+        We should note that this convention for start, break, resume, end transect is very
+        specific to the convention used for the NOAA Hake Survey. If you would like to add
+        your own schema for transect logging, please create an issue in the following link:
+        https://github.com/OSOceanAcoustics/echoregions/issues.
 
         Parameters
         ----------
         da_Sv : Data Array
             DataArray of shape (ping_time, depth) containing Sv data.
         transect_dict : dict
-            Dictionary for transect values. Values must be unique and must be of same length.
-        file_names : list
-            List for file names to do the transect querying on.
+            Dictionary for transect values. Values must be unique.
+        bbox_distance_threshold: float
+            The maximum value for how far apart the left and right bounding box for each transect
+            value region. Default is set to 1 minute.
         Returns
         -------
         M : Data Array
-            A DataArray masked by the transect values from the Regions2d.data dataframe.
+            A DataArray masked by the transect values from the Regions2d.data dataframe
+            with dimensions (ping_time, depth).
         """
 
         # Get transect strings
@@ -534,11 +541,12 @@ class Regions2D:
                 "There exist duplicate values in transect_dict. \
                              All values must be unique"
             )
-
-        # Check that transect strings are of same length
         for transect_str in transect_strs:
-            if len(transect_strs[0]) != len(transect_str):
-                raise ValueError("Transect strings must be of same length.")
+            if not isinstance(transect_str, str):
+                raise TypeError(
+                    f"Transect dictionary values must be strings. There exists a\
+                                value of type {type(transect_str)} in transect dictionary"
+                )
 
         # Create transect_df
         region_df = self.data.copy()
@@ -550,48 +558,30 @@ class Regions2D:
         ].copy()
 
         # Create a new column which stores the transect_type without the transect number
-        transect_df.loc[:, "transect_type"] = transect_df.loc[:, "region_name"].str[
-            : len(transect_str)
-        ]
-
-        # Checking the maximum width of a transect log region bbox.
-        # If over an hour, throw an error.
-        max_time = (
-            transect_df["region_bbox_right"] - transect_df["region_bbox_left"]
-        ).max()
-        max_time_hours = max_time.total_seconds() / (60 * 60)
-        if max_time_hours > 1.0:
-            raise ValueError(
-                "Maximum width in time of transect log region bboxs is \
-                             too large i.e. over an hour."
-            )
-
-        # Drop time duplicates
-        transect_df = transect_df.drop_duplicates(subset=["region_bbox_left"])
-
-        # Sort the dataframe by datetime
-        transect_df = transect_df.sort_values(by="region_bbox_left")
-
-        # Create new shifted columns with the next transect log type and next region
-        # bbox left datetime value.
-        transect_df.loc[:, "transect_type_next"] = transect_df.loc[
-            :, "transect_type"
-        ].shift(-1)
-        transect_df.loc[:, "region_bbox_left_next"] = transect_df.loc[
-            :, "region_bbox_left"
-        ].shift(-1)
+        transect_df.loc[:, "transect_type"] = transect_df.loc[
+            :, "region_name"
+        ].str.extract(rf"({start_str}|{break_str}|{resume_str}|{end_str})")
 
         # Check if for all transects, there exists 1 start_str transect type.
+        # If there does not exists a start_str transect, set the first region
+        # to be the start_str transect.
         if not (
             transect_df.groupby("file_name").apply(
                 lambda x: x[x["transect_type"] == start_str].count()
             )["file_name"]
             == 1
         ).all():
-            raise ValueError(
-                f"Each transect must contain a single {start_str} transect_type. \
-                             There exists transect that does not contain a single {start_str}."
+            warnings.warn(
+                UserWarning(
+                    f"There exists a transect that does not contain a single {start_str} \
+                    transect_type."
+                )
             )
+            # Modify first row of original dataframe such that its transect type has value start_str
+            # and add it into transect df as its first row.
+            first_row = region_df.loc[region_df.index[0]].copy().to_frame().T
+            first_row["transect_type"] = start_str
+            transect_df = pd.concat([first_row, transect_df]).reset_index(drop=True)
 
         # Check if for all transects, there exists 1 end_str transect type.
         if not (
@@ -600,10 +590,44 @@ class Regions2D:
             )["file_name"]
             == 1
         ).all():
-            raise ValueError(
-                f"Each transect must contain 1 {end_str} transect_type. \
-                             There exists transect that does not contain a single {end_str}."
+            warnings.warn(
+                UserWarning(
+                    f"There exists a transect that does not contain a single {end_str} \
+                    transect type."
+                )
             )
+            # Modify last row of original dataframe such that its transect type has value end_str
+            # and add it into transect df as its last row.
+            last_row = region_df.tail(1).copy()
+            last_row["transect_type"] = end_str
+            transect_df = pd.concat([transect_df, last_row]).reset_index(drop=True)
+
+        # Checking the maximum width of a transect log region bbox.
+        # If over a minute, throw an error.
+        max_time = (
+            transect_df["region_bbox_right"] - transect_df["region_bbox_left"]
+        ).max()
+        max_time_minutes = max_time.total_seconds() / 60
+        if max_time_minutes > bbox_distance_threshold:
+            raise ValueError(
+                f"Maximum width in time of transect log region bboxs is \
+                             too large i.e. over {bbox_distance_threshold} minute(s).\
+                             The maximum width is: {max_time_minutes}"
+            )
+
+        # Drop time duplicates
+        transect_df = transect_df.drop_duplicates(subset=["region_bbox_left"])
+
+        # Sort the dataframe by datetime
+        transect_df = transect_df.sort_values(by="region_bbox_left")
+        # Create new shifted columns with the next transect log type and next region
+        # bbox left datetime value.
+        transect_df.loc[:, "transect_type_next"] = transect_df.loc[
+            :, "transect_type"
+        ].shift(-1)
+        transect_df.loc[:, "region_bbox_left_next"] = transect_df.loc[
+            :, "region_bbox_left"
+        ].shift(-1)
 
         # Check if start_str followed by break_str/end_str.
         start_transect_rows = transect_df[transect_df["transect_type"] == start_str]
@@ -673,25 +697,7 @@ class Regions2D:
         transect_df.loc[rt_indices, "within_transect"] = True
 
         # Get all unique file_names in transect_df.
-        default_transect_querying_list = list(transect_df["file_name"].unique())
-
-        if file_names is None:
-            # If no input for file_names for transect querying, query all such
-            # unique file names in transect_df.
-            transect_querying_list = default_transect_querying_list
-        else:
-            # If there exists a input for file_names, check these file_names
-            # to be in the unique file_names of transect_df and select these
-            # names to query.
-            transect_querying_list = []
-            for file_name in file_names:
-                if file_name not in default_transect_querying_list:
-                    raise ValueError(
-                        f"{file_name} is not in the unique file_names \
-                                     of transect_df."
-                    )
-                else:
-                    transect_querying_list.apend(file_name)
+        transect_querying_list = list(transect_df["file_name"].unique())
 
         # Create list of masks for each file name to be queried.
         mask_list = []
@@ -713,5 +719,9 @@ class Regions2D:
         M = xr.zeros_like(da_Sv)
         for _, T in enumerate(mask_list):
             M = M + T
+
+        # If M contains channel dimension, then drop it.
+        if "channel" in M.dims:
+            M = M.isel(channel=0)
 
         return M
