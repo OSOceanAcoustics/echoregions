@@ -257,6 +257,91 @@ def test_mask_type_error():
         _ = r2d.mask(da_Sv, empty_list)
 
 
+def test_within_transect():
+    """
+    Tests functionality for transect_mask.
+    """
+    evr_path = data_dir + "x1.evr"
+    r2d = er.read_evr(evr_path)
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv.T
+    transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
+    M = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+
+    # This entire .nc file should be covered by the Resume Transect at 2017-06-25 21:23:54.735000
+    # and End Transect at 2017-06-25 21:47:59.609000 time period, so the transect mask should all
+    # be 1s.
+    assert len(list(np.unique(M.data))) == 1
+    assert list(np.unique(M.data))[0] == 1
+
+
+def test_within_transect_no_ET_ST():
+    """
+    Tests functionality for evr file with no ST and for evr file with no ET.
+    Should raise appropriate UserWarning and should use first row for ST
+    and last row for ET.
+    """
+
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv.T
+    transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
+    with pytest.warns(UserWarning):
+        evr_path = data_dir + "x1_no_ST.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+    with pytest.warns(UserWarning):
+        evr_path = data_dir + "x1_no_ET.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+
+
+def test_within_transect_bad_dict():
+    """
+    Tests functionality for transect_mask with invalid dictionary values.
+    """
+    evr_path = data_dir + "x1.evr"
+    r2d = er.read_evr(evr_path)
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv.T
+
+    transect_dict_duplicate = {
+        "start": "BT",
+        "break": "BT",
+        "resume": "RT",
+        "end": "ET",
+    }
+    with pytest.raises(ValueError):
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict_duplicate)
+    transect_dict_int = {"start": "ST", "break": "BT", "resume": "RT", "end": 4}
+    with pytest.raises(TypeError):
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict_int)
+
+
+def test_within_transect_invalid_next():
+    """
+    Tests functionality for evr file with invalid next transect type values.
+    """
+    da_Sv = xr.open_dataset(os.path.join(data_dir, "x1_test.nc")).Sv.T
+    transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
+    # Should raise value error as ST is followed by ST
+    with pytest.raises(ValueError):
+        evr_path = data_dir + "x1_ST_ST.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+    # Should raise value error as RT is followed by RT
+    with pytest.raises(ValueError):
+        evr_path = data_dir + "x1_RT_RT.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+    # Should raise value error as BT is followed by ET
+    with pytest.raises(ValueError):
+        evr_path = data_dir + "x1_BT_ET.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+    # Should raise value error as ET is followed by RT
+    with pytest.raises(ValueError):
+        evr_path = data_dir + "x1_ET_RT.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv, transect_dict=transect_dict)
+
+
 def test_mask_2d_3d_2d_3d():
     """
     Testing if converting 2d-3d-2d-3d masks works.
