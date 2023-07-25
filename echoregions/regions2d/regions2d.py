@@ -489,14 +489,14 @@ class Regions2D:
         # Check that there are 4 unique transect strings
         if len(transect_strs) != len(set(transect_strs)):
             raise ValueError(
-                "There exist duplicate values in transect_dict. \
-                             All values must be unique"
+                "There exist duplicate values in transect_dict. "
+                "All values must be unique."
             )
         for transect_str in transect_strs:
             if not isinstance(transect_str, str):
                 raise TypeError(
-                    f"Transect dictionary values must be strings. There exists a\
-                                value of type {type(transect_str)} in transect dictionary"
+                    f"Transect dictionary values must be strings. There exists a "
+                    f"value of type {type(transect_str)} in transect dictionary."
                 )
 
         # Create transect_df
@@ -524,8 +524,8 @@ class Regions2D:
         ).all():
             warnings.warn(
                 UserWarning(
-                    f"There exists a transect that does not contain a single {start_str} \
-                    transect_type."
+                    f"There exists a transect that does not contain a single {start_str} "
+                    "transect_type."
                 )
             )
             # Modify first row of original dataframe such that its transect type has value start_str
@@ -543,8 +543,8 @@ class Regions2D:
         ).all():
             warnings.warn(
                 UserWarning(
-                    f"There exists a transect that does not contain a single {end_str} \
-                    transect type."
+                    f"There exists a transect that does not contain a single {end_str} "
+                    "transect type."
                 )
             )
             # Modify last row of original dataframe such that its transect type has value end_str
@@ -560,10 +560,11 @@ class Regions2D:
         ).max()
         max_time_minutes = max_time.total_seconds() / 60
         if max_time_minutes > bbox_distance_threshold:
-            raise ValueError(
-                f"Maximum width in time of transect log region bboxs is \
-                             too large i.e. over {bbox_distance_threshold} minute(s).\
-                             The maximum width is: {max_time_minutes}"
+            Warning(
+                f"Maximum width in time of transect log region bboxs is "
+                f"too large i.e. over {bbox_distance_threshold} minute(s). "
+                f"The maximum width is: {max_time_minutes}.",
+                UserWarning,
             )
 
         # Drop time duplicates
@@ -588,9 +589,9 @@ class Regions2D:
         for transect_type_next in start_transect_type_next_list:
             if transect_type_next not in [break_str, end_str]:
                 raise ValueError(
-                    f"Transect start string is followed by invalid value \
-                            {transect_type_next}. Must be followed by either \
-                            {break_str} or {end_str}"
+                    f"Transect start string is followed by invalid value "
+                    f"{transect_type_next}. Must be followed by either "
+                    f"{break_str} or {end_str}"
                 )
 
         # Check if break_str followed by resume_str.
@@ -601,8 +602,8 @@ class Regions2D:
         for transect_type_next in break_transect_type_next_list:
             if transect_type_next != resume_str:
                 raise ValueError(
-                    f"Transect break string is followed by invalid value \
-                            {transect_type_next}. Must be followed by {resume_str}."
+                    f"Transect break string is followed by invalid value "
+                    f"{transect_type_next}. Must be followed by {resume_str}."
                 )
 
         # Check if resume_str followed by break_str/end_str.
@@ -613,9 +614,9 @@ class Regions2D:
         for transect_type_next in resume_transect_type_next_list:
             if transect_type_next not in [break_str, end_str]:
                 raise ValueError(
-                    f"Transect resume string is followed by invalid value \
-                            {transect_type_next}. Must be followed by either \
-                            {break_str} or {end_str}"
+                    f"Transect resume string is followed by invalid value "
+                    f"{transect_type_next}. Must be followed by either "
+                    f"{break_str} or {end_str}."
                 )
 
         # Check if end_str followed by start_str or if NA.
@@ -628,8 +629,8 @@ class Regions2D:
             if not isna(transect_type_next):
                 if transect_type_next != start_str:
                     raise ValueError(
-                        f"Transect end string is followed by invalid value \
-                                {transect_type_next}. Must be followed by {start_str}."
+                        f"Transect end string is followed by invalid value "
+                        f"{transect_type_next}. Must be followed by {start_str}."
                     )
 
         # Create binary variable indicating within transect segments.
