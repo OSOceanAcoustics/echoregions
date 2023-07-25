@@ -124,7 +124,7 @@ def test_regions2d_parsing(regions2d_fixture: Regions2D) -> None:
     df_r2d = regions2d_fixture.data
 
     # Check shape
-    assert df_r2d.shape == (18, 22)
+    assert df_r2d.shape == (19, 22)
 
     # Check individual values of specific row
     assert df_r2d.loc[4]["file_name"] == "transect.evr"
@@ -594,3 +594,128 @@ def test_overlapping_mask_3d_2d(
     # Trying to convert 3d mask to 2d should raise ValueError
     with pytest.raises(ValueError):
         er.convert_mask_3d_to_2d(mask_3d_ds)
+
+
+@pytest.mark.regions2d
+def test_within_transect(
+    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
+) -> None:
+    """
+    Tests functionality for transect_mask.
+
+    Parameters
+    ----------
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
+    """
+
+    # Create transect mask with no errors
+    transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
+    M = regions2d_fixture.transect_mask(
+        da_Sv=da_Sv_fixture, transect_dict=transect_dict
+    ).compute()
+
+    # This entire .zarr file should be covered by the single start and end transect period
+    # found in the EVR file, so the only values listed should be 1, implying everything is
+    # within-transect.
+    assert len(list(np.unique(M.data))) == 1
+    assert list(np.unique(M.data))[0] == 1
+
+
+@pytest.mark.regions2d
+def test_within_transect_no_ET_ST(da_Sv_fixture: DataArray) -> None:
+    """
+    Tests functionality for evr file with no ST and for evr file with no ET.
+    Should raise appropriate UserWarning and should use first row for ST
+    and last row for ET.
+
+
+    Parameters
+    ----------
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
+    """
+
+    transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
+    with pytest.warns(UserWarning):
+        evr_path = DATA_DIR / "transect_no_ST.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
+    with pytest.warns(UserWarning):
+        evr_path = DATA_DIR / "transect_no_ET.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
+
+
+@pytest.mark.regions2d
+def test_within_transect_bad_dict(da_Sv_fixture: DataArray) -> None:
+    """
+    Tests functionality for transect_mask with invalid dictionary values.
+
+    Parameters
+    ----------
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
+    """
+
+    # Get Regions2D Object
+    evr_path = DATA_DIR / "transect.evr"
+    r2d = er.read_evr(evr_path)
+
+    # Create dictionary with duplicates
+    transect_dict_duplicate = {
+        "start": "BT",
+        "break": "BT",
+        "resume": "RT",
+        "end": "ET",
+    }
+    with pytest.raises(ValueError):
+        _ = r2d.transect_mask(
+            da_Sv=da_Sv_fixture, transect_dict=transect_dict_duplicate
+        )
+
+    # Create dictionary with integers
+    transect_dict_int = {"start": "ST", "break": "BT", "resume": "RT", "end": 4}
+    with pytest.raises(TypeError):
+        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict_int)
+
+
+@pytest.mark.regions2d
+def test_within_transect_invalid_next(da_Sv_fixture: DataArray) -> None:
+    """
+    Tests functionality for evr file with invalid next transect type values.
+
+    Parameters
+    ----------
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
+    """
+
+    # Initialize proper dictionary
+    transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
+
+    # Should raise value error as ST is followed by ST
+    with pytest.raises(ValueError):
+        evr_path = DATA_DIR / "x1_ST_ST.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
+
+    # Should raise value error as RT is followed by RT
+    with pytest.raises(ValueError):
+        evr_path = DATA_DIR / "x1_RT_RT.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
+
+    # Should raise value error as BT is followed by ET
+    with pytest.raises(ValueError):
+        evr_path = DATA_DIR / "x1_BT_ET.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
+
+    # Should raise value error as ET is followed by RT
+    with pytest.raises(ValueError):
+        evr_path = DATA_DIR / "x1_ET_RT.evr"
+        r2d = er.read_evr(evr_path)
+        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
