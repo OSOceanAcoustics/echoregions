@@ -239,14 +239,22 @@ class Regions2D:
         sonar_file_names: List[str],
         region: Union[float, str, list, Series, DataFrame] = None,
     ) -> List:
-        """Finds sonar files in the time domain that encompasses region or list of regions
+        """Finds SIMRAD sonar files in the time domain that encompasses region or list of regions.
+
+        SIMRAD Format Explained with the example Summer2017-D20170625-T205018.nc:
+
+        The letter "D" is a prefix indicating the date in the format following it. In this case,
+        "20170625" represents the date June 25, 2017. The letter "T" is a prefix indicating the
+        time in the format following it. In this case, "205018" represents the time 20:50:18
+        (8:50:18 PM) in 24-hour format. The .nc is a file extension that denotes a NetCDF (Network
+        Common Data Form) file.
 
         Parameters
         ----------
         files : list
-            raw filenames
+            Raw filenames in SIMRAD format.
         region : float, str, list, Series, DataFrame, ``None``
-            region(s) to select sonar files with
+            Region(s) to select sonar files with.
             If ``None``, select all regions. Defaults to ``None``
 
         Returns
@@ -254,7 +262,15 @@ class Regions2D:
         files: list
             list of raw file(s) spanning the encompassing region or list of regions.
         """
+        # Check that sonar_file_names is a list
+        if not isinstance(sonar_file_names, list):
+            raise TypeError(
+                f"sonar_file_names must be type list. Filenames is of type {type(sonar_file_names)}"
+            )
+
         sonar_file_names.sort()
+
+        # Parse simrad filenames
         filetimes = parse_simrad_fname_time(
             [Path(fname).name for fname in sonar_file_names]
         ).values
@@ -281,7 +297,7 @@ class Regions2D:
 
         Returns
         -------
-        DataFrame with depth edges replaced by Regions2D.min_depth and  Regions2D.max_depth
+        DataFrame with depth edges replaced by Regions2D.min_depth and Regions2D.max_depth
         """
 
         def replace_depth(row: Series) -> Series:

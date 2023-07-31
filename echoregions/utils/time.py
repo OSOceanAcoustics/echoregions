@@ -46,12 +46,12 @@ def parse_time(
 
 
 def parse_simrad_fname_time(filenames: List[str]) -> datetime64:
-    """Convert Simrad-style datetime to a numpy datetime64 object
+    """Convert SIMRAD-style datetime to a numpy datetime64 object
 
     Parameters
     ----------
-    filenames : str, list
-        Simrad-style filename
+    filenames : list
+        SIMRAD-style filename
 
     Returns
     -------
@@ -61,11 +61,23 @@ def parse_simrad_fname_time(filenames: List[str]) -> datetime64:
     if isinstance(filenames, list):
         f_list = []
         for f in filenames:
-            groups = SIMRAD_FILENAME_MATCHER.match(f)
-            f_list.append(groups["date"] + " " + groups["time"])
-    elif isinstance(filenames, str):
-        groups = SIMRAD_FILENAME_MATCHER.match(filenames)
-        f_list = [groups["date"] + " " + groups["time"]]
+            if isinstance(f, str):
+                groups = SIMRAD_FILENAME_MATCHER.match(f)
+                try:
+                    f_list.append(groups["date"] + " " + groups["time"])
+                except:
+                    raise ValueError(
+                        f"Invalid value {f} in filenames."
+                        "Read documentation on correct SIMRAD format"
+                        "in the API reference for Regions2D's select_sonar_file."
+                    )
+            else:
+                raise TypeError(
+                    "Filenames contains non string element."
+                    f"Invalid element is of type {type(f)}"
+                )
     else:
-        raise ValueError("'filenames' must be type str or list")
+        raise TypeError(
+            f"Filenames must be type list. Filenames is of type {type(filenames)}"
+        )
     return parse_time(f_list, "%Y%m%d %H%M%S")

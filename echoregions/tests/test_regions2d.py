@@ -116,8 +116,8 @@ def test_regions2d_parsing(regions2d_fixture: Regions2D) -> None:
 
     Parameters
     ----------
-    lines_fixture : Lines
-        Object containing data of test EVL file.
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
     """
 
     # Get dataframe
@@ -169,6 +169,11 @@ def test_regions2d_parsing(regions2d_fixture: Regions2D) -> None:
 def test_evr_to_file(regions2d_fixture: Regions2D) -> None:
     """
     Test converting an Echoview 2D Regions files (.EVR).
+
+    Parameters
+    ----------
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
     """
 
     # Get output path
@@ -233,6 +238,70 @@ def test_select_sonar_file(regions2d_fixture: Regions2D) -> None:
     # Check for correct sonar file
     raw = regions2d_fixture.select_sonar_file(raw_files, 11)
     assert raw == ["Summer2017-D20170625-T205018.nc"]
+
+
+@pytest.mark.regions2d
+def test_invalid_select_sonar_file(regions2d_fixture: Regions2D) -> None:
+    """
+    Test that sonar file selection functions raise the correct errors.
+
+    Parameters
+    ----------
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
+    """
+    raw_files_str = "Summer2017-D20170625-T124834.nc"
+    raw_files_with_int = [
+        "Summer2017-D20170625-T124834.nc",
+        10,
+        "Summer2017-D20170625-T132103.nc",
+        "Summer2017-D20170625-T134400.nc",
+        "Summer2017-D20170625-T140924.nc",
+        "Summer2017-D20170625-T143450.nc",
+        "Summer2017-D20170625-T150430.nc",
+        "Summer2017-D20170625-T153818.nc",
+        "Summer2017-D20170625-T161209.nc",
+        "Summer2017-D20170625-T164600.nc",
+        "Summer2017-D20170625-T171948.nc",
+        "Summer2017-D20170625-T175136.nc",
+        "Summer2017-D20170625-T181701.nc",
+        "Summer2017-D20170625-T184227.nc",
+        "Summer2017-D20170625-T190753.nc",
+        "Summer2017-D20170625-T193400.nc",
+        "Summer2017-D20170625-T195927.nc",
+        "Summer2017-D20170625-T202452.nc",
+        "Summer2017-D20170625-T205018.nc",
+    ]
+    raw_files_with_invalid_simrad_format = [
+        "Summer2017-D20170625-T124834.nc",
+        "Summer2017-D20170625-T132103.nc",
+        "Summer2017-D20170625-T134400.nc",
+        "Summer2017-D20170625-T140924.nc",
+        "Summer2017-D20170625-T143450.nc",
+        "Summer2017-D20170625-T150430.nc",
+        "Summer2017-D20170625-T153818.nc",
+        "Summer2017-D20170625-T161209.nc",
+        "Summer2017-D20170625-T164600.nc",
+        "Summer2017-D20170625-T171948.nc",
+        "Summer2017-D20170625-T175136.nc",
+        "Summer2017-D20170625-T181701.nc",
+        "Summer2017-D20170625-T184227.nc",
+        "Summer2017-Z20170625-M190753.nc",
+        "Summer2017-D20170625-T193400.nc",
+        "Summer2017-D20170625-T195927.nc",
+        "Summer2017-D20170625-T202452.nc",
+        "Summer2017-D20170625-T205018.nc",
+    ]
+
+    # Check that type errors are correctly thrown
+    with pytest.raises(TypeError):
+        regions2d_fixture.select_sonar_file(raw_files_str, 11)
+    with pytest.raises(TypeError):
+        regions2d_fixture.select_sonar_file(raw_files_with_int, 11)
+
+    # Check that value errors are correctly thrown
+    with pytest.raises(ValueError):
+        regions2d_fixture.select_sonar_file(raw_files_with_invalid_simrad_format, 11)
 
 
 @pytest.mark.regions2d
@@ -617,11 +686,17 @@ def test_within_transect(
         da_Sv=da_Sv_fixture, transect_dict=transect_dict
     ).compute()
 
+    # Check M dimensions
+    assert M.sizes == {"depth": 3955, "ping_time": 1681}
+
     # This entire .zarr file should be covered by the single start and end transect period
     # found in the EVR file, so the only values listed should be 1, implying everything is
     # within-transect.
     assert len(list(np.unique(M.data))) == 1
     assert list(np.unique(M.data))[0] == 1
+
+    # Test number of 1 values
+    assert np.unique(M.data, return_counts=True)[1][0] == 6648355
 
 
 @pytest.mark.regions2d
