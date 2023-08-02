@@ -8,13 +8,16 @@ from ..regions2d.regions2d import Regions2D
 
 
 def convert_mask_2d_to_3d(mask_2d_da: DataArray) -> Dataset:
-    """Convert 2D multi-labeled mask data into its 3D one-hot encoded form.
+    """
+    Convert 2D multi-labeled mask data into its 3D one-hot encoded form.
+
     Parameters
     ----------
-    mask_2d_da: DataArray
+    mask_2d_da : DataArray
         A DataArray with the data_var masked by a specified region. This data will
         be in the form of integer, demarking labels of masked regions, and nan values,
         demarking non-masked areas.
+
     Returns
     -------
     mask_3d_ds : Dataset
@@ -22,6 +25,7 @@ def convert_mask_2d_to_3d(mask_2d_da: DataArray) -> Dataset:
         a 1s/0s mask for each unique label in the 2D mask. The layers will be labeled
         by a dictionary that maps the individual label layers of the 3D mask to an integer
         label in the 2D mask.
+
     Notes
     -----
     Emtpy dictionary data of mask_3d_ds means that there exists no masked
@@ -60,7 +64,9 @@ def convert_mask_2d_to_3d(mask_2d_da: DataArray) -> Dataset:
 
 
 def convert_mask_3d_to_2d(mask_3d_ds: Dataset) -> DataArray:
-    """Convert 3D one-hot encoded mask data into its 2D multi-labeled form.
+    """
+    Convert 3D one-hot encoded mask data into its 2D multi-labeled form.
+
     Parameters
     ----------
     mask_3d_ds : Dataset
@@ -69,12 +75,14 @@ def convert_mask_3d_to_2d(mask_3d_ds: Dataset) -> DataArray:
         the individual label layers of the 3D mask to an integer label in the 2D mask.
         The 3D DataArray will be in the form of 1s/0s: masked areas, and
         non-masked areas.
+
     Returns
     -------
     mask_2d_da: DataArray
         A DataArray with the data_var masked by a specified region. This data will
         be in the form of integer, demarking labels of masked regions, and nan values,
         demarking non-masked areas.
+
     Notes
     -----
     Emtpy dictionary data of mask_3d_ds means that there exists no masked

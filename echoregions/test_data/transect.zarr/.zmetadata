@@ -1,0 +1,151 @@
+{
+    "metadata": {
+        ".zattrs": {},
+        ".zgroup": {
+            "zarr_format": 2
+        },
+        "Sv/.zarray": {
+            "chunks": [
+                3955,
+                634,
+                3
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3955,
+                1681,
+                3
+            ],
+            "zarr_format": 2
+        },
+        "Sv/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "depth",
+                "ping_time",
+                "channel"
+            ],
+            "actual_range": [
+                -156.0,
+                37.68
+            ],
+            "coordinates": "range_sample",
+            "long_name": "Volume backscattering strength (Sv re 1 m-1)",
+            "units": "dB"
+        },
+        "channel/.zarray": {
+            "chunks": [
+                5
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<U37",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3
+            ],
+            "zarr_format": 2
+        },
+        "channel/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "channel"
+            ],
+            "long_name": "Vendor channel ID"
+        },
+        "depth/.zarray": {
+            "chunks": [
+                3955
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3955
+            ],
+            "zarr_format": 2
+        },
+        "depth/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "depth"
+            ]
+        },
+        "ping_time/.zarray": {
+            "chunks": [
+                6335
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<i8",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                1681
+            ],
+            "zarr_format": 2
+        },
+        "ping_time/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "ping_time"
+            ],
+            "calendar": "proleptic_gregorian",
+            "units": "seconds since 2019-07-02T12:29:30"
+        },
+        "range_sample/.zarray": {
+            "chunks": [
+                3957
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<i8",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3955
+            ],
+            "zarr_format": 2
+        },
+        "range_sample/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "depth"
+            ],
+            "long_name": "Along-range sample number, base 0"
+        }
+    },
+    "zarr_consolidated_format": 1
+}

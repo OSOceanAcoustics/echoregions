@@ -1,6 +1,6 @@
 import warnings
 from pathlib import Path
-from typing import Dict, Iterable, List, Union
+from typing import Iterable, List, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -99,6 +99,7 @@ class Regions2D:
             index value must be larger than 0th index value.
         copy : bool
             Return a copy of the `data` DataFrame
+
         Returns
         -------
         DataFrame
@@ -140,7 +141,7 @@ class Regions2D:
                                 region["time"].apply(
                                     lambda time_array: all(
                                         time_range[0] <= Timestamp(x)
-                                        or time_range[1] >= Timestamp(x)
+                                        and time_range[1] >= Timestamp(x)
                                         for x in time_array
                                     )
                                 )
@@ -179,7 +180,7 @@ class Regions2D:
                                 region["time"].apply(
                                     lambda depth_array: all(
                                         depth_range[0] <= float(x)
-                                        or depth_range[1] >= float(x)
+                                        and depth_range[1] >= float(x)
                                         for x in depth_array
                                     )
                                 )
@@ -238,14 +239,22 @@ class Regions2D:
         sonar_file_names: List[str],
         region: Union[float, str, list, Series, DataFrame] = None,
     ) -> List:
-        """Finds sonar files in the time domain that encompasses region or list of regions
+        """Finds SIMRAD sonar files in the time domain that encompasses region or list of regions.
+
+        SIMRAD Format Explained with the example Summer2017-D20170625-T205018.nc:
+
+        The letter "D" is a prefix indicating the date in the format following it. In this case,
+        "20170625" represents the date June 25, 2017. The letter "T" is a prefix indicating the
+        time in the format following it. In this case, "205018" represents the time 20:50:18
+        (8:50:18 PM) in 24-hour format. The .nc is a file extension that denotes a NetCDF (Network
+        Common Data Form) file.
 
         Parameters
         ----------
         files : list
-            raw filenames
+            Raw filenames in SIMRAD format.
         region : float, str, list, Series, DataFrame, ``None``
-            region(s) to select sonar files with
+            Region(s) to select sonar files with.
             If ``None``, select all regions. Defaults to ``None``
 
         Returns
@@ -253,7 +262,15 @@ class Regions2D:
         files: list
             list of raw file(s) spanning the encompassing region or list of regions.
         """
+        # Check that sonar_file_names is a list
+        if not isinstance(sonar_file_names, list):
+            raise TypeError(
+                f"sonar_file_names must be type list. Filenames is of type {type(sonar_file_names)}"
+            )
+
         sonar_file_names.sort()
+
+        # Parse simrad filenames
         filetimes = parse_simrad_fname_time(
             [Path(fname).name for fname in sonar_file_names]
         ).values
@@ -280,7 +297,7 @@ class Regions2D:
 
         Returns
         -------
-        DataFrame with depth edges replaced by Regions2D.min_depth and  Regions2D.max_depth
+        DataFrame with depth edges replaced by Regions2D.min_depth and Regions2D.max_depth
         """
 
         def replace_depth(row: Series) -> Series:
@@ -304,56 +321,6 @@ class Regions2D:
         regions = self.data if inplace else self.data.copy()
         regions.loc[:] = regions.apply(replace_depth, axis=1)
         return regions
-
-    def convert_points(
-        self,
-        points: Union[List, Dict, DataFrame],
-        convert_time: bool = True,
-        convert_depth_edges: bool = True,
-    ) -> Union[List, Dict]:
-        """Convert x and y values of points from the EV format.
-        Returns a copy of points.
-        Parameters
-        ----------
-        points : list, dict
-            point in [x, y] format or list/dict of these
-        convert_time : bool
-            Whether to convert EV time to datetime64, defaults `True`
-        convert_depth_edges : bool
-            Whether to convert -9999.99 edges to real range values.
-            Min and max ranges must be set manually or by calling `set_range_edge_from_raw`
-        unix : bool
-            unix : bool
-            Whether or not to output the time in the unix time format
-        Returns
-        -------
-        points : list or dict
-            single converted point or list/dict of converted points depending on input
-        """
-
-        def _swap_depth_edge(self, y: Union[int, float]) -> Union[int, float]:
-            if float(y) == 9999.99 and self.max_depth is not None:
-                return self.max_depth
-            elif float(y) == -9999.99 and self.min_depth is not None:
-                return self.min_depth
-            else:
-                return float(y)
-
-        def _convert_single(point: List) -> None:
-            if convert_time:
-                point[0] = matplotlib.dates.date2num(point[0])
-
-            if convert_depth_edges:
-                point[1] = _swap_depth_edge(point[1])
-
-        if isinstance(points, dict):
-            for point in points.values():
-                _convert_single(point)
-        else:
-            for point in points:
-                _convert_single(point)
-
-        return points
 
     def plot(
         self,
@@ -410,7 +377,7 @@ class Regions2D:
         -------
         A DataArray with the data_var masked by the specified region.
         """
-        if type(region_ids) == list:
+        if isinstance(region_ids, list):
             if len(region_ids) == 0:
                 raise ValueError("region_ids is empty. Cannot be empty.")
         else:
@@ -538,14 +505,14 @@ class Regions2D:
         # Check that there are 4 unique transect strings
         if len(transect_strs) != len(set(transect_strs)):
             raise ValueError(
-                "There exist duplicate values in transect_dict. \
-                             All values must be unique"
+                "There exist duplicate values in transect_dict. "
+                "All values must be unique."
             )
         for transect_str in transect_strs:
             if not isinstance(transect_str, str):
                 raise TypeError(
-                    f"Transect dictionary values must be strings. There exists a\
-                                value of type {type(transect_str)} in transect dictionary"
+                    f"Transect dictionary values must be strings. There exists a "
+                    f"value of type {type(transect_str)} in transect dictionary."
                 )
 
         # Create transect_df
@@ -573,8 +540,8 @@ class Regions2D:
         ).all():
             warnings.warn(
                 UserWarning(
-                    f"There exists a transect that does not contain a single {start_str} \
-                    transect_type."
+                    f"There exists a transect that does not contain a single {start_str} "
+                    "transect_type."
                 )
             )
             # Modify first row of original dataframe such that its transect type has value start_str
@@ -592,8 +559,8 @@ class Regions2D:
         ).all():
             warnings.warn(
                 UserWarning(
-                    f"There exists a transect that does not contain a single {end_str} \
-                    transect type."
+                    f"There exists a transect that does not contain a single {end_str} "
+                    "transect type."
                 )
             )
             # Modify last row of original dataframe such that its transect type has value end_str
@@ -609,10 +576,11 @@ class Regions2D:
         ).max()
         max_time_minutes = max_time.total_seconds() / 60
         if max_time_minutes > bbox_distance_threshold:
-            raise ValueError(
-                f"Maximum width in time of transect log region bboxs is \
-                             too large i.e. over {bbox_distance_threshold} minute(s).\
-                             The maximum width is: {max_time_minutes}"
+            Warning(
+                f"Maximum width in time of transect log region bboxs is "
+                f"too large i.e. over {bbox_distance_threshold} minute(s). "
+                f"The maximum width is: {max_time_minutes}.",
+                UserWarning,
             )
 
         # Drop time duplicates
@@ -637,9 +605,9 @@ class Regions2D:
         for transect_type_next in start_transect_type_next_list:
             if transect_type_next not in [break_str, end_str]:
                 raise ValueError(
-                    f"Transect start string is followed by invalid value \
-                            {transect_type_next}. Must be followed by either \
-                            {break_str} or {end_str}"
+                    f"Transect start string is followed by invalid value "
+                    f"{transect_type_next}. Must be followed by either "
+                    f"{break_str} or {end_str}"
                 )
 
         # Check if break_str followed by resume_str.
@@ -650,8 +618,8 @@ class Regions2D:
         for transect_type_next in break_transect_type_next_list:
             if transect_type_next != resume_str:
                 raise ValueError(
-                    f"Transect break string is followed by invalid value \
-                            {transect_type_next}. Must be followed by {resume_str}."
+                    f"Transect break string is followed by invalid value "
+                    f"{transect_type_next}. Must be followed by {resume_str}."
                 )
 
         # Check if resume_str followed by break_str/end_str.
@@ -662,9 +630,9 @@ class Regions2D:
         for transect_type_next in resume_transect_type_next_list:
             if transect_type_next not in [break_str, end_str]:
                 raise ValueError(
-                    f"Transect resume string is followed by invalid value \
-                            {transect_type_next}. Must be followed by either \
-                            {break_str} or {end_str}"
+                    f"Transect resume string is followed by invalid value "
+                    f"{transect_type_next}. Must be followed by either "
+                    f"{break_str} or {end_str}."
                 )
 
         # Check if end_str followed by start_str or if NA.
@@ -677,8 +645,8 @@ class Regions2D:
             if not isna(transect_type_next):
                 if transect_type_next != start_str:
                     raise ValueError(
-                        f"Transect end string is followed by invalid value \
-                                {transect_type_next}. Must be followed by {start_str}."
+                        f"Transect end string is followed by invalid value "
+                        f"{transect_type_next}. Must be followed by {start_str}."
                     )
 
         # Create binary variable indicating within transect segments.
