@@ -687,7 +687,7 @@ def test_within_transect(
     ).compute()
 
     # Check M dimensions
-    assert M.sizes == {"depth": 3955, "ping_time": 1681}
+    assert M.shape == (3955, 1681)
 
     # This entire .zarr file should be covered by the single start and end transect period
     # found in the EVR file, so the only values listed should be 1, implying everything is
