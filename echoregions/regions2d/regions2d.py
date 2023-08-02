@@ -377,7 +377,7 @@ class Regions2D:
         -------
         A DataArray with the data_var masked by the specified region.
         """
-        if type(region_ids) == list:
+        if isinstance(region_ids, list):
             if len(region_ids) == 0:
                 raise ValueError("region_ids is empty. Cannot be empty.")
         else:
