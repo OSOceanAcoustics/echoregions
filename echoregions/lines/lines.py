@@ -199,6 +199,7 @@ class Lines:
         start_time = da_Sv.ping_time.data.min()
         end_time = da_Sv.ping_time.data.max()
         filtered_bottom = filter_bottom(lines_df, start_time, end_time)
+        filtered_bottom = filtered_bottom[~filtered_bottom.index.duplicated()]
 
         if len(filtered_bottom) > 0:
             # create joint index
