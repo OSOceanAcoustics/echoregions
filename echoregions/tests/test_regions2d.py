@@ -215,82 +215,82 @@ def test_select_sonar_file(regions2d_fixture: Regions2D) -> None:
         Object containing data of test EVR file.
     """
     raw_files = [
-        "Summer2017-D20170625-T124834.nc",
-        "Summer2017-D20170625-T132103.nc",
-        "Summer2017-D20170625-T134400.nc",
-        "Summer2017-D20170625-T140924.nc",
-        "Summer2017-D20170625-T143450.nc",
-        "Summer2017-D20170625-T150430.nc",
-        "Summer2017-D20170625-T153818.nc",
-        "Summer2017-D20170625-T161209.nc",
-        "Summer2017-D20170625-T164600.nc",
-        "Summer2017-D20170625-T171948.nc",
-        "Summer2017-D20170625-T175136.nc",
-        "Summer2017-D20170625-T181701.nc",
-        "Summer2017-D20170625-T184227.nc",
-        "Summer2017-D20170625-T190753.nc",
-        "Summer2017-D20170625-T193400.nc",
-        "Summer2017-D20170625-T195927.nc",
-        "Summer2017-D20170625-T202452.nc",
-        "Summer2017-D20170625-T205018.nc",
+        "Summer2019-D20190702-T171948.raw",
+        "Summer2019-D20190702-T175136.raw",
+        "Summer2019-D20190702-T181701.raw",
+        "Summer2019-D20190702-T184227.raw",
+        "Summer2019-D20190702-T190753.raw",
+        "Summer2019-D20190702-T193400.raw",
+        "Summer2019-D20190702-T195927.raw",
+        "Summer2019-D20190702-T202452.raw",
+        "Summer2019-D20190702-T205018.raw",
     ]
 
     # Check for correct sonar file
+    # Note, below are the region times for region 11:
+    # [
+    #   '2019-07-02T18:11:51.190000000' '2019-07-02T18:11:51.190000000'
+    #   '2019-07-02T18:11:52.540000000' '2019-07-02T18:11:52.540000000'
+    # ]
+    # So the idea is that the file Summer2019-D20190702-T175136.raw
+    # encompasses the time period between 2019-07-02T17:51:36.000000000
+    # and 2019-07-02T18:17:01.000000000 since it is proceeded by file
+    # Summer2019-D20190702-T181701.raw.
     raw = regions2d_fixture.select_sonar_file(raw_files, 11)
-    assert raw == ["Summer2017-D20170625-T205018.nc"]
+    assert raw == ["Summer2019-D20190702-T175136.raw"]
 
 
 @pytest.mark.regions2d
-def test_invalid_select_sonar_file(regions2d_fixture: Regions2D) -> None:
+def test_empty_select_sonar_file(regions2d_fixture: Regions2D) -> None:
     """
-    Test that sonar file selection functions raise the correct errors.
+    Test sonar file selection for raw files not in the specified year.
+    This should come out as null.
 
     Parameters
     ----------
     regions2d_fixture : Regions2D
         Object containing data of test EVR file.
     """
-    raw_files_str = "Summer2017-D20170625-T124834.nc"
+    raw_2017_files = [
+        "Summer2017-D20170625-T124834.raw",
+        "Summer2017-D20170625-T132103.raw",
+        "Summer2017-D20170625-T134400.raw",
+        "Summer2017-D20170625-T140924.raw",
+    ]
+    raw_2021_files = [
+        "Summer2021-D20210625-T124834.raw",
+        "Summer2021-D20210625-T132103.raw",
+        "Summer2021-D20210625-T134400.raw",
+        "Summer2021-D20210625-T140924.raw",
+    ]
+
+    # Check for empty sonar files
+    subset_raw_2017_files = regions2d_fixture.select_sonar_file(raw_2017_files, 11)
+    assert subset_raw_2017_files == []
+    subset_raw_2021_files = regions2d_fixture.select_sonar_file(raw_2021_files, 11)
+    assert subset_raw_2021_files == []
+
+
+@pytest.mark.regions2d
+def test_invalid_select_sonar_file(regions2d_fixture: Regions2D) -> None:
+    """
+    Test that sonar file selection functions raise the correct type errors.
+
+    Parameters
+    ----------
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
+    """
+    raw_files_str = "Summer2017-D20170625-T124834.raw"
     raw_files_with_int = [
-        "Summer2017-D20170625-T124834.nc",
+        "Summer2017-D20170625-T124834.raw",
         10,
-        "Summer2017-D20170625-T132103.nc",
-        "Summer2017-D20170625-T134400.nc",
-        "Summer2017-D20170625-T140924.nc",
-        "Summer2017-D20170625-T143450.nc",
-        "Summer2017-D20170625-T150430.nc",
-        "Summer2017-D20170625-T153818.nc",
-        "Summer2017-D20170625-T161209.nc",
-        "Summer2017-D20170625-T164600.nc",
-        "Summer2017-D20170625-T171948.nc",
-        "Summer2017-D20170625-T175136.nc",
-        "Summer2017-D20170625-T181701.nc",
-        "Summer2017-D20170625-T184227.nc",
-        "Summer2017-D20170625-T190753.nc",
-        "Summer2017-D20170625-T193400.nc",
-        "Summer2017-D20170625-T195927.nc",
-        "Summer2017-D20170625-T202452.nc",
-        "Summer2017-D20170625-T205018.nc",
     ]
     raw_files_with_invalid_simrad_format = [
-        "Summer2017-D20170625-T124834.nc",
-        "Summer2017-D20170625-T132103.nc",
-        "Summer2017-D20170625-T134400.nc",
-        "Summer2017-D20170625-T140924.nc",
-        "Summer2017-D20170625-T143450.nc",
-        "Summer2017-D20170625-T150430.nc",
-        "Summer2017-D20170625-T153818.nc",
-        "Summer2017-D20170625-T161209.nc",
-        "Summer2017-D20170625-T164600.nc",
-        "Summer2017-D20170625-T171948.nc",
-        "Summer2017-D20170625-T175136.nc",
-        "Summer2017-D20170625-T181701.nc",
-        "Summer2017-D20170625-T184227.nc",
-        "Summer2017-Z20170625-M190753.nc",
-        "Summer2017-D20170625-T193400.nc",
-        "Summer2017-D20170625-T195927.nc",
-        "Summer2017-D20170625-T202452.nc",
-        "Summer2017-D20170625-T205018.nc",
+        "Summer2019-D20190625-T181701.raw",
+        "Summer2019-D20190625-T184227.raw",
+        "Summer2019-Z20190625-M190753.raw",
+        "Summer2019-D20190625-T193400.raw",
     ]
 
     # Check that type errors are correctly thrown
@@ -299,7 +299,7 @@ def test_invalid_select_sonar_file(regions2d_fixture: Regions2D) -> None:
     with pytest.raises(TypeError):
         regions2d_fixture.select_sonar_file(raw_files_with_int, 11)
 
-    # Check that value errors are correctly thrown
+    # Check that value error is correctly thrown
     with pytest.raises(ValueError):
         regions2d_fixture.select_sonar_file(raw_files_with_invalid_simrad_format, 11)
 
