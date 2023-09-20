@@ -286,6 +286,7 @@ class Regions2D:
         if np.all(sonar_file_times < region_times.min()) or np.all(
             sonar_file_times > region_times.max()
         ):
+            print("Sonar file times did not overlap at all with region times. Returning empty list")
             return []
         else:
             # Get lower and upper index of filetimes
