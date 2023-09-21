@@ -31,13 +31,9 @@ def test_parse_filename_time() -> None:
     """
 
     Sv_2017_fname = ["TestString2017-D20170625-T124834.Sv"]
-    assert parse_simrad_fname_time(Sv_2017_fname) == np.datetime64(
-        "2017-06-25T12:48:34.0000"
-    )
+    assert parse_simrad_fname_time(Sv_2017_fname) == np.datetime64("2017-06-25T12:48:34.0000")
     raw_2019_fname = ["Summer2019-D20190625-T124834.raw"]
-    assert parse_simrad_fname_time(raw_2019_fname) == np.datetime64(
-        "2019-06-25T12:48:34.0000"
-    )
+    assert parse_simrad_fname_time(raw_2019_fname) == np.datetime64("2019-06-25T12:48:34.0000")
 
 
 @pytest.mark.utils
@@ -91,6 +87,4 @@ def test_validate_path_errors():
         validate_path(save_path=EVL_PATH.__str__(), ext="EVL")
     with pytest.raises(ValueError):
         # Check for mismatch of file name and file format
-        validate_path(
-            save_path=EVL_PATH.__str__(), input_file=EVL_PATH_DNE.__str__(), ext="EVR"
-        )
+        validate_path(save_path=EVL_PATH.__str__(), input_file=EVL_PATH_DNE.__str__(), ext="EVR")

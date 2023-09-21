@@ -115,9 +115,7 @@ def parse_regions_file(input_file: str):
         r_notes = [fid.readline().strip() for line in range(n_note_lines)]
         # Add detection settings to region data
         n_detection_setting_lines = int(fid.readline().strip())
-        r_detection_settings = [
-            fid.readline().strip() for line in range(n_detection_setting_lines)
-        ]
+        r_detection_settings = [fid.readline().strip() for line in range(n_detection_setting_lines)]
         # Add class to region data
         r_metadata["region_class"] = fid.readline().strip()
         # Add point x and y

@@ -33,9 +33,7 @@ def parse_time(
     np.datetime64 or float
         converted input datetime
     """
-    if isinstance(ev_time, np.ndarray) and np.issubdtype(
-        ev_time.dtype, "datetime64[ms]"
-    ):
+    if isinstance(ev_time, np.ndarray) and np.issubdtype(ev_time.dtype, "datetime64[ms]"):
         return ev_time
     elif not isinstance(ev_time, str) and not isinstance(ev_time, list):
         raise ValueError("'ev_time' must be type str or list")
@@ -73,11 +71,8 @@ def parse_simrad_fname_time(filenames: List[str]) -> datetime64:
                     )
             else:
                 raise TypeError(
-                    "Filenames contains non string element."
-                    f"Invalid element is of type {type(f)}"
+                    "Filenames contains non string element." f"Invalid element is of type {type(f)}"
                 )
     else:
-        raise TypeError(
-            f"Filenames must be type list. Filenames is of type {type(filenames)}"
-        )
+        raise TypeError(f"Filenames must be type list. Filenames is of type {type(filenames)}")
     return parse_time(f_list, "%Y%m%d %H%M%S")

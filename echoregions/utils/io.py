@@ -3,9 +3,7 @@ from pathlib import Path
 from typing import List, Union
 
 
-def validate_path(
-    save_path: str = None, input_file: str = None, ext: str = ".json"
-) -> str:
+def validate_path(save_path: str = None, input_file: str = None, ext: str = ".json") -> str:
     """
     Checks if save_path is specified. If not try to create one with the input_file and ext.
 

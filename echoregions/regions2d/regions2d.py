@@ -27,15 +27,9 @@ class Regions2D:
         min_depth: Union[int, float] = None,
         max_depth: Union[int, float] = None,
     ):
-        self._min_depth = (
-            None  # Set to replace -9999.99 depth values which are EVR min range
-        )
-        self._max_depth = (
-            None  # Set to replace 9999.99 depth values which are EVR max range
-        )
-        self._nan_depth_value = (
-            None  # Set to replace -10000.99 depth values with (EVL only)
-        )
+        self._min_depth = None  # Set to replace -9999.99 depth values which are EVR min range
+        self._max_depth = None  # Set to replace 9999.99 depth values which are EVR max range
+        self._nan_depth_value = None  # Set to replace -10000.99 depth values with (EVL only)
 
         self.input_file = input_file
         self.data = parse_regions_file(input_file)
@@ -59,9 +53,7 @@ class Regions2D:
             path to save the CSV file to
         """
         # Check if the save directory is safe
-        save_path = validate_path(
-            save_path=save_path, input_file=self.input_file, ext=".csv"
-        )
+        save_path = validate_path(save_path=save_path, input_file=self.input_file, ext=".csv")
         # Reorder columns and export to csv
         self.data.to_csv(save_path, index=False)
         self.output_file.append(save_path)
@@ -179,8 +171,7 @@ class Regions2D:
                             region = region[
                                 region["time"].apply(
                                     lambda depth_array: all(
-                                        depth_range[0] <= float(x)
-                                        and depth_range[1] >= float(x)
+                                        depth_range[0] <= float(x) and depth_range[1] >= float(x)
                                         for x in depth_array
                                     )
                                 )
@@ -209,9 +200,7 @@ class Regions2D:
                 )
         return region
 
-    def close_region(
-        self, region: Union[float, str, List, Series, DataFrame] = None
-    ) -> DataFrame:
+    def close_region(self, region: Union[float, str, List, Series, DataFrame] = None) -> DataFrame:
         """Close a region by appending the first point to end of the list of points.
 
         Parameters
@@ -226,12 +215,8 @@ class Regions2D:
             Returns a new DataFrame with closed regions
         """
         region = self.select_region(region, copy=True)
-        region["time"] = region.apply(
-            lambda row: np.append(row["time"], row["time"][0]), axis=1
-        )
-        region["depth"] = region.apply(
-            lambda row: np.append(row["depth"], row["depth"][0]), axis=1
-        )
+        region["time"] = region.apply(lambda row: np.append(row["time"], row["time"][0]), axis=1)
+        region["depth"] = region.apply(lambda row: np.append(row["depth"], row["depth"][0]), axis=1)
         return region
 
     def select_sonar_file(
@@ -286,9 +271,7 @@ class Regions2D:
         if np.all(sonar_file_times < region_times.min()) or np.all(
             sonar_file_times > region_times.max()
         ):
-            print(
-                "Sonar file times did not overlap at all with region times. Returning empty list"
-            )
+            print("Sonar file times did not overlap at all with region times. Returning empty list")
             return []
         else:
             # Get lower and upper index of filetimes
@@ -401,9 +384,7 @@ class Regions2D:
             )
 
         if isinstance(mask_labels, list) and (len(mask_labels) != len(region_ids)):
-            raise ValueError(
-                "If mask_labels is a list, it should be of same length as region_ids."
-            )
+            raise ValueError("If mask_labels is a list, it should be of same length as region_ids.")
 
         # Replace nan depth in regions2d.
         self.replace_nan_depth(inplace=True)
@@ -520,8 +501,7 @@ class Regions2D:
         # Check that there are 4 unique transect strings
         if len(transect_strs) != len(set(transect_strs)):
             raise ValueError(
-                "There exist duplicate values in transect_dict. "
-                "All values must be unique."
+                "There exist duplicate values in transect_dict. " "All values must be unique."
             )
         for transect_str in transect_strs:
             if not isinstance(transect_str, str):
@@ -540,9 +520,9 @@ class Regions2D:
         ].copy()
 
         # Create a new column which stores the transect_type without the transect number
-        transect_df.loc[:, "transect_type"] = transect_df.loc[
-            :, "region_name"
-        ].str.extract(rf"({start_str}|{break_str}|{resume_str}|{end_str})")
+        transect_df.loc[:, "transect_type"] = transect_df.loc[:, "region_name"].str.extract(
+            rf"({start_str}|{break_str}|{resume_str}|{end_str})"
+        )
 
         # Check if for all transects, there exists 1 start_str transect type.
         # If there does not exists a start_str transect, set the first region
@@ -586,9 +566,7 @@ class Regions2D:
 
         # Checking the maximum width of a transect log region bbox.
         # If over a minute, throw an error.
-        max_time = (
-            transect_df["region_bbox_right"] - transect_df["region_bbox_left"]
-        ).max()
+        max_time = (transect_df["region_bbox_right"] - transect_df["region_bbox_left"]).max()
         max_time_minutes = max_time.total_seconds() / 60
         if max_time_minutes > bbox_distance_threshold:
             Warning(
@@ -605,18 +583,14 @@ class Regions2D:
         transect_df = transect_df.sort_values(by="region_bbox_left")
         # Create new shifted columns with the next transect log type and next region
         # bbox left datetime value.
-        transect_df.loc[:, "transect_type_next"] = transect_df.loc[
-            :, "transect_type"
-        ].shift(-1)
-        transect_df.loc[:, "region_bbox_left_next"] = transect_df.loc[
-            :, "region_bbox_left"
-        ].shift(-1)
+        transect_df.loc[:, "transect_type_next"] = transect_df.loc[:, "transect_type"].shift(-1)
+        transect_df.loc[:, "region_bbox_left_next"] = transect_df.loc[:, "region_bbox_left"].shift(
+            -1
+        )
 
         # Check if start_str followed by break_str/end_str.
         start_transect_rows = transect_df[transect_df["transect_type"] == start_str]
-        start_transect_type_next_list = list(
-            start_transect_rows["transect_type_next"].values
-        )
+        start_transect_type_next_list = list(start_transect_rows["transect_type_next"].values)
         for transect_type_next in start_transect_type_next_list:
             if transect_type_next not in [break_str, end_str]:
                 raise ValueError(
@@ -627,9 +601,7 @@ class Regions2D:
 
         # Check if break_str followed by resume_str.
         break_transect_rows = transect_df[transect_df["transect_type"] == break_str]
-        break_transect_type_next_list = list(
-            break_transect_rows["transect_type_next"].values
-        )
+        break_transect_type_next_list = list(break_transect_rows["transect_type_next"].values)
         for transect_type_next in break_transect_type_next_list:
             if transect_type_next != resume_str:
                 raise ValueError(
@@ -639,9 +611,7 @@ class Regions2D:
 
         # Check if resume_str followed by break_str/end_str.
         resume_transect_rows = transect_df[transect_df["transect_type"] == resume_str]
-        resume_transect_type_next_list = list(
-            resume_transect_rows["transect_type_next"].values
-        )
+        resume_transect_type_next_list = list(resume_transect_rows["transect_type_next"].values)
         for transect_type_next in resume_transect_type_next_list:
             if transect_type_next not in [break_str, end_str]:
                 raise ValueError(
@@ -652,9 +622,7 @@ class Regions2D:
 
         # Check if end_str followed by start_str or if NA.
         end_transect_rows = transect_df[transect_df["transect_type"] == end_str]
-        end_transect_type_next_list = list(
-            end_transect_rows["transect_type_next"].values
-        )
+        end_transect_type_next_list = list(end_transect_rows["transect_type_next"].values)
         for transect_type_next in end_transect_type_next_list:
             # If this value is not NA, check if it is start_str.
             if not isna(transect_type_next):

@@ -23,9 +23,7 @@ class Lines:
         self.data = parse_line_file(input_file)
         self.output_file = []
 
-        self._nan_depth_value = (
-            None  # Set to replace -10000.99 depth values with (EVL only)
-        )
+        self._nan_depth_value = None  # Set to replace -10000.99 depth values with (EVL only)
         self._nan_depth_value = nan_depth_value
 
     def __iter__(self) -> Iterable:
@@ -67,9 +65,7 @@ class Lines:
             path to save the CSV file to
         """
         # Check if the save directory is safe
-        save_path = validate_path(
-            save_path=save_path, input_file=self.input_file, ext=".csv"
-        )
+        save_path = validate_path(save_path=save_path, input_file=self.input_file, ext=".csv")
         # Reorder columns and export to csv
         self.data.to_csv(save_path, index=False)
         self.output_file.append(save_path)
@@ -88,9 +84,7 @@ class Lines:
             keyword arguments passed into `parse_file`
         """
         # Check if the save directory is safe
-        save_path = validate_path(
-            save_path=save_path, input_file=self.input_file, ext=".json"
-        )
+        save_path = validate_path(save_path=save_path, input_file=self.input_file, ext=".json")
         indent = 4 if pretty else None
 
         # Save the entire parsed EVR dictionary as a JSON file
@@ -176,8 +170,7 @@ class Lines:
 
         if not isinstance(da_Sv, DataArray):
             raise TypeError(
-                "Input da_Sv must be of type DataArray. da_Sv was instead"
-                f" of type {type(da_Sv)}"
+                "Input da_Sv must be of type DataArray. da_Sv was instead" f" of type {type(da_Sv)}"
             )
 
         def filter_bottom(bottom, start_date, end_date):
@@ -264,9 +257,7 @@ class Lines:
                 print(e)
 
             # convert to data array for bottom
-            bottom_da = bottom_interpolated[
-                "depth"
-            ].to_xarray()  # .rename({'index':'ping_time'})
+            bottom_da = bottom_interpolated["depth"].to_xarray()  # .rename({'index':'ping_time'})
             bottom_da = bottom_da.rename({"time": "ping_time"})
 
             # create a data array of depths
