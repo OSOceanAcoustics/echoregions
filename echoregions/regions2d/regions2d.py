@@ -260,7 +260,7 @@ class Regions2D:
         Returns
         -------
         files: list
-            list of raw file(s) spanning the encompassing region or list of regions.
+            list of raw/Sv sonar file(s) spanning the encompassing region or list of regions.
         """
         # Check that sonar_file_names is a list
         if not isinstance(sonar_file_names, list):
@@ -268,24 +268,39 @@ class Regions2D:
                 f"sonar_file_names must be type list. Filenames is of type {type(sonar_file_names)}"
             )
 
+        # Sort sonar file names
         sonar_file_names.sort()
 
         # Parse simrad filenames
-        filetimes = parse_simrad_fname_time(
+        sonar_file_times = parse_simrad_fname_time(
             [Path(fname).name for fname in sonar_file_names]
         ).values
 
         # Ensure that region is a DataFrame
         region = self.select_region(region)
 
-        times = np.hstack(region["time"].values)
-        lower_idx = np.searchsorted(filetimes, times.min()) - 1
-        upper_idx = np.searchsorted(filetimes, times.max())
+        # Extract region time values
+        region_times = np.hstack(region["time"].values)
 
-        lower_idx = 0 if lower_idx < 0 else lower_idx
+        # Check if all sonar file times are completely below or above all region times
+        if np.all(sonar_file_times < region_times.min()) or np.all(
+            sonar_file_times > region_times.max()
+        ):
+            print(
+                "Sonar file times did not overlap at all with region times. Returning empty list"
+            )
+            return []
+        else:
+            # Get lower and upper index of filetimes
+            lower_idx = np.searchsorted(sonar_file_times, region_times.min()) - 1
+            upper_idx = np.searchsorted(sonar_file_times, region_times.max())
 
-        sonar_file_names = sonar_file_names[lower_idx:upper_idx]
-        return sonar_file_names
+            # Set lower idx to 0 if at -1
+            lower_idx = 0 if lower_idx < 0 else lower_idx
+
+            # Subset sonar file names based on lower and upper index
+            sonar_file_names = sonar_file_names[lower_idx:upper_idx]
+            return sonar_file_names
 
     def replace_nan_depth(self, inplace: bool = False) -> DataFrame:
         """Replace 9999.99 or -9999.99 depth values with user-specified min_depth and max_depth
