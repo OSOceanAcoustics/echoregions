@@ -361,7 +361,7 @@ class Regions2D:
         region = self.select_region(region)
 
         if close_region:
-            region = self.Regions2D.close_region(region)
+            region = self.close_region(region)
         for _, row in region.iterrows():
             plt.plot(row["time"], row["depth"], **kwargs)
 
