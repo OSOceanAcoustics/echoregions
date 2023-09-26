@@ -1,6 +1,6 @@
 import warnings
 from pathlib import Path
-from typing import Iterable, List, Union
+from typing import Iterable, List, Optional, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -371,7 +371,7 @@ class Regions2D:
         region_ids: List,
         mask_var: str = None,
         mask_labels=None,
-    ) -> DataArray:
+    ) -> Optional[DataArray]:
         """Mask data from Data Array containing Sv data based off of a Regions2D object
         and its regions ids.
 
@@ -405,75 +405,87 @@ class Regions2D:
                 "If mask_labels is a list, it should be of same length as region_ids."
             )
 
-        # Replace nan depth in regions2d.
-        self.replace_nan_depth(inplace=True)
-
         # Dataframe containing region information.
         region_df = self.select_region(region_ids)
 
-        # Select only columns which are important.
+        # Select only important columns
         region_df = region_df[["region_id", "time", "depth"]]
 
-        # Organize the regions in a format for region mask.
-        df = region_df.explode(["time", "depth"])
-
-        # Convert region time to integer timestamp.
-        df["time"] = matplotlib.dates.date2num(df["time"])
-
-        # Create a list of dataframes for each regions.
-        grouped = list(df.groupby("region_id"))
-
-        # Convert to list of numpy arrays which is an acceptable format to create region mask.
-        regions_np = [np.array(region[["time", "depth"]]) for id, region in grouped]
-
-        # Corresponding region ids converted to int.
-        region_ids = [int(id) for id, region in grouped]
-
-        # Convert ping_time to unix_time since the masking does not work on datetime objects.
-        da_Sv = da_Sv.assign_coords(
-            unix_time=(
-                "ping_time",
-                matplotlib.dates.date2num(da_Sv.coords["ping_time"].values),
+        # Filter rows with depth values within self min and self max depth
+        region_df = region_df[
+            (
+                (
+                    region_df["depth"].apply(
+                        lambda x: all(self.min_depth <= i <= self.max_depth for i in x)
+                    )
+                )
+                & (region_df["depth"].apply(lambda x: all(i >= 0 for i in x)))
             )
-        )
+        ]
 
-        # Set up mask labels.
-        if mask_labels == "from_ids":
-            r = regionmask.Regions(outlines=regions_np, numbers=region_ids)
-        elif isinstance(mask_labels, list) or mask_labels is None:
-            r = regionmask.Regions(outlines=regions_np)
+        if region_df.empty:
+            print("Post NaN Depth Filtered Regions is Empty. All rows had NaN Depth values.")
         else:
-            raise ValueError("mask_labels must be None, 'from_ids', or a list.")
+            # Organize the regions in a format for region mask.
+            df = region_df.explode(["time", "depth"])
 
-        # Create mask
-        try:
-            M = r.mask(
-                da_Sv["unix_time"],
-                da_Sv["depth"],
-                wrap_lon=False,
+            # Convert region time to integer timestamp.
+            df["time"] = matplotlib.dates.date2num(df["time"])
+
+            # Create a list of dataframes for each regions.
+            grouped = list(df.groupby("region_id"))
+
+            # Convert to list of numpy arrays which is an acceptable format to create region mask.
+            regions_np = [np.array(region[["time", "depth"]]) for id, region in grouped]
+
+            # Corresponding region ids converted to int.
+            region_ids = [int(id) for id, region in grouped]
+
+            # Convert ping_time to unix_time since the masking does not work on datetime objects.
+            da_Sv = da_Sv.assign_coords(
+                unix_time=(
+                    "ping_time",
+                    matplotlib.dates.date2num(da_Sv.coords["ping_time"].values),
+                )
             )
-        except ValueError as ve:
-            warnings.warn(
-                "Most likely using deprecated regionmask version."
-                "Make sure to use regionmask==0.8.0 or more recent versions.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            raise ve
 
-        if isinstance(mask_labels, list):
-            # Convert default labels to mask_labels.
-            S = xr.where(~M.isnull(), 0, M)
-            S = M
-            for idx, label in enumerate(mask_labels):
-                S = xr.where(M == idx, label, S)
-            M = S
+            # Set up mask labels.
+            if mask_labels == "from_ids":
+                r = regionmask.Regions(outlines=regions_np, numbers=region_ids)
+            elif isinstance(mask_labels, list) or mask_labels is None:
+                r = regionmask.Regions(outlines=regions_np)
+            else:
+                raise ValueError("mask_labels must be None, 'from_ids', or a list.")
 
-        # Assign specific name to mask array, otherwise 'mask'.
-        if mask_var:
-            M = M.rename(mask_var)
+            # Create mask
+            try:
+                M = r.mask(
+                    da_Sv["unix_time"],
+                    da_Sv["depth"],
+                    wrap_lon=False,
+                )
+            except ValueError as ve:
+                warnings.warn(
+                    "Most likely using deprecated regionmask version."
+                    "Make sure to use regionmask==0.8.0 or more recent versions.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                raise ve
 
-        return M
+            if isinstance(mask_labels, list):
+                # Convert default labels to mask_labels.
+                S = xr.where(~M.isnull(), 0, M)
+                S = M
+                for idx, label in enumerate(mask_labels):
+                    S = xr.where(M == idx, label, S)
+                M = S
+
+            # Assign specific name to mask array, otherwise 'mask'.
+            if mask_var:
+                M = M.rename(mask_var)
+
+            return M
 
     def transect_mask(
         self,

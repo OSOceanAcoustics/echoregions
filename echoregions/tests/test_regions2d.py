@@ -27,7 +27,7 @@ def regions2d_fixture() -> Regions2D:
         Object containing data of test EVR file.
     """
 
-    r2d = er.read_evr(EVR_PATH)
+    r2d = er.read_evr(EVR_PATH, min_depth=0, max_depth=1000)
     return r2d
 
 
@@ -455,19 +455,18 @@ def test_mask_correct_labels(
     """
 
     # Extract Region IDs and convert to Python float values
-    region_ids = regions2d_fixture.data.region_id.astype(float).to_list()
+    region_ids = regions2d_fixture.data.region_id.astype(int).to_list()
 
     # Create mask.
     M = regions2d_fixture.mask(
         da_Sv_fixture.isel(channel=0), region_ids, mask_labels=region_ids
     )
 
-    # Check that the mask's values matches only 13th and 18th region and there exists a nan value
+    # Check that the mask's values matches only 4th region and there exists a nan value
     # and that there exists a point of no overlap (nan value)
     values = list(np.unique(M))
-    assert values[0] == 13.0
-    assert values[1] == 18.0
-    assert np.isnan(values[2])
+    assert values[0] == 4
+    assert np.isnan(values[1])
 
 
 @pytest.mark.regions2d
@@ -532,15 +531,15 @@ def test_mask_2d_3d_2d_3d(
     """
 
     # Extract region_ids
-    region_ids = regions2d_fixture.data.region_id.astype(float).to_list()
+    region_ids = regions2d_fixture.data.region_id.astype(int).to_list()
 
     # Create mask
     M = regions2d_fixture.mask(da_Sv_fixture, region_ids, mask_labels=region_ids)
 
     # Test values from converted 3D array (previous 2D array)
     mask_3d_ds = er.convert_mask_2d_to_3d(M)
-    assert mask_3d_ds.mask_3d.shape == (2, 3955, 1681)
-    assert list(mask_3d_ds.mask_dictionary) == [13.0, 18.0]
+    assert mask_3d_ds.mask_3d.shape == (1, 3955, 1681)
+    assert list(mask_3d_ds.mask_dictionary) == [4]
 
     # Test values from converted 2D array (previously 3D array)
     mask_2d_da = er.convert_mask_3d_to_2d(mask_3d_ds)
@@ -647,15 +646,15 @@ def test_overlapping_mask_3d_2d(
     """
 
     # Extract region_ids
-    region_ids = regions2d_fixture.data.region_id.astype(float).to_list()
+    region_ids = regions2d_fixture.data.region_id.astype(int).to_list()
 
     # Create mask
     M = regions2d_fixture.mask(da_Sv_fixture, region_ids, mask_labels=region_ids)
 
     # Test values from converted 3D array (previous 2D array)
     mask_3d_ds = er.convert_mask_2d_to_3d(M)
-    assert mask_3d_ds.mask_3d.shape == (2, 3955, 1681)
-    assert list(mask_3d_ds.mask_dictionary) == [13.0, 18.0]
+    assert mask_3d_ds.mask_3d.shape == (1, 3955, 1681)
+    assert list(mask_3d_ds.mask_dictionary) == [18]
 
     # Turn first (0th index) array into all 1s to guarantee overlap
     mask_3d_ds.mask_3d[0] = xr.ones_like(mask_3d_ds.mask_3d[0])
