@@ -210,13 +210,13 @@ class Regions2D:
         return region
 
     def close_region(
-        self, region: Union[float, str, List, Series, DataFrame] = None
+        self, region_ids: List = None
     ) -> DataFrame:
         """Close a region by appending the first point to end of the list of points.
 
         Parameters
         ----------
-        region : float, str, list, Series, DataFrame, ``None``
+        region_ids : List, ``None``
             region(s) to select raw files with
             If ``None``, select all regions. Defaults to ``None``
 
@@ -225,7 +225,7 @@ class Regions2D:
         DataFrame
             Returns a new DataFrame with closed regions
         """
-        region = self.select_region(region, copy=True)
+        region = self.select_region(region_ids, copy=True)
         region["time"] = region.apply(
             lambda row: np.append(row["time"], row["time"][0]), axis=1
         )
@@ -339,8 +339,8 @@ class Regions2D:
 
     def plot(
         self,
-        region: Union[str, List, DataFrame] = None,
-        close_region: bool = False,
+        region_ids: List = None,
+        close_regions: bool = False,
         **kwargs,
     ) -> None:
         """Plot a region from data.
@@ -348,7 +348,7 @@ class Regions2D:
 
         Parameters
         ---------
-        region : float, str, list, Series, DataFrame, ``None``
+        region_ids : List, ``None``
             Region(s) to select raw files with
             If ``None``, select all regions. Defaults to ``None``
         close_region : bool
@@ -358,9 +358,9 @@ class Regions2D:
         """
 
         # Ensure that region is a DataFrame
-        region = self.select_region(region)
+        region = self.select_region(region_ids)
 
-        if close_region:
+        if close_regions:
             region = self.close_region(region)
         for _, row in region.iterrows():
             plt.plot(row["time"], row["depth"], **kwargs)
@@ -458,28 +458,11 @@ class Regions2D:
                 raise ValueError("mask_labels must be None, 'from_ids', or a list.")
 
             # Create mask
-            try:
-                M = r.mask(
-                    da_Sv["unix_time"],
-                    da_Sv["depth"],
-                    wrap_lon=False,
-                )
-            except ValueError as ve:
-                warnings.warn(
-                    "Most likely using deprecated regionmask version."
-                    "Make sure to use regionmask==0.8.0 or more recent versions.",
-                    DeprecationWarning,
-                    stacklevel=2,
-                )
-                raise ve
-
-            if isinstance(mask_labels, list):
-                # Convert default labels to mask_labels.
-                S = xr.where(~M.isnull(), 0, M)
-                S = M
-                for idx, label in enumerate(mask_labels):
-                    S = xr.where(M == idx, label, S)
-                M = S
+            M = r.mask_3D(
+                da_Sv["unix_time"],
+                da_Sv["depth"],
+                wrap_lon=False,
+            ).astype(int)
 
             # Assign specific name to mask array, otherwise 'mask'.
             if mask_var:
