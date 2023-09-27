@@ -209,9 +209,7 @@ class Regions2D:
                 )
         return region
 
-    def close_region(
-        self, region_ids: List = None
-    ) -> DataFrame:
+    def close_region(self, region_ids: List = None) -> DataFrame:
         """Close a region by appending the first point to end of the list of points.
 
         Parameters
@@ -369,8 +367,7 @@ class Regions2D:
         self,
         da_Sv: DataArray,
         region_ids: List,
-        mask_var: str = None,
-        mask_labels=None,
+        mask_name: str = None,
     ) -> Optional[DataArray]:
         """Mask data from Data Array containing Sv data based off of a Regions2D object
         and its regions ids.
@@ -381,12 +378,8 @@ class Regions2D:
             DataArray of shape (ping_time, depth) containing Sv data.
         region_ids : list
             list IDs of regions to create mask for
-        mask_var : str
+        mask_name : str
             If provided, used to name the output mask array, otherwise `mask`
-        mask_labels:
-            None: assigns labels automatically 0,1,2,...
-            "from_ids": uses the region ids
-            list: uses a list of integers as labels
 
         Returns
         -------
@@ -398,11 +391,6 @@ class Regions2D:
         else:
             raise TypeError(
                 f"region_ids must be of type list. Currently is of type {type(region_ids)}"
-            )
-
-        if isinstance(mask_labels, list) and (len(mask_labels) != len(region_ids)):
-            raise ValueError(
-                "If mask_labels is a list, it should be of same length as region_ids."
             )
 
         # Dataframe containing region information.
@@ -424,7 +412,9 @@ class Regions2D:
         ]
 
         if region_df.empty:
-            print("Post NaN Depth Filtered Regions is Empty. All rows had NaN Depth values.")
+            print(
+                "Post NaN Depth Filtered Regions is Empty. All rows had NaN Depth values."
+            )
         else:
             # Organize the regions in a format for region mask.
             df = region_df.explode(["time", "depth"])
@@ -436,10 +426,10 @@ class Regions2D:
             grouped = list(df.groupby("region_id"))
 
             # Convert to list of numpy arrays which is an acceptable format to create region mask.
-            regions_np = [np.array(region[["time", "depth"]]) for id, region in grouped]
+            regions_np = [np.array(region[["time", "depth"]]) for _, region in grouped]
 
             # Corresponding region ids converted to int.
-            region_ids = [int(id) for id, region in grouped]
+            filtered_region_ids = [int(id) for id, _ in grouped]
 
             # Convert ping_time to unix_time since the masking does not work on datetime objects.
             da_Sv = da_Sv.assign_coords(
@@ -449,26 +439,39 @@ class Regions2D:
                 )
             )
 
-            # Set up mask labels.
-            if mask_labels == "from_ids":
-                r = regionmask.Regions(outlines=regions_np, numbers=region_ids)
-            elif isinstance(mask_labels, list) or mask_labels is None:
-                r = regionmask.Regions(outlines=regions_np)
-            else:
-                raise ValueError("mask_labels must be None, 'from_ids', or a list.")
-
             # Create mask
-            M = r.mask_3D(
+            r = regionmask.Regions(
+                outlines=regions_np, names=filtered_region_ids, name=mask_name
+            )
+            mask_3d = r.mask_3D(
                 da_Sv["unix_time"],
                 da_Sv["depth"],
                 wrap_lon=False,
-            ).astype(int)
+            ).astype(
+                int
+            )  # This maps False to 0 and True to 1
 
-            # Assign specific name to mask array, otherwise 'mask'.
-            if mask_var:
-                M = M.rename(mask_var)
+            # Replace region coords with region_id coords
+            mask_3d = mask_3d.assign_coords(region_id=mask_3d["names"])
+            mask_3d = mask_3d.swap_dims({"region": "region_id"})
 
-            return M
+            # Remove all coords other than depth, ping_time, region_id
+            mask_3d = mask_3d.drop_vars(
+                [
+                    coord
+                    for coord in mask_3d.coords
+                    if coord not in ["depth", "ping_time", "region_id"]
+                ]
+            )
+
+            # Remove attribute standard_name
+            mask_3d.attrs.pop("standard_name")
+
+            # Rename Data Array to mask_name
+            if mask_name:
+                mask_3d = mask_3d.rename(mask_name)
+
+            return mask_3d
 
     def transect_mask(
         self,

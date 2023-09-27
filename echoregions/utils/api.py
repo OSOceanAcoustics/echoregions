@@ -63,13 +63,13 @@ def convert_mask_2d_to_3d(mask_2d_da: DataArray) -> Dataset:
     return mask_3d_ds
 
 
-def convert_mask_3d_to_2d(mask_3d_ds: Dataset) -> DataArray:
+def convert_mask_3d_to_2d(mask_3d: Dataset) -> DataArray:
     """
     Convert 3D one-hot encoded mask data into its 2D multi-labeled form.
 
     Parameters
     ----------
-    mask_3d_ds : Dataset
+    mask_3d : DataArray
         A Dataset with a 3D DataArray with the data_var masked by the specified
         region in one-hot encoded form and a dictionary that will be used to map
         the individual label layers of the 3D mask to an integer label in the 2D mask.
@@ -88,18 +88,15 @@ def convert_mask_3d_to_2d(mask_3d_ds: Dataset) -> DataArray:
     Emtpy dictionary data of mask_3d_ds means that there exists no masked
     values.
     """
-    # Get unique non nan values from the 2d mask
-    unique_non_nan = list(mask_3d_ds.mask_dictionary.data)
-
-    # Create copies and placeholder values for 2D and 3D mask objects
-    mask_3d_da = mask_3d_ds.mask_3d.copy()
+    # Get region_ids from the 3D Mask
+    region_ids = list(mask_3d.region_id)
 
     # Check if there is overlap between layers.
     # TODO For now, overlap between layers will not be allowed.
     # Allowing overlapping layers can be explored in later development.
-    if len(unique_non_nan) > 1:
+    if len(region_ids) > 1:
         non_zero_indices_list = [
-            np.transpose(np.nonzero(np_mask)) for np_mask in mask_3d_da.data
+            np.transpose(np.nonzero(np_mask)) for np_mask in mask_3d.data
         ]
         for index_main, non_zero_indices_main in enumerate(non_zero_indices_list):
             main_set = set([tuple(x) for x in non_zero_indices_main])
@@ -114,22 +111,22 @@ def convert_mask_3d_to_2d(mask_3d_ds: Dataset) -> DataArray:
                             " Overlapping values are not allowed."
                         )
 
-    if len(unique_non_nan) > 0:
+    if len(region_ids) > 0:
         # Iterate through 3D array layers and set 1.0 to associated label values
         # dependent on which layer is being worked on and create append layers to
         # form 2D mask array.
-        for index, label_value in enumerate(unique_non_nan):
-            label_layer = mask_3d_da[index]
+        for index, label_value in enumerate(region_ids):
+            label_layer = mask_3d[index]
             label_layer = xr.where(label_layer == 1.0, label_value, 0.0)
             if index == 0:
-                mask_2d_da = label_layer
+                mask_2d = label_layer
             else:
-                mask_2d_da = label_layer + mask_2d_da
-        mask_2d_da = xr.where(mask_2d_da == 0.0, np.nan, mask_2d_da)
+                mask_2d = label_layer + mask_2d
+        mask_2d = xr.where(mask_2d == 0.0, np.nan, mask_2d)
     else:
         # In the case where unique_non_nan is empty, create all zeroes DataArray
-        mask_2d_da = xr.full_like(mask_3d_da, np.nan)
-    return mask_2d_da
+        mask_2d = xr.full_like(mask_3d, np.nan)
+    return mask_2d
 
 
 def merge(objects: List[Regions2D], reindex_ids: bool = False) -> Regions2D:
