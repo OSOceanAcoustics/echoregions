@@ -1,4 +1,5 @@
-from typing import List
+import warnings
+from typing import List, Union
 
 import numpy as np
 import xarray as xr
@@ -7,24 +8,23 @@ from xarray import DataArray, Dataset
 from ..regions2d.regions2d import Regions2D
 
 
-def convert_mask_2d_to_3d(mask_2d_da: DataArray) -> Dataset:
+def convert_mask_2d_to_3d(mask_2d: DataArray) -> Union[Dataset, None]:
     """
     Convert 2D multi-labeled mask data into its 3D one-hot encoded form.
 
     Parameters
     ----------
-    mask_2d_da : DataArray
+    mask_2d: DataArray
         A DataArray with the data_var masked by a specified region. This data will
         be in the form of integer, demarking labels of masked regions, and nan values,
         demarking non-masked areas.
 
     Returns
     -------
-    mask_3d_ds : Dataset
-        A Dataset with a 3D DataArray/mask and each layer of the 3D mask will contain
-        a 1s/0s mask for each unique label in the 2D mask. The layers will be labeled
-        by a dictionary that maps the individual label layers of the 3D mask to an integer
-        label in the 2D mask.
+    mask_3d : DataArray
+        A 3D DataArray/mask and each layer of the 3D mask will contain a 1s/0s mask for each
+        unique label in the 2D mask. The layers will be labeled via region_id values, extracted
+        from 2d values.
 
     Notes
     -----
@@ -32,38 +32,36 @@ def convert_mask_2d_to_3d(mask_2d_da: DataArray) -> Dataset:
     values.
     """
     # Get unique non nan values from the 2d mask
-    unique_non_nan = list(np.unique(mask_2d_da.data[~np.isnan(mask_2d_da.data)]))
-    if len(unique_non_nan) == 0:
-        unique_non_nan = None
+    region_ids = list(np.unique(mask_2d.data[~np.isnan(mask_2d.data)]))
+    if len(region_ids) == 0:
+        region_ids = None
 
     # Create a list of mask objects from one-hot encoding M.data non-nan values
     # and a dictionary to remember said values from one-hot encoded data arrays.
     # If unique_non_nan is None, make mask_dictionary None.
     mask_list = []
-    mask_dictionary = {"dims": "label", "data": []}
-    if unique_non_nan is not None:
-        mask_dictionary = {"dims": "label", "data": []}
-        for _, value in enumerate(unique_non_nan):
+    mask_dictionary = {"dims": "region_id", mask_2d.name: []}
+    if region_ids is not None:
+        for _, value in enumerate(region_ids):
             # Create new 1d mask
-            new_mask_data = xr.where(mask_2d_da == value, 1.0, 0.0)
+            new_mask_data = xr.where(mask_2d == value, 1.0, 0.0)
             # Append data to mask_list and mask_dictionary
             mask_list.append(new_mask_data)
-            mask_dictionary_list = mask_dictionary["data"]
+            mask_dictionary_list = mask_dictionary[mask_2d.name]
             mask_dictionary_list.append(value)
-            mask_dictionary["data"] = mask_dictionary_list
-        mask_3d_da = xr.concat(mask_list, dim="label")
+            mask_dictionary[mask_2d.name] = mask_dictionary_list
+        mask_3d = xr.concat(mask_list, dim=region_ids)
+        mask_3d = mask_3d.rename({"concat_dim": "region_id"})
+        return mask_3d
     else:
-        mask_3d_da = xr.zeros_like(mask_2d_da)
-    mask_dictionary_da = xr.DataArray.from_dict(mask_dictionary)
-
-    # Initialize Dataset
-    mask_3d_ds = xr.Dataset()
-    mask_3d_ds["mask_3d"] = mask_3d_da
-    mask_3d_ds["mask_dictionary"] = mask_dictionary_da
-    return mask_3d_ds
+        warnings.warn(
+            "Returning No Mask. Empty 3D Mask cannot be converted to 2D Mask.",
+            UserWarning,
+        )
+        return None
 
 
-def convert_mask_3d_to_2d(mask_3d: Dataset) -> DataArray:
+def convert_mask_3d_to_2d(mask_3d: Dataset) -> Union[DataArray, None]:
     """
     Convert 3D one-hot encoded mask data into its 2D multi-labeled form.
 
@@ -78,15 +76,10 @@ def convert_mask_3d_to_2d(mask_3d: Dataset) -> DataArray:
 
     Returns
     -------
-    mask_2d_da: DataArray
+    mask_2d: DataArray
         A DataArray with the data_var masked by a specified region. This data will
         be in the form of integer, demarking labels of masked regions, and nan values,
         demarking non-masked areas.
-
-    Notes
-    -----
-    Emtpy dictionary data of mask_3d_ds means that there exists no masked
-    values.
     """
     # Get region_ids from the 3D Mask
     region_ids = list(mask_3d.region_id)
@@ -123,10 +116,13 @@ def convert_mask_3d_to_2d(mask_3d: Dataset) -> DataArray:
             else:
                 mask_2d = label_layer + mask_2d
         mask_2d = xr.where(mask_2d == 0.0, np.nan, mask_2d)
+        return mask_2d
     else:
-        # In the case where unique_non_nan is empty, create all zeroes DataArray
-        mask_2d = xr.full_like(mask_3d, np.nan)
-    return mask_2d
+        warnings.warn(
+            "Returning No Mask. Empty 3D Mask cannot be converted to 2D Mask.",
+            UserWarning,
+        )
+        return None
 
 
 def merge(objects: List[Regions2D], reindex_ids: bool = False) -> Regions2D:
