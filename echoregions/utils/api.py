@@ -1,4 +1,5 @@
 import warnings
+from multiprocessing import Pool
 from typing import List, Union
 
 import numpy as np
@@ -6,7 +7,6 @@ import xarray as xr
 from xarray import DataArray, Dataset
 
 from ..regions2d.regions2d import Regions2D
-
 
 def convert_mask_2d_to_3d(mask_2d: DataArray) -> Union[Dataset, None]:
     """
@@ -33,25 +33,19 @@ def convert_mask_2d_to_3d(mask_2d: DataArray) -> Union[Dataset, None]:
     """
     # Get unique non nan values from the 2d mask
     region_ids = list(np.unique(mask_2d.data[~np.isnan(mask_2d.data)]))
-    if len(region_ids) == 0:
-        region_ids = None
 
     # Create a list of mask objects from one-hot encoding M.data non-nan values
     # and a dictionary to remember said values from one-hot encoded data arrays.
     # If unique_non_nan is None, make mask_dictionary None.
-    mask_list = []
-    mask_dictionary = {"dims": "region_id", mask_2d.name: []}
-    if region_ids is not None:
+    if len(region_ids) > 0:
+        mask_list = []
         for _, value in enumerate(region_ids):
             # Create new 1d mask
             new_mask_data = xr.where(mask_2d == value, 1.0, 0.0)
-            # Append data to mask_list and mask_dictionary
+            # Append data to mask_list
             mask_list.append(new_mask_data)
-            mask_dictionary_list = mask_dictionary[mask_2d.name]
-            mask_dictionary_list.append(value)
-            mask_dictionary[mask_2d.name] = mask_dictionary_list
+        # Concat mask list together to make 3d mask
         mask_3d = xr.concat(mask_list, dim=region_ids)
-        mask_3d = mask_3d.rename({"concat_dim": "region_id"})
         return mask_3d
     else:
         warnings.warn(
@@ -61,7 +55,9 @@ def convert_mask_2d_to_3d(mask_2d: DataArray) -> Union[Dataset, None]:
         return None
 
 
-def convert_mask_3d_to_2d(mask_3d: Dataset) -> Union[DataArray, None]:
+def convert_mask_3d_to_2d(
+    mask_3d: Dataset, processes: int = 4
+) -> Union[DataArray, None]:
     """
     Convert 3D one-hot encoded mask data into its 2D multi-labeled form.
 
@@ -73,6 +69,8 @@ def convert_mask_3d_to_2d(mask_3d: Dataset) -> Union[DataArray, None]:
         the individual label layers of the 3D mask to an integer label in the 2D mask.
         The 3D DataArray will be in the form of 1s/0s: masked areas, and
         non-masked areas.
+    processes : int
+        Number of threads to run checking overlap with.
 
     Returns
     -------
@@ -81,12 +79,16 @@ def convert_mask_3d_to_2d(mask_3d: Dataset) -> Union[DataArray, None]:
         be in the form of integer, demarking labels of masked regions, and nan values,
         demarking non-masked areas.
     """
+
     # Get region_ids from the 3D Mask
     region_ids = list(mask_3d.region_id)
 
     # Check if there is overlap between layers.
     # TODO For now, overlap between layers will not be allowed.
     # Allowing overlapping layers can be explored in later development.
+    # TODO This code is also extremely slow. It is an O(n^2) operation that
+    # can be parallelized due to the index operations being independent to
+    # one another.
     if len(region_ids) > 1:
         non_zero_indices_list = [
             np.transpose(np.nonzero(np_mask)) for np_mask in mask_3d.data
@@ -116,6 +118,9 @@ def convert_mask_3d_to_2d(mask_3d: Dataset) -> Union[DataArray, None]:
             else:
                 mask_2d = label_layer + mask_2d
         mask_2d = xr.where(mask_2d == 0.0, np.nan, mask_2d)
+        # Drop region_id coordinate if it exists
+        if "region_id" in mask_2d.coords:
+            mask_2d = mask_2d.drop_vars(["region_id"])
         return mask_2d
     else:
         warnings.warn(

@@ -579,6 +579,54 @@ def test_mask_3d_2d_3d_2d(
     mask_2d_2nd.equals(mask_2d)
 
 
+@pytest.mark.regions2d
+@pytest.mark.test
+def test_one_label_mask_3d_2d_3d_2d(
+    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
+) -> None:
+    """
+    Testing if converting 3d-2d-3d-2d masks works for 1 label mask.
+
+    Parameters
+    ----------
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
+    """
+
+    # Create 3d mask
+    mask_3d = regions2d_fixture.mask(da_Sv_fixture, [18.0])
+
+    # Check mask region_id values
+    assert (mask_3d.region_id.values == [18]).all()
+    assert (
+        np.unique(mask_3d.isel(region_id=0).data, return_counts=True)[1][0] == 3520945
+    )
+    assert (
+        np.unique(mask_3d.isel(region_id=0).data, return_counts=True)[1][1] == 3127410
+    )
+
+    # Convert 2d mask to 3d mask
+    mask_2d = er.convert_mask_3d_to_2d(mask_3d)
+
+    # Check mask_2d values and counts
+    mask_2d_values = np.unique(mask_2d.data, return_counts=True)[0]
+    mask_2d_counts = np.unique(mask_2d.data, return_counts=True)[1]
+    assert mask_2d_values[0] == 18
+    assert np.isnan(mask_2d_values[1])
+    assert mask_2d_counts[0] == 3127410
+    assert mask_2d_counts[1] == 3520945
+
+    # Convert 2d mask to 3d mask and test for equality with previous 3d mask
+    mask_3d_2nd = er.convert_mask_2d_to_3d(mask_2d)
+    mask_3d_2nd.equals(mask_3d)
+
+    # Convert 2nd 3d mask to 2d mask and test for equality with previous 2d mask
+    mask_2d_2nd = er.convert_mask_3d_to_2d(mask_3d)
+    mask_2d_2nd.equals(mask_2d)
+
+
 @pytest.mark.filterwarnings("ignore:No gridpoint belongs to any region")
 @pytest.mark.filterwarnings("ignore:Returning No Mask")
 @pytest.mark.regions2d
@@ -623,49 +671,7 @@ def test_nan_mask_3d_2d_and_2d_3d(
 
 
 @pytest.mark.regions2d
-def test_one_label_mask_2d_3d_2d_3d(
-    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
-) -> None:
-    """
-    Testing if converting 2d-3d-2d-3d masks works for 1 label mask.
-
-    Parameters
-    ----------
-    regions2d_fixture : Regions2D
-        Object containing data of test EVR file.
-    da_Sv_fixture : DataArray
-        DataArray containing Sv data of test zarr file.
-    """
-
-    # Extract region_ids
-    region_ids = regions2d_fixture.data.region_id.astype(float).to_list()
-
-    # Create mask
-    M = regions2d_fixture.mask(da_Sv_fixture, region_ids)
-
-    # Remove 18.0 from mask
-    M = xr.where(M == 18.0, np.nan, M)
-
-    # Test values of 2D Mask
-    M_values = M.values
-    assert set(np.unique(M_values[~np.isnan(M_values)])) == {13.0}
-    assert M.shape == (3955, 1681)
-
-    # Test values from converted 3D array (previous 2D array)
-    mask_3d_ds = er.convert_mask_2d_to_3d(M)
-    assert list(mask_3d_ds.mask_dictionary) == [13.0]
-    assert mask_3d_ds.mask_3d.shape == (1, 3955, 1681)
-
-    # Test values from converted 2D array (previously 3D array)
-    mask_2d_da = er.convert_mask_3d_to_2d(mask_3d_ds)
-    assert mask_2d_da.equals(M)
-
-    # Test values from 3D array (previously 2D array)
-    second_mask_3d_ds = er.convert_mask_2d_to_3d(mask_2d_da)
-    assert second_mask_3d_ds.equals(mask_3d_ds)
-
-
-@pytest.mark.regions2d
+@pytest.mark.test
 def test_overlapping_mask_3d_2d(
     regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
 ) -> None:
@@ -683,20 +689,16 @@ def test_overlapping_mask_3d_2d(
     # Extract region_ids
     region_ids = regions2d_fixture.data.region_id.astype(int).to_list()
 
-    # Create mask
-    M = regions2d_fixture.mask(da_Sv_fixture, region_ids)
+    # Create 3d mask
+    mask_3d = regions2d_fixture.mask(da_Sv_fixture, region_ids)
 
-    # Test values from converted 3D array (previous 2D array)
-    mask_3d_ds = er.convert_mask_2d_to_3d(M)
-    assert mask_3d_ds.mask_3d.shape == (1, 3955, 1681)
-    assert list(mask_3d_ds.mask_dictionary) == [18]
-
-    # Turn first (0th index) array into all 1s to guarantee overlap
-    mask_3d_ds.mask_3d[0] = xr.ones_like(mask_3d_ds.mask_3d[0])
+    # Turn first (0th index) array corresponding to region id 13 into all 1s
+    # to guarantee overlap with array corresponding to region id 18
+    mask_3d[0] = xr.ones_like(mask_3d[0])
 
     # Trying to convert 3d mask to 2d should raise ValueError
     with pytest.raises(ValueError):
-        er.convert_mask_3d_to_2d(mask_3d_ds)
+        er.convert_mask_3d_to_2d(mask_3d)
 
 
 @pytest.mark.regions2d
