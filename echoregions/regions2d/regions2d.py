@@ -209,12 +209,12 @@ class Regions2D:
                 )
         return region
 
-    def close_region(self, region_ids: List = None) -> DataFrame:
+    def close_region(self, region_id: List = None) -> DataFrame:
         """Close a region by appending the first point to end of the list of points.
 
         Parameters
         ----------
-        region_ids : List, ``None``
+        region_id : List, ``None``
             region(s) to select raw files with
             If ``None``, select all regions. Defaults to ``None``
 
@@ -223,7 +223,7 @@ class Regions2D:
         DataFrame
             Returns a new DataFrame with closed regions
         """
-        region = self.select_region(region_ids, copy=True)
+        region = self.select_region(region_id, copy=True)
         region["time"] = region.apply(
             lambda row: np.append(row["time"], row["time"][0]), axis=1
         )
@@ -337,7 +337,7 @@ class Regions2D:
 
     def plot(
         self,
-        region_ids: List = None,
+        region_id: List = None,
         close_regions: bool = False,
         **kwargs,
     ) -> None:
@@ -346,7 +346,7 @@ class Regions2D:
 
         Parameters
         ---------
-        region_ids : List, ``None``
+        region_id : List, ``None``
             Region(s) to select raw files with
             If ``None``, select all regions. Defaults to ``None``
         close_region : bool
@@ -356,7 +356,7 @@ class Regions2D:
         """
 
         # Ensure that region is a DataFrame
-        region = self.select_region(region_ids)
+        region = self.select_region(region_id)
 
         if close_regions:
             region = self.close_region(region)
@@ -366,7 +366,7 @@ class Regions2D:
     def mask(
         self,
         da_Sv: DataArray,
-        region_ids: List,
+        region_id: List,
         mask_name: str = None,
     ) -> Optional[DataArray]:
         """Mask data from Data Array containing Sv data based off of a Regions2D object
@@ -376,7 +376,7 @@ class Regions2D:
         ----------
         da_Sv : Data Array
             DataArray of shape (ping_time, depth) containing Sv data.
-        region_ids : list
+        region_id : list
             list IDs of regions to create mask for
         mask_name : str
             If provided, used to name the output mask array, otherwise `mask`
@@ -389,16 +389,16 @@ class Regions2D:
             The slices of the 3d array will be in the form of 1s/0s: masked areas, and
             non-masked areas.
         """
-        if isinstance(region_ids, list):
-            if len(region_ids) == 0:
-                raise ValueError("region_ids is empty. Cannot be empty.")
+        if isinstance(region_id, list):
+            if len(region_id) == 0:
+                raise ValueError("region_id is empty. Cannot be empty.")
         else:
             raise TypeError(
-                f"region_ids must be of type list. Currently is of type {type(region_ids)}"
+                f"region_id must be of type list. Currently is of type {type(region_id)}"
             )
 
         # Dataframe containing region information.
-        region_df = self.select_region(region_ids)
+        region_df = self.select_region(region_id)
 
         # Select only important columns
         region_df = region_df[["region_id", "time", "depth"]]
@@ -433,7 +433,7 @@ class Regions2D:
             regions_np = [np.array(region[["time", "depth"]]) for _, region in grouped]
 
             # Corresponding region ids converted to int.
-            filtered_region_ids = [int(id) for id, _ in grouped]
+            filtered_region_id = [int(id) for id, _ in grouped]
 
             # Convert ping_time to unix_time since the masking does not work on datetime objects.
             da_Sv = da_Sv.assign_coords(
@@ -445,7 +445,7 @@ class Regions2D:
 
             # Create mask
             r = regionmask.Regions(
-                outlines=regions_np, names=filtered_region_ids, name=mask_name
+                outlines=regions_np, names=filtered_region_id, name=mask_name
             )
             mask_3d = r.mask_3D(
                 da_Sv["unix_time"],

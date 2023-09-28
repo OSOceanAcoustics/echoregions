@@ -1,5 +1,4 @@
 import warnings
-from multiprocessing import Pool
 from typing import List, Union
 
 import numpy as np
@@ -8,6 +7,7 @@ from xarray import DataArray, Dataset
 
 from ..regions2d.regions2d import Regions2D
 
+
 def convert_mask_2d_to_3d(mask_2d: DataArray) -> Union[Dataset, None]:
     """
     Convert 2D multi-labeled mask data into its 3D one-hot encoded form.
@@ -15,8 +15,8 @@ def convert_mask_2d_to_3d(mask_2d: DataArray) -> Union[Dataset, None]:
     Parameters
     ----------
     mask_2d: DataArray
-        A DataArray with the data_var masked by a specified region. Individual data 
-        points will be in the form of integers, demarking region_ids of masked regions,
+        A DataArray with the data_var masked by a specified region. Individual data
+        points will be in the form of integers, demarking region_id of masked regions,
         and nan values, demarking non-masked areas.
 
     Returns
@@ -27,20 +27,20 @@ def convert_mask_2d_to_3d(mask_2d: DataArray) -> Union[Dataset, None]:
         extracted from 2d values.
     """
     # Get unique non nan values from the 2d mask
-    region_ids = list(np.unique(mask_2d.data[~np.isnan(mask_2d.data)]))
+    region_id = list(np.unique(mask_2d.data[~np.isnan(mask_2d.data)]))
 
     # Create a list of mask objects from one-hot encoding M.data non-nan values
     # and a dictionary to remember said values from one-hot encoded data arrays.
     # If unique_non_nan is None, make mask_dictionary None.
-    if len(region_ids) > 0:
+    if len(region_id) > 0:
         mask_list = []
-        for _, value in enumerate(region_ids):
+        for _, value in enumerate(region_id):
             # Create new 1d mask
             new_mask_data = xr.where(mask_2d == value, 1.0, 0.0)
             # Append data to mask_list
             mask_list.append(new_mask_data)
         # Concat mask list together to make 3d mask
-        mask_3d = xr.concat(mask_list, dim=region_ids)
+        mask_3d = xr.concat(mask_list, dim=region_id)
         return mask_3d
     else:
         warnings.warn(
@@ -50,9 +50,7 @@ def convert_mask_2d_to_3d(mask_2d: DataArray) -> Union[Dataset, None]:
         return None
 
 
-def convert_mask_3d_to_2d(
-    mask_3d: Dataset
-) -> Union[DataArray, None]:
+def convert_mask_3d_to_2d(mask_3d: Dataset) -> Union[DataArray, None]:
     """
     Convert 3D one-hot encoded mask data into its 2D multi-labeled form.
 
@@ -67,19 +65,19 @@ def convert_mask_3d_to_2d(
     Returns
     -------
     mask_2d: DataArray
-        A DataArray with the data_var masked by a specified region. Individual data 
-        points will be in the form of integers, demarking region_ids of masked regions,
+        A DataArray with the data_var masked by a specified region. Individual data
+        points will be in the form of integers, demarking region_id of masked regions,
         and nan values, demarking non-masked areas.
     """
 
-    # Get region_ids from the 3D Mask
-    region_ids = list(mask_3d.region_id)
+    # Get region_id from the 3D Mask
+    region_id = list(mask_3d.region_id)
 
     # Check if there is overlap between layers.
     # TODO This code is also extremely slow. It is an O(n^2) operation that
     # can be parallelized due to the index operations being independent to
     # one another.
-    if len(region_ids) > 1:
+    if len(region_id) > 1:
         non_zero_indices_list = [
             np.transpose(np.nonzero(np_mask)) for np_mask in mask_3d.data
         ]
@@ -96,11 +94,11 @@ def convert_mask_3d_to_2d(
                             " Overlapping values are not allowed."
                         )
 
-    if len(region_ids) > 0:
+    if len(region_id) > 0:
         # Iterate through 3D array layers and set 1.0 to associated label values
         # dependent on which layer is being worked on and create append layers to
         # form 2D mask array.
-        for index, label_value in enumerate(region_ids):
+        for index, label_value in enumerate(region_id):
             label_layer = mask_3d[index]
             label_layer = xr.where(label_layer == 1.0, label_value, 0.0)
             if index == 0:
@@ -156,7 +154,7 @@ def merge(objects: List[Regions2D], reindex_ids: bool = False) -> Regions2D:
         else:
             merged_idx += [
                 f"{regions.data['metadata']['file_name']}_{r}"
-                for r in regions.region_ids
+                for r in regions.region_id
             ]
     # Attach region information to region ids
     merged = dict(zip(merged_idx, merged_data))

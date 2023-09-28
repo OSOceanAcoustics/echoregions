@@ -481,17 +481,17 @@ def test_mask_correct_labels(
     """
 
     # Extract Region IDs and convert to Python float values
-    region_ids = regions2d_fixture.data.region_id.astype(int).to_list()
+    region_id = regions2d_fixture.data.region_id.astype(int).to_list()
 
     # Create mask.
     mask_3d = regions2d_fixture.mask(
-        da_Sv_fixture.isel(channel=0), region_ids=region_ids, mask_name="mask"
+        da_Sv_fixture.isel(channel=0), region_id=region_id, mask_name="mask"
     )
 
     # Check that the mask's region_id values match the expected masked regions
-    mask_3d_region_ids = mask_3d.region_id
-    assert mask_3d_region_ids[0] == 13
-    assert mask_3d_region_ids[1] == 18
+    mask_3d_region_id = mask_3d.region_id
+    assert mask_3d_region_id[0] == 13
+    assert mask_3d_region_id[1] == 18
 
 
 @pytest.mark.regions2d
@@ -535,10 +535,10 @@ def test_mask_3d_2d_3d_2d(
     """
 
     # Extract region_id
-    region_ids = regions2d_fixture.data.region_id.astype(int).to_list()
+    region_id = regions2d_fixture.data.region_id.astype(int).to_list()
 
     # Create mask
-    mask_3d = regions2d_fixture.mask(da_Sv_fixture, region_ids)
+    mask_3d = regions2d_fixture.mask(da_Sv_fixture, region_id)
 
     # Check mask region_id values
     assert (mask_3d.region_id.values == [13, 18]).all()
@@ -679,11 +679,11 @@ def test_overlapping_mask_3d_2d(
         DataArray containing Sv data of test zarr file.
     """
 
-    # Extract region_ids
-    region_ids = regions2d_fixture.data.region_id.astype(int).to_list()
+    # Extract region_id
+    region_id = regions2d_fixture.data.region_id.astype(int).to_list()
 
     # Create 3d mask
-    mask_3d = regions2d_fixture.mask(da_Sv_fixture, region_ids)
+    mask_3d = regions2d_fixture.mask(da_Sv_fixture, region_id)
 
     # Turn first (0th index) array corresponding to region id 13 into all 1s
     # to guarantee overlap with array corresponding to region id 18
