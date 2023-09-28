@@ -533,12 +533,8 @@ def test_mask_3d_2d_3d_2d(
     da_Sv_fixture : DataArray
         DataArray containing Sv data of test zarr file.
     """
-
-    # Extract region_id
-    region_id = regions2d_fixture.data.region_id.astype(int).to_list()
-
     # Create mask
-    mask_3d = regions2d_fixture.mask(da_Sv_fixture, region_id)
+    mask_3d = regions2d_fixture.mask(da_Sv_fixture)
 
     # Check mask region_id values
     assert (mask_3d.region_id.values == [13, 18]).all()

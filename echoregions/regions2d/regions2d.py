@@ -366,7 +366,7 @@ class Regions2D:
     def mask(
         self,
         da_Sv: DataArray,
-        region_id: List,
+        region_id: List = None,
         mask_name: str = None,
     ) -> Optional[DataArray]:
         """Mask data from Data Array containing Sv data based off of a Regions2D object
@@ -392,6 +392,9 @@ class Regions2D:
         if isinstance(region_id, list):
             if len(region_id) == 0:
                 raise ValueError("region_id is empty. Cannot be empty.")
+        elif region_id is None:
+            # Extract all region_id values
+            region_id = self.data.region_id.astype(int).to_list()
         else:
             raise TypeError(
                 f"region_id must be of type list. Currently is of type {type(region_id)}"
