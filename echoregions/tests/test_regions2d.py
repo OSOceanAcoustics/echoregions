@@ -587,7 +587,7 @@ def test_nan_mask_3d_2d_and_2d_3d(
     regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
 ) -> None:
     """
-    Testing if converting 2d-3d-2d-3d masks works for nan mask.
+    Testing if both converting functions returns none for empty mask inputs.
 
     Parameters
     ----------
@@ -601,7 +601,6 @@ def test_nan_mask_3d_2d_and_2d_3d(
     mask_3d = regions2d_fixture.mask(da_Sv_fixture, [8, 9, 10])
 
     # Check if mask is null/empty
-    assert isinstance(mask_3d, DataArray)
     assert mask_3d.isnull().all()
 
     # Attempt to convert empty 3d mask to 2d mask
@@ -615,6 +614,11 @@ def test_nan_mask_3d_2d_and_2d_3d(
         coords={"depth": depth_values, "ping_time": ping_time_values},
         dims=["depth", "ping_time"],
     )
+
+    # Check if mask is null/empty
+    assert mask_2d.isnull().all()
+
+    # Attempt to convert empty 2d mask to 3d mask
     assert er.convert_mask_2d_to_3d(mask_2d) is None
 
 
