@@ -91,10 +91,10 @@ class Regions2D:
         ----------
         region_id : float, int, str, list, ``None``
             A region id provided as a number, a string, or list of these.
-        time_range: List of 2 Pandas Timestamps.
+        time_range : List of 2 Pandas Timestamps.
             Datetime range for expected output of subselected DataFrame. 1st
             index value must be later than 0th index value.
-        depth_range: List of 2 floats.
+        depth_range : List of 2 floats.
             Depth range for expected output of subselected DataFrame. 1st
             index value must be larger than 0th index value.
         copy : bool
@@ -383,7 +383,11 @@ class Regions2D:
 
         Returns
         -------
-        A DataArray with the data_var masked by the specified region.
+        mask_3d : Data Array
+            A 3D mask where each layer of the mask will contain a 1s/0s mask for each
+            unique label in the 2D mask. The layers will be labeled via region_id values.
+            The slices of the 3d array will be in the form of 1s/0s: masked areas, and
+            non-masked areas.
         """
         if isinstance(region_ids, list):
             if len(region_ids) == 0:
@@ -501,6 +505,7 @@ class Regions2D:
         bbox_distance_threshold: float
             The maximum value for how far apart the left and right bounding box for each transect
             value region. Default is set to 1 minute.
+
         Returns
         -------
         M : Data Array

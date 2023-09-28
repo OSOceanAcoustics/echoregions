@@ -15,21 +15,16 @@ def convert_mask_2d_to_3d(mask_2d: DataArray) -> Union[Dataset, None]:
     Parameters
     ----------
     mask_2d: DataArray
-        A DataArray with the data_var masked by a specified region. This data will
-        be in the form of integer, demarking labels of masked regions, and nan values,
-        demarking non-masked areas.
+        A DataArray with the data_var masked by a specified region. Individual data 
+        points will be in the form of integers, demarking region_ids of masked regions,
+        and nan values, demarking non-masked areas.
 
     Returns
     -------
-    mask_3d : DataArray
-        A 3D DataArray/mask and each layer of the 3D mask will contain a 1s/0s mask for each
-        unique label in the 2D mask. The layers will be labeled via region_id values, extracted
-        from 2d values.
-
-    Notes
-    -----
-    Emtpy dictionary data of mask_3d_ds means that there exists no masked
-    values.
+    mask_3d : Data Array
+        A 3D mask where each layer of the mask will contain a 1s/0s mask for each
+        unique label in the 2D mask. The layers will be labeled via region_id values
+        extracted from 2d values.
     """
     # Get unique non nan values from the 2d mask
     region_ids = list(np.unique(mask_2d.data[~np.isnan(mask_2d.data)]))
@@ -56,7 +51,7 @@ def convert_mask_2d_to_3d(mask_2d: DataArray) -> Union[Dataset, None]:
 
 
 def convert_mask_3d_to_2d(
-    mask_3d: Dataset, processes: int = 4
+    mask_3d: Dataset
 ) -> Union[DataArray, None]:
     """
     Convert 3D one-hot encoded mask data into its 2D multi-labeled form.
@@ -64,28 +59,23 @@ def convert_mask_3d_to_2d(
     Parameters
     ----------
     mask_3d : DataArray
-        A Dataset with a 3D DataArray with the data_var masked by the specified
-        region in one-hot encoded form and a dictionary that will be used to map
-        the individual label layers of the 3D mask to an integer label in the 2D mask.
-        The 3D DataArray will be in the form of 1s/0s: masked areas, and
+        A 3D mask where each layer of the mask will contain a 1s/0s mask for each
+        unique label in the 2D mask. The layers will be labeled via region_id values.
+        The slices of the 3d array will be in the form of 1s/0s: masked areas, and
         non-masked areas.
-    processes : int
-        Number of threads to run checking overlap with.
 
     Returns
     -------
     mask_2d: DataArray
-        A DataArray with the data_var masked by a specified region. This data will
-        be in the form of integer, demarking labels of masked regions, and nan values,
-        demarking non-masked areas.
+        A DataArray with the data_var masked by a specified region. Individual data 
+        points will be in the form of integers, demarking region_ids of masked regions,
+        and nan values, demarking non-masked areas.
     """
 
     # Get region_ids from the 3D Mask
     region_ids = list(mask_3d.region_id)
 
     # Check if there is overlap between layers.
-    # TODO For now, overlap between layers will not be allowed.
-    # Allowing overlapping layers can be explored in later development.
     # TODO This code is also extremely slow. It is an O(n^2) operation that
     # can be parallelized due to the index operations being independent to
     # one another.

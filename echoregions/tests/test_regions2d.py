@@ -127,7 +127,7 @@ def test_regions2d_parsing(regions2d_fixture: Regions2D) -> None:
     assert df_r2d.shape == (19, 22)
 
     # Check individual values of specific row
-    assert df_r2d.loc[4]["file_name"] == "transect.evr"
+    assert df_r2d.loc[4]["file_name"] == "transect_multi_mask.evr"
     assert df_r2d.loc[4]["file_type"] == "EVRG"
     assert df_r2d.loc[4]["evr_file_format_number"] == "7"
     assert df_r2d.loc[4]["echoview_version"] == "13.0.378.44817"
@@ -439,7 +439,6 @@ def test_select_type_error(regions2d_fixture: Regions2D) -> None:
 
 @pytest.mark.filterwarnings("ignore:No gridpoint belongs to any region.")
 @pytest.mark.regions2d
-@pytest.mark.test
 def test_mask_emtpy_no_overlap(
     regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
 ) -> None:
@@ -467,7 +466,6 @@ def test_mask_emtpy_no_overlap(
 
 
 @pytest.mark.regions2d
-@pytest.mark.test
 def test_mask_correct_labels(
     regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
 ) -> None:
@@ -497,7 +495,6 @@ def test_mask_correct_labels(
 
 
 @pytest.mark.regions2d
-@pytest.mark.test
 def test_mask_type_error(
     regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
 ) -> None:
@@ -523,7 +520,6 @@ def test_mask_type_error(
 
 
 @pytest.mark.regions2d
-@pytest.mark.test
 def test_mask_3d_2d_3d_2d(
     regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
 ) -> None:
@@ -580,7 +576,6 @@ def test_mask_3d_2d_3d_2d(
 
 
 @pytest.mark.regions2d
-@pytest.mark.test
 def test_one_label_mask_3d_2d_3d_2d(
     regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
 ) -> None:
@@ -630,7 +625,6 @@ def test_one_label_mask_3d_2d_3d_2d(
 @pytest.mark.filterwarnings("ignore:No gridpoint belongs to any region")
 @pytest.mark.filterwarnings("ignore:Returning No Mask")
 @pytest.mark.regions2d
-@pytest.mark.test
 def test_nan_mask_3d_2d_and_2d_3d(
     regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
 ) -> None:
@@ -671,7 +665,6 @@ def test_nan_mask_3d_2d_and_2d_3d(
 
 
 @pytest.mark.regions2d
-@pytest.mark.test
 def test_overlapping_mask_3d_2d(
     regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
 ) -> None:
