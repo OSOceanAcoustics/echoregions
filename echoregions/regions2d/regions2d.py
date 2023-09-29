@@ -434,22 +434,25 @@ class Regions2D:
         # Select only important columns
         region_df = region_df[["region_id", "time", "depth"]]
 
-        # Filter rows with depth values within self min and self max depth
+        # Filter for rows with depth values within self min and self max depth and
+        # for rows that have positive depth.
         region_df = region_df[
             (
                 (
                     region_df["depth"].apply(
-                        lambda x: all(self.min_depth <= i <= self.max_depth for i in x)
+                        lambda x: all(
+                            (i >= np.max(0, self.min_depth) and i <= self.max_depth)
+                            for i in x
+                        )
                     )
                 )
-                & (region_df["depth"].apply(lambda x: all(i >= 0 for i in x)))
             )
         ]
 
         if region_df.empty:
             print(
-                "All rows in has NaN Depth values after filtering depth between "
-                "min_depth and max_depth."
+                "All rows in Regions DataFrame have NaN Depth values after filtering depth "
+                "between min_depth and max_depth."
             )
         else:
             # Organize the regions in a format for region mask.
