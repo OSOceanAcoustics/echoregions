@@ -372,7 +372,8 @@ class Regions2D:
         mask_labels: dict = None,
         collapse_to_2d: bool = False,
     ) -> Optional[Dataset]:
-        """Mask data from Data Array containing Sv data based off of a Regions2D object
+        """
+        Mask data from Data Array containing Sv data based off of a Regions2D object
         and its regions ids.
 
         Parameters
@@ -390,7 +391,7 @@ class Regions2D:
 
         Returns
         -------
-        Dataset
+        mask_ds : Dataset
             Either a 3D mask or a 2D mask based on the conditions below.
             If collapse_to_2d is False:
                 A 3D mask where each layer of the mask will contain a 1s/0s mask for each
@@ -401,6 +402,7 @@ class Regions2D:
                 A 2D mask where each individual data points will be in the form of integers,
                 demarking region_id of masked regions, and nan values, demarking non-masked
                 areas.
+            Also contains a DataArray with mask labels corresponding to region_id values.
 
         """
         if isinstance(region_id, list):

@@ -667,28 +667,29 @@ def test_nan_mask_3d_2d_and_2d_3d(
     """
 
     # Create 3d mask
-    mask_3d = regions2d_fixture.mask(da_Sv_fixture, [8, 9, 10])
+    mask_3d_ds = regions2d_fixture.mask(da_Sv_fixture, [8, 9, 10])
 
     # Check if mask is null/empty
-    assert mask_3d.isnull().all()
+    assert mask_3d_ds.mask_3d.isnull().all()
 
     # Attempt to convert empty 3d mask to 2d mask
-    assert er.convert_mask_3d_to_2d(mask_3d) is None
+    assert er.convert_mask_3d_to_2d(mask_3d_ds) is None
 
     # Create emtpy 2d mask with None values
     depth_values = [9.15, 9.34, 9.529, 9.719, 758.5]
     ping_time_values = ["2019-07-02T18:40:00", "2019-07-02T19:00:00"]
-    mask_2d = xr.DataArray(
+    mask_2d_ds = xr.Dataset()
+    mask_2d_ds["mask_2d"] = xr.DataArray(
         np.full((len(depth_values), len(ping_time_values)), np.nan),
         coords={"depth": depth_values, "ping_time": ping_time_values},
         dims=["depth", "ping_time"],
     )
 
     # Check if mask is null/empty
-    assert mask_2d.isnull().all()
+    assert mask_2d_ds.mask_2d.isnull().all()
 
     # Attempt to convert empty 2d mask to 3d mask
-    assert er.convert_mask_2d_to_3d(mask_2d) is None
+    assert er.convert_mask_2d_to_3d(mask_2d_ds) is None
 
 
 @pytest.mark.regions2d
@@ -710,15 +711,15 @@ def test_overlapping_mask_3d_2d(
     region_id = regions2d_fixture.data.region_id.astype(int).to_list()
 
     # Create 3d mask
-    mask_3d = regions2d_fixture.mask(da_Sv_fixture, region_id)
+    mask_3d_ds = regions2d_fixture.mask(da_Sv_fixture, region_id)
 
     # Turn first (0th index) array corresponding to region id 13 into all 1s
     # to guarantee overlap with array corresponding to region id 18
-    mask_3d[0] = xr.ones_like(mask_3d[0])
+    mask_3d_ds["mask_3d"] = xr.concat([xr.ones_like(mask_3d_ds.mask_3d[0])], dim="region_id")
 
     # Trying to convert 3d mask to 2d should raise ValueError
     with pytest.raises(ValueError):
-        er.convert_mask_3d_to_2d(mask_3d)
+        er.convert_mask_3d_to_2d(mask_3d_ds)
 
 
 @pytest.mark.regions2d

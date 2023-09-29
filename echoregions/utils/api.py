@@ -12,7 +12,7 @@ def convert_mask_2d_to_3d(mask_2d_ds: Dataset) -> Union[Dataset, None]:
 
     Parameters
     ----------
-    mask_2d_ds: DataArray
+    mask_2d_ds : Dataset
         A dataset with the following:
             DataArray with the data_var masked by a specified region. Individual data
             points will be in the form of integers, demarking region_id of masked regions,
@@ -21,7 +21,7 @@ def convert_mask_2d_to_3d(mask_2d_ds: Dataset) -> Union[Dataset, None]:
 
     Returns
     -------
-    mask_3d_ds : Data Array
+    mask_3d_ds : Dataset
         A dataset with the following:
             A DataArray 3D mask where each layer of the mask will contain a 1s/0s mask for
             each unique label in the 2D mask. The layers will be labeled via region_id
@@ -70,18 +70,21 @@ def convert_mask_3d_to_2d(mask_3d_ds: Dataset) -> Union[Dataset, None]:
 
     Parameters
     ----------
-    mask_3d : DataArray
-        A 3D mask where each layer of the mask will contain a 1s/0s mask for each
-        unique label in the 2D mask. The layers will be labeled via region_id values.
-        The slices of the 3d array will be in the form of 1s/0s: masked areas, and
-        non-masked areas.
+    mask_3d_ds : Dataset
+        A dataset with the following:
+            A DataArray 3D mask where each layer of the mask will contain a 1s/0s mask for
+            each unique label in the 2D mask. The layers will be labeled via region_id
+            values extracted from 2d values.
+            DataArray with mask labels corresponding to region_id values.
 
     Returns
     -------
-    mask_2d: DataArray
-        A DataArray with the data_var masked by a specified region. Individual data
-        points will be in the form of integers, demarking region_id of masked regions,
-        and nan values, demarking non-masked areas.
+    mask_2d_ds : Dataset
+        A dataset with the following:
+            DataArray with the data_var masked by a specified region. Individual data
+            points will be in the form of integers, demarking region_id of masked regions,
+            and nan values, demarking non-masked areas.
+            DataArray with mask labels corresponding to region_id values.
     """
     # Check if 'mask_2d' exists as a data variable
     if "mask_3d" not in mask_3d_ds:
