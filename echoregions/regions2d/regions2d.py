@@ -435,7 +435,7 @@ class Regions2D:
             # Convert to list of numpy arrays which is an acceptable format to create region mask.
             regions_np = [np.array(region[["time", "depth"]]) for _, region in grouped]
 
-            # Corresponding region ids converted to int.
+            # Convert corresponding region_id to int.
             filtered_region_id = [int(id) for id, _ in grouped]
 
             # Convert ping_time to unix_time since the masking does not work on datetime objects.
