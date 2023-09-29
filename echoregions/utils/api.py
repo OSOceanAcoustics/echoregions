@@ -98,9 +98,7 @@ def convert_mask_3d_to_2d(mask_3d_ds: Dataset) -> DataArray:
     # TODO For now, overlap between layers will not be allowed.
     # Allowing overlapping layers can be explored in later development.
     if len(unique_non_nan) > 1:
-        non_zero_indices_list = [
-            np.transpose(np.nonzero(np_mask)) for np_mask in mask_3d_da.data
-        ]
+        non_zero_indices_list = [np.transpose(np.nonzero(np_mask)) for np_mask in mask_3d_da.data]
         for index_main, non_zero_indices_main in enumerate(non_zero_indices_list):
             main_set = set([tuple(x) for x in non_zero_indices_main])
             for index_sub, non_zero_indices_sub in enumerate(non_zero_indices_list):
@@ -153,9 +151,7 @@ def merge(objects: List[Regions2D], reindex_ids: bool = False) -> Regions2D:
         if not all(isinstance(o, Regions2D) for o in objects):
             raise TypeError("Invalid elements in objects. Must be of type Regions2D")
     else:
-        raise TypeError(
-            f"Invalid objects Type: {type(objects)}. Must be of type List[DataFrame]"
-        )
+        raise TypeError(f"Invalid objects Type: {type(objects)}. Must be of type List[DataFrame]")
 
     merged_idx = []
     merged_data = []
@@ -167,8 +163,7 @@ def merge(objects: List[Regions2D], reindex_ids: bool = False) -> Regions2D:
             merged_idx += list(range(len(regions.data["regions"])))
         else:
             merged_idx += [
-                f"{regions.data['metadata']['file_name']}_{r}"
-                for r in regions.region_ids
+                f"{regions.data['metadata']['file_name']}_{r}" for r in regions.region_ids
             ]
     # Attach region information to region ids
     merged = dict(zip(merged_idx, merged_data))
@@ -178,9 +173,7 @@ def merge(objects: List[Regions2D], reindex_ids: bool = False) -> Regions2D:
     merged_obj.data["metadata"] = objects[0].data["metadata"]
     # Combine metadata of all Regions2D objects
     for field in objects[0].data["metadata"].keys():
-        merged_obj.data["metadata"][field] = [
-            o.data["metadata"][field] for o in objects
-        ]
+        merged_obj.data["metadata"][field] = [o.data["metadata"][field] for o in objects]
     # Set region data
     merged_obj.data["regions"] = merged
     return merged_obj

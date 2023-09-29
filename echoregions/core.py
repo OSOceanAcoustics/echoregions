@@ -2,9 +2,7 @@ from .lines.lines import Lines
 from .regions2d.regions2d import Regions2D
 
 
-def read_evr(
-    filepath: str, min_depth: float = None, max_depth: float = None
-) -> Regions2D:
+def read_evr(filepath: str, min_depth: float = None, max_depth: float = None) -> Regions2D:
     """Read an EVR file into a Regions2D object.
 
     Parameters

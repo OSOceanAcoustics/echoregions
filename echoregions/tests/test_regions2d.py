@@ -136,12 +136,8 @@ def test_regions2d_parsing(regions2d_fixture: Regions2D) -> None:
     assert df_r2d.loc[4]["region_name"] == "ST22"
     assert df_r2d.loc[4]["region_class"] == "Log"
     assert df_r2d.loc[4]["region_creation_type"] == "6"
-    assert df_r2d.loc[4]["region_bbox_left"] == pd.to_datetime(
-        "2019-07-02 13:14:00.488000"
-    )
-    assert df_r2d.loc[4]["region_bbox_right"] == pd.to_datetime(
-        "2019-07-02 13:14:01.888000"
-    )
+    assert df_r2d.loc[4]["region_bbox_left"] == pd.to_datetime("2019-07-02 13:14:00.488000")
+    assert df_r2d.loc[4]["region_bbox_right"] == pd.to_datetime("2019-07-02 13:14:01.888000")
     assert df_r2d.loc[4]["region_bbox_top"] == -9999.99
     assert df_r2d.loc[4]["region_bbox_bottom"] == 9999.99
     assert df_r2d.loc[4]["region_point_count"] == "4"
@@ -418,9 +414,7 @@ def test_select_region_errors(regions2d_fixture: Regions2D) -> None:
 
 @pytest.mark.filterwarnings("ignore:No gridpoint belongs to any region")
 @pytest.mark.regions2d
-def test_mask_no_overlap(
-    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
-) -> None:
+def test_mask_no_overlap(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Test if mask is empty when there is no overlap.
 
@@ -440,9 +434,7 @@ def test_mask_no_overlap(
 
 
 @pytest.mark.regions2d
-def test_mask_correct_labels(
-    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
-) -> None:
+def test_mask_correct_labels(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Test if the generated id labels are as expected
 
@@ -458,9 +450,7 @@ def test_mask_correct_labels(
     region_ids = regions2d_fixture.data.region_id.astype(float).to_list()
 
     # Create mask.
-    M = regions2d_fixture.mask(
-        da_Sv_fixture.isel(channel=0), region_ids, mask_labels=region_ids
-    )
+    M = regions2d_fixture.mask(da_Sv_fixture.isel(channel=0), region_ids, mask_labels=region_ids)
 
     # Check that the mask's values matches only 13th and 18th region and there exists a nan value
     # and that there exists a point of no overlap (nan value)
@@ -492,9 +482,7 @@ def test_select_type_error(regions2d_fixture: Regions2D) -> None:
 
 
 @pytest.mark.regions2d
-def test_mask_type_error(
-    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
-) -> None:
+def test_mask_type_error(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Tests mask error functionality for regions.
 
@@ -517,9 +505,7 @@ def test_mask_type_error(
 
 
 @pytest.mark.regions2d
-def test_mask_2d_3d_2d_3d(
-    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
-) -> None:
+def test_mask_2d_3d_2d_3d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Testing if converting 2d-3d-2d-3d masks works.
 
@@ -553,9 +539,7 @@ def test_mask_2d_3d_2d_3d(
 
 @pytest.mark.filterwarnings("ignore:No gridpoint belongs to any region")
 @pytest.mark.regions2d
-def test_nan_mask_2d_3d_2d_3d(
-    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
-) -> None:
+def test_nan_mask_2d_3d_2d_3d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Testing if converting 2d-3d-2d-3d masks works for nan mask.
 
@@ -589,9 +573,7 @@ def test_nan_mask_2d_3d_2d_3d(
 
 
 @pytest.mark.regions2d
-def test_one_label_mask_2d_3d_2d_3d(
-    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
-) -> None:
+def test_one_label_mask_2d_3d_2d_3d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Testing if converting 2d-3d-2d-3d masks works for 1 label mask.
 
@@ -632,9 +614,7 @@ def test_one_label_mask_2d_3d_2d_3d(
 
 
 @pytest.mark.regions2d
-def test_overlapping_mask_3d_2d(
-    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
-) -> None:
+def test_overlapping_mask_3d_2d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Testing if converting 3d to 2d with overlapping mask produces error.
 
@@ -666,9 +646,7 @@ def test_overlapping_mask_3d_2d(
 
 
 @pytest.mark.regions2d
-def test_within_transect(
-    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
-) -> None:
+def test_within_transect(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Tests functionality for transect_mask.
 
@@ -682,9 +660,7 @@ def test_within_transect(
 
     # Create transect mask with no errors
     transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
-    M = regions2d_fixture.transect_mask(
-        da_Sv=da_Sv_fixture, transect_dict=transect_dict
-    ).compute()
+    M = regions2d_fixture.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict).compute()
 
     # Check M dimensions
     assert M.shape == (3955, 1681)
@@ -747,9 +723,7 @@ def test_within_transect_bad_dict(da_Sv_fixture: DataArray) -> None:
         "end": "ET",
     }
     with pytest.raises(ValueError):
-        _ = r2d.transect_mask(
-            da_Sv=da_Sv_fixture, transect_dict=transect_dict_duplicate
-        )
+        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict_duplicate)
 
     # Create dictionary with integers
     transect_dict_int = {"start": "ST", "break": "BT", "resume": "RT", "end": 4}
