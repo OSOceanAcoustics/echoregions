@@ -459,7 +459,7 @@ class Regions2D:
             )  # This maps False to 0 and True to 1
 
             # Replace region coords with region_id coords
-            mask_3d = mask_3d.assign_coords(region_id=mask_3d["names"])
+            mask_3d = mask_3d.rename({"names": "region_id"})
             mask_3d = mask_3d.swap_dims({"region": "region_id"})
 
             # Remove all coords other than depth, ping_time, region_id
