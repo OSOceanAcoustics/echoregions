@@ -514,14 +514,14 @@ class Regions2D:
                 coords={"region_id": masked_region_id},
             )
 
-            if collapse_to_2d:
-                # Convert 3d mask to 2d mask
-                mask_da = convert_mask_3d_to_2d(mask_da)
-
             # Create dataset
             mask_ds = xr.Dataset()
-            mask_ds["mask"] = mask_da
             mask_ds["mask_labels"] = mask_labels_da
+            mask_ds["mask_3d"] = mask_da
+
+            if collapse_to_2d:
+                # Convert 3d mask to 2d mask
+                mask_ds = convert_mask_3d_to_2d(mask_ds)
 
             return mask_ds
 
