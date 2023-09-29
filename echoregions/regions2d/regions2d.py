@@ -413,7 +413,7 @@ class Regions2D:
             raise TypeError(
                 f"region_id must be of type list. Currently is of type {type(region_id)}"
             )
-        
+
         if mask_labels is None:
             # Create mask_labels with each region_id as a key and values starting from 0
             mask_labels = {key: idx for idx, key in enumerate(region_id)}
@@ -423,7 +423,8 @@ class Regions2D:
             raise ValueError(
                 "Each region_id' must be a key in 'mask_labels'. "
                 "If you would prefer 0 based indexing as values for mask_labels, leave "
-                "mask_labels as None.")
+                "mask_labels as None."
+            )
 
         # Dataframe containing region information.
         region_df = self.select_region(region_id)
@@ -504,8 +505,14 @@ class Regions2D:
 
             # Set mask_labels_da
             masked_region_id = mask_da.region_id.values.tolist()
-            subset_mask_labels = [mask_labels[key] for key in masked_region_id if key in mask_labels]
-            mask_labels_da = xr.DataArray(subset_mask_labels, dims="region_id", coords={"region_id": masked_region_id})
+            subset_mask_labels = [
+                mask_labels[key] for key in masked_region_id if key in mask_labels
+            ]
+            mask_labels_da = xr.DataArray(
+                subset_mask_labels,
+                dims="region_id",
+                coords={"region_id": masked_region_id},
+            )
 
             if collapse_to_2d:
                 # Convert 3d mask to 2d mask
