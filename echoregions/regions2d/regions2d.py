@@ -464,11 +464,7 @@ class Regions2D:
 
             # Remove all coords other than depth, ping_time, region_id
             mask_3d = mask_3d.drop_vars(
-                [
-                    coord
-                    for coord in mask_3d.coords
-                    if coord not in ["depth", "ping_time", "region_id"]
-                ]
+               mask_3d.coords._names.difference({"depth", "ping_time", "region_id"})
             )
 
             # Remove attribute standard_name
