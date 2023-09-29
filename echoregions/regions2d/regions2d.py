@@ -431,7 +431,10 @@ class Regions2D:
                 (
                     region_df["depth"].apply(
                         lambda x: all(
-                            (i >= np.max(0, int(self.min_depth)) and i <= int(self.max_depth))
+                            (
+                                i >= np.max(0, int(self.min_depth))
+                                and i <= int(self.max_depth)
+                            )
                             for i in x
                         )
                     )

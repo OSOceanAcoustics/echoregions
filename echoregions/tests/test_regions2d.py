@@ -8,7 +8,6 @@ import xarray as xr
 from xarray import DataArray, Dataset
 
 import echoregions as er
-
 from echoregions.regions2d.regions2d import Regions2D
 
 DATA_DIR = Path("./echoregions/test_data/")
