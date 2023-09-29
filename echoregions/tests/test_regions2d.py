@@ -9,7 +9,7 @@ from xarray import DataArray, Dataset
 
 import echoregions as er
 
-from ..regions2d.regions2d import Regions2D
+from echoregions.regions2d.regions2d import Regions2D
 
 DATA_DIR = Path("./echoregions/test_data/")
 EVR_PATH = DATA_DIR / "transect_multi_mask.evr"
@@ -27,7 +27,7 @@ def regions2d_fixture() -> Regions2D:
         Object containing data of test EVR file.
     """
 
-    r2d = er.read_evr(EVR_PATH, min_depth=0, max_depth=1000)
+    r2d = er.read_evr(EVR_PATH)
     return r2d
 
 

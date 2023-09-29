@@ -3,7 +3,7 @@ from .regions2d.regions2d import Regions2D
 
 
 def read_evr(
-    filepath: str, min_depth: float = None, max_depth: float = None
+    filepath: str, min_depth: float = 0.0, max_depth: float = 1000.0
 ) -> Regions2D:
     """Read an EVR file into a Regions2D object.
 
@@ -11,9 +11,9 @@ def read_evr(
     ----------
     filepath : str, Path object
         A valid path to an EVR file
-    min_depth : float, default ``None``
+    min_depth : float, default 0
         Depth value in meters to set -9999.99 depth edges to.
-    max_depth : float, default ``None``
+    max_depth : float, default 1000
         Depth value in meters to set 9999.99 depth edges to.
 
     Returns

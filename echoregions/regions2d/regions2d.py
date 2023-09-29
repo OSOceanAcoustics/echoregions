@@ -28,22 +28,12 @@ class Regions2D:
         min_depth: Union[int, float] = None,
         max_depth: Union[int, float] = None,
     ):
-        self._min_depth = (
-            None  # Set to replace -9999.99 depth values which are EVR min range
-        )
-        self._max_depth = (
-            None  # Set to replace 9999.99 depth values which are EVR max range
-        )
-        self._nan_depth_value = (
-            None  # Set to replace -10000.99 depth values with (EVL only)
-        )
-
         self.input_file = input_file
         self.data = parse_regions_file(input_file)
         self.output_file = []
 
-        self.max_depth = max_depth
         self.min_depth = min_depth
+        self.max_depth = max_depth
 
     def __iter__(self) -> Iterable:
         return self.data.iterrows()
@@ -441,7 +431,7 @@ class Regions2D:
                 (
                     region_df["depth"].apply(
                         lambda x: all(
-                            (i >= np.max(0, self.min_depth) and i <= self.max_depth)
+                            (i >= np.max(0, int(self.min_depth)) and i <= int(self.max_depth))
                             for i in x
                         )
                     )

@@ -3,8 +3,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from ..utils.io import check_file, validate_path
-from ..utils.time import parse_simrad_fname_time, parse_time
+from echoregions.utils.io import check_file, validate_path
+from echoregions.utils.time import parse_simrad_fname_time, parse_time
 
 DATA_DIR = Path("./echoregions/test_data/")
 EVR_PATH = DATA_DIR / "transect.evr"
