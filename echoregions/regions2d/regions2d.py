@@ -9,8 +9,9 @@ import pandas as pd
 import regionmask
 import xarray as xr
 from pandas import DataFrame, Series, Timestamp, isna
-from xarray import DataArray
+from xarray import DataArray, Dataset
 
+from ..utils.api import convert_mask_3d_to_2d
 from ..utils.io import validate_path
 from ..utils.time import parse_simrad_fname_time
 from .regions2d_parser import parse_regions_file
@@ -367,8 +368,10 @@ class Regions2D:
         self,
         da_Sv: DataArray,
         region_id: List = None,
-        mask_name: str = None,
-    ) -> Optional[DataArray]:
+        mask_name: str = "mask",
+        mask_labels: dict = None,
+        collapse_to_2d: bool = False,
+    ) -> Optional[Dataset]:
         """Mask data from Data Array containing Sv data based off of a Regions2D object
         and its regions ids.
 
@@ -380,14 +383,25 @@ class Regions2D:
             list IDs of regions to create mask for
         mask_name : str
             If provided, used to name the output mask array, otherwise `mask`
+        mask_labels : dict
+            If provided, used to label the region_id dimension of the output mask.
+        collapse_to_2d : bool
+            If true, then converts 3d mask to 2d mask. If not, keeps output as 3d mask.
 
         Returns
         -------
-        mask_3d : Data Array
-            A 3D mask where each layer of the mask will contain a 1s/0s mask for each
-            unique label in the 2D mask. The layers will be labeled via region_id values.
-            The slices of the 3d array will be in the form of 1s/0s: masked areas, and
-            non-masked areas.
+        Dataset
+            Either a 3D mask or a 2D mask based on the conditions below.
+            If collapse_to_2d is False:
+                A 3D mask where each layer of the mask will contain a 1s/0s mask for each
+                unique label in the 2D mask. The layers will be labeled via region_id
+                values. The slices of the 3D array will be in the form of 1s/0s: masked areas,
+                and non-masked areas.
+            If collapse_to_2d is True:
+                A 2D mask where each individual data points will be in the form of integers,
+                demarking region_id of masked regions, and nan values, demarking non-masked
+                areas.
+
         """
         if isinstance(region_id, list):
             if len(region_id) == 0:
@@ -399,6 +413,17 @@ class Regions2D:
             raise TypeError(
                 f"region_id must be of type list. Currently is of type {type(region_id)}"
             )
+        
+        if mask_labels is None:
+            # Create mask_labels with each region_id as a key and values starting from 0
+            mask_labels = {key: idx for idx, key in enumerate(region_id)}
+
+        # Check that region_id and mask_labels are of the same size
+        if len(set(region_id) - set(mask_labels.keys())) > 0:
+            raise ValueError(
+                "Each region_id' must be a key in 'mask_labels'. "
+                "If you would prefer 0 based indexing as values for mask_labels, leave "
+                "mask_labels as None.")
 
         # Dataframe containing region information.
         region_df = self.select_region(region_id)
@@ -420,7 +445,8 @@ class Regions2D:
 
         if region_df.empty:
             print(
-                "All rows in has NaN Depth values after filtering depth between min_depth and max_depth."
+                "All rows in has NaN Depth values after filtering depth between "
+                "min_depth and max_depth."
             )
         else:
             # Organize the regions in a format for region mask.
@@ -450,7 +476,7 @@ class Regions2D:
             r = regionmask.Regions(
                 outlines=regions_np, names=filtered_region_id, name=mask_name
             )
-            mask_3d = r.mask_3D(
+            mask_da = r.mask_3D(
                 da_Sv["unix_time"],
                 da_Sv["depth"],
                 wrap_lon=False,
@@ -459,22 +485,38 @@ class Regions2D:
             )  # This maps False to 0 and True to 1
 
             # Replace region coords with region_id coords
-            mask_3d = mask_3d.rename({"names": "region_id"})
-            mask_3d = mask_3d.swap_dims({"region": "region_id"})
+            mask_da = mask_da.rename({"names": "region_id"})
+            mask_da = mask_da.swap_dims({"region": "region_id"})
 
             # Remove all coords other than depth, ping_time, region_id
-            mask_3d = mask_3d.drop_vars(
-                mask_3d.coords._names.difference({"depth", "ping_time", "region_id"})
+            mask_da = mask_da.drop_vars(
+                mask_da.coords._names.difference({"depth", "ping_time", "region_id"})
             )
 
+            # Transpose mask_da
+            mask_da = mask_da.transpose("region_id", "depth", "ping_time")
+
             # Remove attribute standard_name
-            mask_3d.attrs.pop("standard_name")
+            mask_da.attrs.pop("standard_name")
 
             # Rename Data Array to mask_name
-            if mask_name:
-                mask_3d = mask_3d.rename(mask_name)
+            mask_da = mask_da.rename(mask_name)
 
-            return mask_3d
+            # Set mask_labels_da
+            masked_region_id = mask_da.region_id.values.tolist()
+            subset_mask_labels = [mask_labels[key] for key in masked_region_id if key in mask_labels]
+            mask_labels_da = xr.DataArray(subset_mask_labels, dims="region_id", coords={"region_id": masked_region_id})
+
+            if collapse_to_2d:
+                # Convert 3d mask to 2d mask
+                mask_da = convert_mask_3d_to_2d(mask_da)
+
+            # Create dataset
+            mask_ds = xr.Dataset()
+            mask_ds["mask"] = mask_da
+            mask_ds["mask_labels"] = mask_labels_da
+
+            return mask_ds
 
     def transect_mask(
         self,

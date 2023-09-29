@@ -2,9 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from pandas import DataFrame, Series
 
-from ..utils.api import merge
 from ..utils.io import check_file, validate_path
 from ..utils.time import parse_simrad_fname_time, parse_time
 
@@ -38,20 +36,6 @@ def test_parse_filename_time() -> None:
     assert parse_simrad_fname_time(raw_2019_fname) == np.datetime64(
         "2019-06-25T12:48:34.0000"
     )
-
-
-@pytest.mark.utils
-def test_merge_type_checking() -> None:
-    """
-    Test merge type checking functionality.
-    """
-
-    with pytest.raises(ValueError):
-        merge([])
-    with pytest.raises(TypeError):
-        merge([DataFrame()])
-    with pytest.raises(TypeError):
-        merge([Series()])
 
 
 @pytest.mark.utils

@@ -5,8 +5,6 @@ import numpy as np
 import xarray as xr
 from xarray import DataArray, Dataset
 
-from ..regions2d.regions2d import Regions2D
-
 
 def convert_mask_2d_to_3d(mask_2d: DataArray) -> Union[Dataset, None]:
     """
@@ -118,7 +116,7 @@ def convert_mask_3d_to_2d(mask_3d: Dataset) -> Union[DataArray, None]:
         return None
 
 
-def merge(objects: List[Regions2D], reindex_ids: bool = False) -> Regions2D:
+def merge(objects: List, reindex_ids: bool = False):  # -> Regions2D:
     # TODO currently deprecated must be fixed before further tests.
     """Merge echoregion objects.
     Currently only supports merging Regions2D objects.
@@ -132,6 +130,7 @@ def merge(objects: List[Regions2D], reindex_ids: bool = False) -> Regions2D:
     -------
     combined : Regions2D
         A Regions2D object with region ids prepended by the EVR original filename.
+    """
     """
     if isinstance(objects, list):
         if len(objects) == 0:
@@ -170,3 +169,4 @@ def merge(objects: List[Regions2D], reindex_ids: bool = False) -> Regions2D:
     # Set region data
     merged_obj.data["regions"] = merged
     return merged_obj
+    """
