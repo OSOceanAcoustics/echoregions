@@ -715,7 +715,9 @@ def test_overlapping_mask_3d_2d(
 
     # Turn first (0th index) array corresponding to region id 13 into all 1s
     # to guarantee overlap with array corresponding to region id 18
-    mask_3d_ds["mask_3d"] = xr.concat([xr.ones_like(mask_3d_ds.mask_3d[0])], dim="region_id")
+    mask_3d_ds["mask_3d"] = xr.concat(
+        [xr.ones_like(mask_3d_ds.mask_3d[0])], dim="region_id"
+    )
 
     # Trying to convert 3d mask to 2d should raise ValueError
     with pytest.raises(ValueError):
