@@ -420,7 +420,7 @@ class Regions2D:
 
         if region_df.empty:
             print(
-                "Post NaN Depth Filtered Regions is Empty. All rows had NaN Depth values."
+                "All rows in has NaN Depth values after filtering depth between min_depth and max_depth."
             )
         else:
             # Organize the regions in a format for region mask.
