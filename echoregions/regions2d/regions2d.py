@@ -392,7 +392,8 @@ class Regions2D:
                 A 2D mask where each individual data points will be in the form of integers,
                 demarking region_id of masked regions, and nan values, demarking non-masked
                 areas.
-            Also contains a DataArray with mask labels corresponding to region_id values.
+            Also contains a data variable (`mask_labels`) with mask labels
+            corresponding to region_id values.
 
         """
         if isinstance(region_id, list):
