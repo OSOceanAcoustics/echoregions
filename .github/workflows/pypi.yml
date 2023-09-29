@@ -33,8 +33,6 @@ jobs:
     name: Test echoregions package
     needs: build-artifact
     runs-on: ubuntu-20.04
-    permissions:
-      id-token: write
     steps:
     - uses: actions/setup-python@v4.7.0
       name: Install Python
@@ -50,6 +48,10 @@ jobs:
         ls -ltrh dist
     - name: Publish to Test PyPI
       uses: pypa/gh-action-pypi-publish@v1.8.10
+      with:
+        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        repository-url: https://test.pypi.org/legacy/
+        verbose: true
     - name: Check pypi packages
       run: |
         sleep 3
