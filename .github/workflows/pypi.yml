@@ -33,6 +33,8 @@ jobs:
     name: Test echoregions package
     needs: build-artifact
     runs-on: ubuntu-20.04
+    permissions:
+      id-token: write
     steps:
     - uses: actions/setup-python@v4.7.0
       name: Install Python
