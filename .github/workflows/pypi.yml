@@ -34,6 +34,7 @@ jobs:
     needs: build-artifact
     runs-on: ubuntu-20.04
     permissions:
+      contents: read
       id-token: write
     steps:
     - uses: actions/setup-python@v4.7.0
