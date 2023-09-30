@@ -95,10 +95,13 @@ def convert_mask_3d_to_2d(mask_3d_ds: Dataset) -> DataArray:
     mask_3d_da = mask_3d_ds.mask_3d.copy()
 
     # Check if there is overlap between layers.
-    # TODO For now, overlap between layers will not be allowed.
-    # Allowing overlapping layers can be explored in later development.
-    if len(unique_non_nan) > 1:
-        non_zero_indices_list = [np.transpose(np.nonzero(np_mask)) for np_mask in mask_3d_da.data]
+    # TODO This code is also extremely slow. It is an O(n^2) operation that
+    # can be parallelized due to the index operations being independent to
+    # one another.
+    if len(region_id) > 1:
+        non_zero_indices_list = [
+            np.transpose(np.nonzero(np_mask)) for np_mask in mask_3d_ds.mask_3d.data
+        ]
         for index_main, non_zero_indices_main in enumerate(non_zero_indices_list):
             main_set = set([tuple(x) for x in non_zero_indices_main])
             for index_sub, non_zero_indices_sub in enumerate(non_zero_indices_list):
@@ -163,7 +166,8 @@ def merge(objects: List[Regions2D], reindex_ids: bool = False) -> Regions2D:
             merged_idx += list(range(len(regions.data["regions"])))
         else:
             merged_idx += [
-                f"{regions.data['metadata']['file_name']}_{r}" for r in regions.region_ids
+                f"{regions.data['metadata']['file_name']}_{r}"
+                for r in regions.region_id
             ]
     # Attach region information to region ids
     merged = dict(zip(merged_idx, merged_data))
