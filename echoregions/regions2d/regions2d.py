@@ -1,6 +1,6 @@
 import warnings
 from pathlib import Path
-from typing import Iterable, List, Union
+from typing import Iterable, List, Optional, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -9,8 +9,9 @@ import pandas as pd
 import regionmask
 import xarray as xr
 from pandas import DataFrame, Series, Timestamp, isna
-from xarray import DataArray
+from xarray import DataArray, Dataset
 
+from ..utils.api import convert_mask_3d_to_2d
 from ..utils.io import validate_path
 from ..utils.time import parse_simrad_fname_time
 from .regions2d_parser import parse_regions_file
@@ -31,8 +32,8 @@ class Regions2D:
         self.data = parse_regions_file(input_file)
         self.output_file = []
 
-        self.max_depth = max_depth
         self.min_depth = min_depth
+        self.max_depth = max_depth
 
     def __iter__(self) -> Iterable:
         return self.data.iterrows()
@@ -79,10 +80,10 @@ class Regions2D:
         ----------
         region_id : float, int, str, list, ``None``
             A region id provided as a number, a string, or list of these.
-        time_range: List of 2 Pandas Timestamps.
+        time_range : List of 2 Pandas Timestamps.
             Datetime range for expected output of subselected DataFrame. 1st
             index value must be later than 0th index value.
-        depth_range: List of 2 floats.
+        depth_range : List of 2 floats.
             Depth range for expected output of subselected DataFrame. 1st
             index value must be larger than 0th index value.
         copy : bool
@@ -201,7 +202,7 @@ class Regions2D:
 
         Parameters
         ----------
-        region : float, str, list, Series, DataFrame, ``None``
+        region_id : List, ``None``
             region(s) to select raw files with
             If ``None``, select all regions. Defaults to ``None``
 
@@ -322,8 +323,8 @@ class Regions2D:
 
     def plot(
         self,
-        region: Union[str, List, DataFrame] = None,
-        close_region: bool = False,
+        region_id: List = None,
+        close_regions: bool = False,
         **kwargs,
     ) -> None:
         """Plot a region from data.
@@ -331,7 +332,7 @@ class Regions2D:
 
         Parameters
         ---------
-        region : float, str, list, Series, DataFrame, ``None``
+        region_id : List, ``None``
             Region(s) to select raw files with
             If ``None``, select all regions. Defaults to ``None``
         close_region : bool
@@ -341,9 +342,9 @@ class Regions2D:
         """
 
         # Ensure that region is a DataFrame
-        region = self.select_region(region)
+        region = self.select_region(region_id)
 
-        if close_region:
+        if close_regions:
             region = self.close_region(region)
         for _, row in region.iterrows():
             plt.plot(row["time"], row["depth"], **kwargs)
@@ -351,36 +352,54 @@ class Regions2D:
     def mask(
         self,
         da_Sv: DataArray,
-        region_ids: List,
-        mask_var: str = None,
-        mask_labels=None,
-    ) -> DataArray:
-        """Mask data from Data Array containing Sv data based off of a Regions2D object
+        region_id: List = None,
+        mask_name: str = "mask",
+        mask_labels: dict = None,
+        collapse_to_2d: bool = False,
+    ) -> Optional[Dataset]:
+        """
+        Mask data from Data Array containing Sv data based off of a Regions2D object
         and its regions ids.
 
         Parameters
         ----------
         da_Sv : Data Array
             DataArray of shape (ping_time, depth) containing Sv data.
-        region_ids : list
+        region_id : list
             list IDs of regions to create mask for
-        mask_var : str
+        mask_name : str
             If provided, used to name the output mask array, otherwise `mask`
-        mask_labels:
-            None: assigns labels automatically 0,1,2,...
-            "from_ids": uses the region ids
-            list: uses a list of integers as labels
+        mask_labels : dict
+            If provided, used to label the region_id dimension of the output mask.
+        collapse_to_2d : bool
+            If true, then converts 3d mask to 2d mask. If not, keeps output as 3d mask.
 
         Returns
         -------
-        A DataArray with the data_var masked by the specified region.
+        mask_ds : Dataset
+            Either a 3D mask or a 2D mask based on the conditions below.
+            If collapse_to_2d is False:
+                A 3D mask where each layer of the mask will contain a 1s/0s mask for each
+                unique label in the 2D mask. The layers will be labeled via region_id
+                values. The slices of the 3D array will be in the form of 1s/0s: masked areas,
+                and non-masked areas.
+            If collapse_to_2d is True:
+                A 2D mask where each individual data points will be in the form of integers,
+                demarking region_id of masked regions, and nan values, demarking non-masked
+                areas.
+            Also contains a data variable (`mask_labels`) with mask labels
+            corresponding to region_id values.
+
         """
-        if isinstance(region_ids, list):
-            if len(region_ids) == 0:
-                raise ValueError("region_ids is empty. Cannot be empty.")
+        if isinstance(region_id, list):
+            if len(region_id) == 0:
+                raise ValueError("region_id is empty. Cannot be empty.")
+        elif region_id is None:
+            # Extract all region_id values
+            region_id = self.data.region_id.astype(int).to_list()
         else:
             raise TypeError(
-                f"region_ids must be of type list. Currently is of type {type(region_ids)}"
+                f"region_id must be of type list. Currently is of type {type(region_id)}"
             )
 
         if mask_labels is None:
@@ -395,75 +414,103 @@ class Regions2D:
                 "mask_labels as None."
             )
 
-        # Replace nan depth in regions2d.
-        self.replace_nan_depth(inplace=True)
-
         # Dataframe containing region information.
-        region_df = self.select_region(region_ids)
+        region_df = self.select_region(region_id)
 
-        # Select only columns which are important.
+        # Select only important columns
         region_df = region_df[["region_id", "time", "depth"]]
 
-        # Organize the regions in a format for region mask.
-        df = region_df.explode(["time", "depth"])
-
-        # Convert region time to integer timestamp.
-        df["time"] = matplotlib.dates.date2num(df["time"])
-
-        # Create a list of dataframes for each regions.
-        grouped = list(df.groupby("region_id"))
-
-        # Convert to list of numpy arrays which is an acceptable format to create region mask.
-        regions_np = [np.array(region[["time", "depth"]]) for id, region in grouped]
-
-        # Corresponding region ids converted to int.
-        region_ids = [int(id) for id, region in grouped]
-
-        # Convert ping_time to unix_time since the masking does not work on datetime objects.
-        da_Sv = da_Sv.assign_coords(
-            unix_time=(
-                "ping_time",
-                matplotlib.dates.date2num(da_Sv.coords["ping_time"].values),
+        # Filter for rows with depth values within self min and self max depth and
+        # for rows that have positive depth.
+        region_df = region_df[
+            region_df["depth"].apply(
+                lambda x: all(
+                    (i >= np.max(0, int(self.min_depth)) and i <= int(self.max_depth))
+                    for i in x
+                )
             )
-        )
+        ]
 
-        # Set up mask labels.
-        if mask_labels == "from_ids":
-            r = regionmask.Regions(outlines=regions_np, numbers=region_ids)
-        elif isinstance(mask_labels, list) or mask_labels is None:
-            r = regionmask.Regions(outlines=regions_np)
+        if region_df.empty:
+            print(
+                "All rows in Regions DataFrame have NaN Depth values after filtering depth "
+                "between min_depth and max_depth."
+            )
         else:
-            raise ValueError("mask_labels must be None, 'from_ids', or a list.")
+            # Organize the regions in a format for region mask.
+            df = region_df.explode(["time", "depth"])
 
-        # Create mask
-        try:
-            M = r.mask(
+            # Convert region time to integer timestamp.
+            df["time"] = matplotlib.dates.date2num(df["time"])
+
+            # Create a list of dataframes for each regions.
+            grouped = list(df.groupby("region_id"))
+
+            # Convert to list of numpy arrays which is an acceptable format to create region mask.
+            regions_np = [np.array(region[["time", "depth"]]) for _, region in grouped]
+
+            # Convert corresponding region_id to int.
+            filtered_region_id = [int(id) for id, _ in grouped]
+
+            # Convert ping_time to unix_time since the masking does not work on datetime objects.
+            da_Sv = da_Sv.assign_coords(
+                unix_time=(
+                    "ping_time",
+                    matplotlib.dates.date2num(da_Sv.coords["ping_time"].values),
+                )
+            )
+
+            # Create mask
+            r = regionmask.Regions(
+                outlines=regions_np, names=filtered_region_id, name=mask_name
+            )
+            mask_da = r.mask_3D(
                 da_Sv["unix_time"],
                 da_Sv["depth"],
                 wrap_lon=False,
+            ).astype(
+                int
+            )  # This maps False to 0 and True to 1
+
+            # Replace region coords with region_id coords
+            mask_da = mask_da.rename({"names": "region_id"})
+            mask_da = mask_da.swap_dims({"region": "region_id"})
+
+            # Remove all coords other than depth, ping_time, region_id
+            mask_da = mask_da.drop_vars(
+                mask_da.coords._names.difference({"depth", "ping_time", "region_id"})
             )
-        except ValueError as ve:
-            warnings.warn(
-                "Most likely using deprecated regionmask version."
-                "Make sure to use regionmask==0.8.0 or more recent versions.",
-                DeprecationWarning,
-                stacklevel=2,
+
+            # Transpose mask_da
+            mask_da = mask_da.transpose("region_id", "depth", "ping_time")
+
+            # Remove attribute standard_name
+            mask_da.attrs.pop("standard_name")
+
+            # Rename Data Array to mask_name
+            mask_da = mask_da.rename(mask_name)
+
+            # Set mask_labels_da
+            masked_region_id = mask_da.region_id.values.tolist()
+            subset_mask_labels = [
+                mask_labels[key] for key in masked_region_id if key in mask_labels
+            ]
+            mask_labels_da = xr.DataArray(
+                subset_mask_labels,
+                dims="region_id",
+                coords={"region_id": masked_region_id},
             )
-            raise ve
 
-        if isinstance(mask_labels, list):
-            # Convert default labels to mask_labels.
-            S = xr.where(~M.isnull(), 0, M)
-            S = M
-            for idx, label in enumerate(mask_labels):
-                S = xr.where(M == idx, label, S)
-            M = S
+            # Create dataset
+            mask_ds = xr.Dataset()
+            mask_ds["mask_labels"] = mask_labels_da
+            mask_ds["mask_3d"] = mask_da
 
-        # Assign specific name to mask array, otherwise 'mask'.
-        if mask_var:
-            M = M.rename(mask_var)
+            if collapse_to_2d:
+                # Convert 3d mask to 2d mask
+                mask_ds = convert_mask_3d_to_2d(mask_ds)
 
-        return M
+            return mask_ds
 
     def transect_mask(
         self,
@@ -493,6 +540,7 @@ class Regions2D:
         bbox_distance_threshold: float
             The maximum value for how far apart the left and right bounding box for each transect
             value region. Default is set to 1 minute.
+
         Returns
         -------
         M : Data Array

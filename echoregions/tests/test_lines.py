@@ -8,8 +8,7 @@ import xarray as xr
 from xarray import DataArray
 
 import echoregions as er
-
-from ..lines.lines import Lines
+from echoregions.lines.lines import Lines
 
 DATA_DIR = Path("./echoregions/test_data/")
 EVL_PATH = DATA_DIR / "transect.evl"

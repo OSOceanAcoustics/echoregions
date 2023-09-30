@@ -11,9 +11,9 @@ def read_evr(
     ----------
     filepath : str, Path object
         A valid path to an EVR file
-    min_depth : float, default ``None``
+    min_depth : float, default 0
         Depth value in meters to set -9999.99 depth edges to.
-    max_depth : float, default ``None``
+    max_depth : float, default 1000
         Depth value in meters to set 9999.99 depth edges to.
 
     Returns

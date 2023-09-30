@@ -2,11 +2,9 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from pandas import DataFrame, Series
 
-from ..utils.api import merge
-from ..utils.io import check_file, validate_path
-from ..utils.time import parse_simrad_fname_time, parse_time
+from echoregions.utils.io import check_file, validate_path
+from echoregions.utils.time import parse_simrad_fname_time, parse_time
 
 DATA_DIR = Path("./echoregions/test_data/")
 EVR_PATH = DATA_DIR / "transect.evr"
@@ -34,20 +32,6 @@ def test_parse_filename_time() -> None:
     assert parse_simrad_fname_time(Sv_2017_fname) == np.datetime64("2017-06-25T12:48:34.0000")
     raw_2019_fname = ["Summer2019-D20190625-T124834.raw"]
     assert parse_simrad_fname_time(raw_2019_fname) == np.datetime64("2019-06-25T12:48:34.0000")
-
-
-@pytest.mark.utils
-def test_merge_type_checking() -> None:
-    """
-    Test merge type checking functionality.
-    """
-
-    with pytest.raises(ValueError):
-        merge([])
-    with pytest.raises(TypeError):
-        merge([DataFrame()])
-    with pytest.raises(TypeError):
-        merge([Series()])
 
 
 @pytest.mark.utils
