@@ -428,17 +428,10 @@ class Regions2D:
         # Filter for rows with depth values within self min and self max depth and
         # for rows that have positive depth.
         region_df = region_df[
-            (
-                (
-                    region_df["depth"].apply(
-                        lambda x: all(
-                            (
-                                i >= np.max(0, int(self.min_depth))
-                                and i <= int(self.max_depth)
-                            )
-                            for i in x
-                        )
-                    )
+            region_df["depth"].apply(
+                lambda x: all(
+                    (i >= np.max(0, int(self.min_depth)) and i <= int(self.max_depth))
+                    for i in x
                 )
             )
         ]
