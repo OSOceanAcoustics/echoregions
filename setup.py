@@ -7,7 +7,7 @@ INSTALL_REQUIRES = [t.strip() for t in requirements]
 
 setup(
     name="echoregions",
-    version="v0.1.0",
+    version="0.2.0",
     author="Caesar Tuguinay",
     author_email="ctuguina@uw.edu",
     maintainer="Caesar Tuguinay",
