@@ -27,10 +27,6 @@ class Regions2D:
         min_depth: Union[int, float] = None,
         max_depth: Union[int, float] = None,
     ):
-        self._min_depth = None  # Set to replace -9999.99 depth values which are EVR min range
-        self._max_depth = None  # Set to replace 9999.99 depth values which are EVR max range
-        self._nan_depth_value = None  # Set to replace -10000.99 depth values with (EVL only)
-
         self.input_file = input_file
         self.data = parse_regions_file(input_file)
         self.output_file = []
@@ -200,7 +196,7 @@ class Regions2D:
                 )
         return region
 
-    def close_region(self, region: Union[float, str, List, Series, DataFrame] = None) -> DataFrame:
+    def close_region(self, region_id: List = None) -> DataFrame:
         """Close a region by appending the first point to end of the list of points.
 
         Parameters
@@ -214,9 +210,13 @@ class Regions2D:
         DataFrame
             Returns a new DataFrame with closed regions
         """
-        region = self.select_region(region, copy=True)
-        region["time"] = region.apply(lambda row: np.append(row["time"], row["time"][0]), axis=1)
-        region["depth"] = region.apply(lambda row: np.append(row["depth"], row["depth"][0]), axis=1)
+        region = self.select_region(region_id, copy=True)
+        region["time"] = region.apply(
+            lambda row: np.append(row["time"], row["time"][0]), axis=1
+        )
+        region["depth"] = region.apply(
+            lambda row: np.append(row["depth"], row["depth"][0]), axis=1
+        )
         return region
 
     def select_sonar_file(
@@ -383,8 +383,17 @@ class Regions2D:
                 f"region_ids must be of type list. Currently is of type {type(region_ids)}"
             )
 
-        if isinstance(mask_labels, list) and (len(mask_labels) != len(region_ids)):
-            raise ValueError("If mask_labels is a list, it should be of same length as region_ids.")
+        if mask_labels is None:
+            # Create mask_labels with each region_id as a key and values starting from 0
+            mask_labels = {key: idx for idx, key in enumerate(region_id)}
+
+        # Check that region_id and mask_labels are of the same size
+        if len(set(region_id) - set(mask_labels.keys())) > 0:
+            raise ValueError(
+                "Each region_id' must be a key in 'mask_labels'. "
+                "If you would prefer 0 based indexing as values for mask_labels, leave "
+                "mask_labels as None."
+            )
 
         # Replace nan depth in regions2d.
         self.replace_nan_depth(inplace=True)
