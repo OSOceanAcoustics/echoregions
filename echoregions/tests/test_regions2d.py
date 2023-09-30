@@ -414,7 +414,7 @@ def test_select_region_errors(regions2d_fixture: Regions2D) -> None:
 
 @pytest.mark.filterwarnings("ignore:No gridpoint belongs to any region")
 @pytest.mark.regions2d
-def test_mask_no_overlap(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+def test_select_type_error(regions2d_fixture: Regions2D) -> None:
     """
     Test if mask is empty when there is no overlap.
 
@@ -434,7 +434,9 @@ def test_mask_no_overlap(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray)
 
 
 @pytest.mark.regions2d
-def test_mask_correct_labels(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+def test_mask_empty_no_overlap(
+    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
+) -> None:
     """
     Test if the generated id labels are as expected
 
@@ -449,8 +451,8 @@ def test_mask_correct_labels(regions2d_fixture: Regions2D, da_Sv_fixture: DataAr
     # Extract Region IDs and convert to Python float values
     region_ids = regions2d_fixture.data.region_id.astype(float).to_list()
 
-    # Create mask.
-    M = regions2d_fixture.mask(da_Sv_fixture.isel(channel=0), region_ids, mask_labels=region_ids)
+    # Check that all values are null
+    assert mask_3d_ds is None
 
     # Check that the mask's values matches only 13th and 18th region and there exists a nan value
     # and that there exists a point of no overlap (nan value)
@@ -461,7 +463,7 @@ def test_mask_correct_labels(regions2d_fixture: Regions2D, da_Sv_fixture: DataAr
 
 
 @pytest.mark.regions2d
-def test_select_type_error(regions2d_fixture: Regions2D) -> None:
+def test_mask_2d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Test for select region errors.
 
@@ -505,7 +507,9 @@ def test_mask_type_error(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray)
 
 
 @pytest.mark.regions2d
-def test_mask_2d_3d_2d_3d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+def test_mask_3d_2d_3d_2d(
+    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
+) -> None:
     """
     Testing if converting 2d-3d-2d-3d masks works.
 
@@ -539,7 +543,9 @@ def test_mask_2d_3d_2d_3d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
 
 @pytest.mark.filterwarnings("ignore:No gridpoint belongs to any region")
 @pytest.mark.regions2d
-def test_nan_mask_2d_3d_2d_3d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+def test_one_label_mask_3d_2d_3d_2d(
+    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
+) -> None:
     """
     Testing if converting 2d-3d-2d-3d masks works for nan mask.
 
@@ -573,7 +579,9 @@ def test_nan_mask_2d_3d_2d_3d(regions2d_fixture: Regions2D, da_Sv_fixture: DataA
 
 
 @pytest.mark.regions2d
-def test_one_label_mask_2d_3d_2d_3d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+def test_nan_mask_3d_2d_and_2d_3d(
+    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
+) -> None:
     """
     Testing if converting 2d-3d-2d-3d masks works for 1 label mask.
 
