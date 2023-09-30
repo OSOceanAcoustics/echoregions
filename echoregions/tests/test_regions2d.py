@@ -463,7 +463,9 @@ def test_mask_empty_no_overlap(
 
 
 @pytest.mark.regions2d
-def test_mask_2d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+def test_mask_type_error(
+    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
+) -> None:
     """
     Test for select region errors.
 
@@ -484,7 +486,7 @@ def test_mask_2d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None
 
 
 @pytest.mark.regions2d
-def test_mask_type_error(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+def test_mask_2d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Tests mask error functionality for regions.
 
