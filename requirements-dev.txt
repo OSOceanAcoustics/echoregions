@@ -6,3 +6,4 @@ pytest
 xarray>=2023.2.0
 pytest-cov
 setuptools_scm
+wheel

@@ -12,7 +12,7 @@ build-backend = 'setuptools.build_meta'
 fallback_version = "unknown"
 local_scheme = "node-and-date"
 write_to = "_echoregions_version.py"
-write_to_template = 'version = "{version}"  # noqa'
+write_to_template = 'version = "{version}"'
 
 [tool.black]
 line-length = 100
@@ -23,5 +23,4 @@ known_third_party = ["_echoregions_version", "setuptools"]
 multi_line_output = 3
 include_trailing_comma = true
 force_grid_wrap = 0
-combine_as_imports = true
 line_length = 100
