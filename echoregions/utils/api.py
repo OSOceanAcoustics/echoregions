@@ -33,9 +33,7 @@ def convert_mask_2d_to_3d(mask_2d_ds: Dataset) -> Union[Dataset, None]:
         raise ValueError("The variable 'mask_2d' does not exist in the input dataset.")
 
     # Get unique non nan values from the 2d mask
-    region_id = list(
-        np.unique(mask_2d_ds.mask_2d.data[~np.isnan(mask_2d_ds.mask_2d.data)])
-    )
+    region_id = list(np.unique(mask_2d_ds.mask_2d.data[~np.isnan(mask_2d_ds.mask_2d.data)]))
 
     # Create a list of mask objects from one-hot encoding M.data non-nan values
     # and a dictionary to remember said values from one-hot encoded data arrays.

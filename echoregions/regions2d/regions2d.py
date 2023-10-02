@@ -212,12 +212,8 @@ class Regions2D:
             Returns a new DataFrame with closed regions
         """
         region = self.select_region(region_id, copy=True)
-        region["time"] = region.apply(
-            lambda row: np.append(row["time"], row["time"][0]), axis=1
-        )
-        region["depth"] = region.apply(
-            lambda row: np.append(row["depth"], row["depth"][0]), axis=1
-        )
+        region["time"] = region.apply(lambda row: np.append(row["time"], row["time"][0]), axis=1)
+        region["depth"] = region.apply(lambda row: np.append(row["depth"], row["depth"][0]), axis=1)
         return region
 
     def select_sonar_file(
@@ -425,8 +421,7 @@ class Regions2D:
         region_df = region_df[
             region_df["depth"].apply(
                 lambda x: all(
-                    (i >= np.max(0, int(self.min_depth)) and i <= int(self.max_depth))
-                    for i in x
+                    (i >= np.max(0, int(self.min_depth)) and i <= int(self.max_depth)) for i in x
                 )
             )
         ]
@@ -461,9 +456,7 @@ class Regions2D:
             )
 
             # Create mask
-            r = regionmask.Regions(
-                outlines=regions_np, names=filtered_region_id, name=mask_name
-            )
+            r = regionmask.Regions(outlines=regions_np, names=filtered_region_id, name=mask_name)
             mask_da = r.mask_3D(
                 da_Sv["unix_time"],
                 da_Sv["depth"],

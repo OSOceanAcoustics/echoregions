@@ -434,9 +434,7 @@ def test_select_type_error(regions2d_fixture: Regions2D) -> None:
 
 @pytest.mark.filterwarnings("ignore:No gridpoint belongs to any region.")
 @pytest.mark.regions2d
-def test_mask_empty_no_overlap(
-    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
-) -> None:
+def test_mask_empty_no_overlap(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Test if mask is empty when a region's depth values are invalid
     and also test mask is empty when there is no overlap.
@@ -461,9 +459,7 @@ def test_mask_empty_no_overlap(
 
 
 @pytest.mark.regions2d
-def test_mask_type_error(
-    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
-) -> None:
+def test_mask_type_error(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Tests mask error functionality for regions.
 
@@ -503,9 +499,7 @@ def test_mask_2d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None
     mask_labels[13] = "Mask1"
 
     # Create mask
-    mask_2d_ds = regions2d_fixture.mask(
-        da_Sv_fixture, mask_labels=mask_labels, collapse_to_2d=True
-    )
+    mask_2d_ds = regions2d_fixture.mask(da_Sv_fixture, mask_labels=mask_labels, collapse_to_2d=True)
 
     # Check mask_2d values and counts
     mask_2d_values = np.unique(mask_2d_ds.mask_2d.data, return_counts=True)[0]
@@ -523,9 +517,7 @@ def test_mask_2d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None
 
 
 @pytest.mark.regions2d
-def test_mask_3d_2d_3d_2d(
-    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
-) -> None:
+def test_mask_3d_2d_3d_2d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Testing if converting 3d-2d-3d-2d masks works.
 
@@ -546,22 +538,10 @@ def test_mask_3d_2d_3d_2d(
 
     # Check mask values
     assert (mask_3d_ds.mask_3d.region_id.values == [13, 18]).all()
-    assert (
-        np.unique(mask_3d_ds.mask_3d.isel(region_id=0).data, return_counts=True)[1][0]
-        == 6642027
-    )
-    assert (
-        np.unique(mask_3d_ds.mask_3d.isel(region_id=0).data, return_counts=True)[1][1]
-        == 6328
-    )
-    assert (
-        np.unique(mask_3d_ds.mask_3d.isel(region_id=1).data, return_counts=True)[1][0]
-        == 3520945
-    )
-    assert (
-        np.unique(mask_3d_ds.mask_3d.isel(region_id=1).data, return_counts=True)[1][1]
-        == 3127410
-    )
+    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=0).data, return_counts=True)[1][0] == 6642027
+    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=0).data, return_counts=True)[1][1] == 6328
+    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=1).data, return_counts=True)[1][0] == 3520945
+    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=1).data, return_counts=True)[1][1] == 3127410
 
     # Check mask_labels values
     assert (np.unique(mask_3d_ds.mask_labels.data) == ["17", "Mask1"]).all()
@@ -590,9 +570,7 @@ def test_mask_3d_2d_3d_2d(
 
 
 @pytest.mark.regions2d
-def test_one_label_mask_3d_2d_3d_2d(
-    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
-) -> None:
+def test_one_label_mask_3d_2d_3d_2d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Testing if converting 3d-2d-3d-2d masks works for 1 label mask.
 
@@ -605,20 +583,12 @@ def test_one_label_mask_3d_2d_3d_2d(
     """
 
     # Create 3d mask
-    mask_3d_ds = regions2d_fixture.mask(
-        da_Sv_fixture, region_id=[18], mask_labels={18: "Mask1"}
-    )
+    mask_3d_ds = regions2d_fixture.mask(da_Sv_fixture, region_id=[18], mask_labels={18: "Mask1"})
 
     # Check mask values
     assert (mask_3d_ds.mask_3d.region_id.values == [18]).all()
-    assert (
-        np.unique(mask_3d_ds.mask_3d.isel(region_id=0).data, return_counts=True)[1][0]
-        == 3520945
-    )
-    assert (
-        np.unique(mask_3d_ds.mask_3d.isel(region_id=0).data, return_counts=True)[1][1]
-        == 3127410
-    )
+    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=0).data, return_counts=True)[1][0] == 3520945
+    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=0).data, return_counts=True)[1][1] == 3127410
 
     # Check mask_labels values
     assert (np.unique(mask_3d_ds.mask_labels.data) == ["Mask1"]).all()
@@ -647,9 +617,7 @@ def test_one_label_mask_3d_2d_3d_2d(
 @pytest.mark.filterwarnings("ignore:No gridpoint belongs to any region")
 @pytest.mark.filterwarnings("ignore:Returning No Mask")
 @pytest.mark.regions2d
-def test_nan_mask_3d_2d_and_2d_3d(
-    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
-) -> None:
+def test_nan_mask_3d_2d_and_2d_3d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Testing if both converting functions returns none for empty mask inputs.
 
@@ -708,9 +676,7 @@ def test_overlapping_mask_3d_2d(regions2d_fixture: Regions2D, da_Sv_fixture: Dat
 
     # Turn first (0th index) array corresponding to region id 13 into all 1s
     # to guarantee overlap with array corresponding to region id 18
-    mask_3d_ds["mask_3d"] = xr.concat(
-        [xr.ones_like(mask_3d_ds.mask_3d[0])], dim="region_id"
-    )
+    mask_3d_ds["mask_3d"] = xr.concat([xr.ones_like(mask_3d_ds.mask_3d[0])], dim="region_id")
 
     # Trying to convert 3d mask to 2d should raise ValueError
     with pytest.raises(ValueError):
