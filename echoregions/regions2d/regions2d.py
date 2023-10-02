@@ -1,6 +1,6 @@
 import warnings
 from pathlib import Path
-from typing import Iterable, List, Union
+from typing import Iterable, List, Optional, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -9,8 +9,9 @@ import pandas as pd
 import regionmask
 import xarray as xr
 from pandas import DataFrame, Series, Timestamp, isna
-from xarray import DataArray
+from xarray import DataArray, Dataset
 
+from ..utils.api import convert_mask_3d_to_2d
 from ..utils.io import validate_path
 from ..utils.time import parse_simrad_fname_time
 from .regions2d_parser import parse_regions_file
@@ -27,22 +28,12 @@ class Regions2D:
         min_depth: Union[int, float] = None,
         max_depth: Union[int, float] = None,
     ):
-        self._min_depth = (
-            None  # Set to replace -9999.99 depth values which are EVR min range
-        )
-        self._max_depth = (
-            None  # Set to replace 9999.99 depth values which are EVR max range
-        )
-        self._nan_depth_value = (
-            None  # Set to replace -10000.99 depth values with (EVL only)
-        )
-
         self.input_file = input_file
         self.data = parse_regions_file(input_file)
         self.output_file = []
 
-        self.max_depth = max_depth
         self.min_depth = min_depth
+        self.max_depth = max_depth
 
     def __iter__(self) -> Iterable:
         return self.data.iterrows()
@@ -59,9 +50,7 @@ class Regions2D:
             path to save the CSV file to
         """
         # Check if the save directory is safe
-        save_path = validate_path(
-            save_path=save_path, input_file=self.input_file, ext=".csv"
-        )
+        save_path = validate_path(save_path=save_path, input_file=self.input_file, ext=".csv")
         # Reorder columns and export to csv
         self.data.to_csv(save_path, index=False)
         self.output_file.append(save_path)
@@ -91,10 +80,10 @@ class Regions2D:
         ----------
         region_id : float, int, str, list, ``None``
             A region id provided as a number, a string, or list of these.
-        time_range: List of 2 Pandas Timestamps.
+        time_range : List of 2 Pandas Timestamps.
             Datetime range for expected output of subselected DataFrame. 1st
             index value must be later than 0th index value.
-        depth_range: List of 2 floats.
+        depth_range : List of 2 floats.
             Depth range for expected output of subselected DataFrame. 1st
             index value must be larger than 0th index value.
         copy : bool
@@ -179,8 +168,7 @@ class Regions2D:
                             region = region[
                                 region["time"].apply(
                                     lambda depth_array: all(
-                                        depth_range[0] <= float(x)
-                                        and depth_range[1] >= float(x)
+                                        depth_range[0] <= float(x) and depth_range[1] >= float(x)
                                         for x in depth_array
                                     )
                                 )
@@ -209,14 +197,12 @@ class Regions2D:
                 )
         return region
 
-    def close_region(
-        self, region: Union[float, str, List, Series, DataFrame] = None
-    ) -> DataFrame:
+    def close_region(self, region_id: List = None) -> DataFrame:
         """Close a region by appending the first point to end of the list of points.
 
         Parameters
         ----------
-        region : float, str, list, Series, DataFrame, ``None``
+        region_id : List, ``None``
             region(s) to select raw files with
             If ``None``, select all regions. Defaults to ``None``
 
@@ -225,13 +211,9 @@ class Regions2D:
         DataFrame
             Returns a new DataFrame with closed regions
         """
-        region = self.select_region(region, copy=True)
-        region["time"] = region.apply(
-            lambda row: np.append(row["time"], row["time"][0]), axis=1
-        )
-        region["depth"] = region.apply(
-            lambda row: np.append(row["depth"], row["depth"][0]), axis=1
-        )
+        region = self.select_region(region_id, copy=True)
+        region["time"] = region.apply(lambda row: np.append(row["time"], row["time"][0]), axis=1)
+        region["depth"] = region.apply(lambda row: np.append(row["depth"], row["depth"][0]), axis=1)
         return region
 
     def select_sonar_file(
@@ -286,9 +268,7 @@ class Regions2D:
         if np.all(sonar_file_times < region_times.min()) or np.all(
             sonar_file_times > region_times.max()
         ):
-            print(
-                "Sonar file times did not overlap at all with region times. Returning empty list"
-            )
+            print("Sonar file times did not overlap at all with region times. Returning empty list")
             return []
         else:
             # Get lower and upper index of filetimes
@@ -339,8 +319,8 @@ class Regions2D:
 
     def plot(
         self,
-        region: Union[str, List, DataFrame] = None,
-        close_region: bool = False,
+        region_id: List = None,
+        close_regions: bool = False,
         **kwargs,
     ) -> None:
         """Plot a region from data.
@@ -348,7 +328,7 @@ class Regions2D:
 
         Parameters
         ---------
-        region : float, str, list, Series, DataFrame, ``None``
+        region_id : List, ``None``
             Region(s) to select raw files with
             If ``None``, select all regions. Defaults to ``None``
         close_region : bool
@@ -358,122 +338,172 @@ class Regions2D:
         """
 
         # Ensure that region is a DataFrame
-        region = self.select_region(region)
+        region = self.select_region(region_id)
 
-        if close_region:
-            region = self.Regions2D.close_region(region)
+        if close_regions:
+            region = self.close_region(region)
         for _, row in region.iterrows():
             plt.plot(row["time"], row["depth"], **kwargs)
 
     def mask(
         self,
         da_Sv: DataArray,
-        region_ids: List,
-        mask_var: str = None,
-        mask_labels=None,
-    ) -> DataArray:
-        """Mask data from Data Array containing Sv data based off of a Regions2D object
+        region_id: List = None,
+        mask_name: str = "mask",
+        mask_labels: dict = None,
+        collapse_to_2d: bool = False,
+    ) -> Optional[Dataset]:
+        """
+        Mask data from Data Array containing Sv data based off of a Regions2D object
         and its regions ids.
 
         Parameters
         ----------
         da_Sv : Data Array
             DataArray of shape (ping_time, depth) containing Sv data.
-        region_ids : list
+        region_id : list
             list IDs of regions to create mask for
-        mask_var : str
+        mask_name : str
             If provided, used to name the output mask array, otherwise `mask`
-        mask_labels:
-            None: assigns labels automatically 0,1,2,...
-            "from_ids": uses the region ids
-            list: uses a list of integers as labels
+        mask_labels : dict
+            If provided, used to label the region_id dimension of the output mask.
+        collapse_to_2d : bool
+            If true, then converts 3d mask to 2d mask. If not, keeps output as 3d mask.
 
         Returns
         -------
-        A DataArray with the data_var masked by the specified region.
+        mask_ds : Dataset
+            Either a 3D mask or a 2D mask based on the conditions below.
+            If collapse_to_2d is False:
+                A 3D mask where each layer of the mask will contain a 1s/0s mask for each
+                unique label in the 2D mask. The layers will be labeled via region_id
+                values. The slices of the 3D array will be in the form of 1s/0s: masked areas,
+                and non-masked areas.
+            If collapse_to_2d is True:
+                A 2D mask where each individual data points will be in the form of integers,
+                demarking region_id of masked regions, and nan values, demarking non-masked
+                areas.
+            Also contains a data variable (`mask_labels`) with mask labels
+            corresponding to region_id values.
+
         """
-        if isinstance(region_ids, list):
-            if len(region_ids) == 0:
-                raise ValueError("region_ids is empty. Cannot be empty.")
+        if isinstance(region_id, list):
+            if len(region_id) == 0:
+                raise ValueError("region_id is empty. Cannot be empty.")
+        elif region_id is None:
+            # Extract all region_id values
+            region_id = self.data.region_id.astype(int).to_list()
         else:
             raise TypeError(
-                f"region_ids must be of type list. Currently is of type {type(region_ids)}"
+                f"region_id must be of type list. Currently is of type {type(region_id)}"
             )
 
-        if isinstance(mask_labels, list) and (len(mask_labels) != len(region_ids)):
+        if mask_labels is None:
+            # Create mask_labels with each region_id as a key and values starting from 0
+            mask_labels = {key: idx for idx, key in enumerate(region_id)}
+
+        # Check that region_id and mask_labels are of the same size
+        if len(set(region_id) - set(mask_labels.keys())) > 0:
             raise ValueError(
-                "If mask_labels is a list, it should be of same length as region_ids."
+                "Each region_id' must be a key in 'mask_labels'. "
+                "If you would prefer 0 based indexing as values for mask_labels, leave "
+                "mask_labels as None."
             )
-
-        # Replace nan depth in regions2d.
-        self.replace_nan_depth(inplace=True)
 
         # Dataframe containing region information.
-        region_df = self.select_region(region_ids)
+        region_df = self.select_region(region_id)
 
-        # Select only columns which are important.
+        # Select only important columns
         region_df = region_df[["region_id", "time", "depth"]]
 
-        # Organize the regions in a format for region mask.
-        df = region_df.explode(["time", "depth"])
-
-        # Convert region time to integer timestamp.
-        df["time"] = matplotlib.dates.date2num(df["time"])
-
-        # Create a list of dataframes for each regions.
-        grouped = list(df.groupby("region_id"))
-
-        # Convert to list of numpy arrays which is an acceptable format to create region mask.
-        regions_np = [np.array(region[["time", "depth"]]) for id, region in grouped]
-
-        # Corresponding region ids converted to int.
-        region_ids = [int(id) for id, region in grouped]
-
-        # Convert ping_time to unix_time since the masking does not work on datetime objects.
-        da_Sv = da_Sv.assign_coords(
-            unix_time=(
-                "ping_time",
-                matplotlib.dates.date2num(da_Sv.coords["ping_time"].values),
+        # Filter for rows with depth values within self min and self max depth and
+        # for rows that have positive depth.
+        region_df = region_df[
+            region_df["depth"].apply(
+                lambda x: all(
+                    (i >= np.max(0, int(self.min_depth)) and i <= int(self.max_depth)) for i in x
+                )
             )
-        )
+        ]
 
-        # Set up mask labels.
-        if mask_labels == "from_ids":
-            r = regionmask.Regions(outlines=regions_np, numbers=region_ids)
-        elif isinstance(mask_labels, list) or mask_labels is None:
-            r = regionmask.Regions(outlines=regions_np)
+        if region_df.empty:
+            print(
+                "All rows in Regions DataFrame have NaN Depth values after filtering depth "
+                "between min_depth and max_depth."
+            )
         else:
-            raise ValueError("mask_labels must be None, 'from_ids', or a list.")
+            # Organize the regions in a format for region mask.
+            df = region_df.explode(["time", "depth"])
 
-        # Create mask
-        try:
-            M = r.mask(
+            # Convert region time to integer timestamp.
+            df["time"] = matplotlib.dates.date2num(df["time"])
+
+            # Create a list of dataframes for each regions.
+            grouped = list(df.groupby("region_id"))
+
+            # Convert to list of numpy arrays which is an acceptable format to create region mask.
+            regions_np = [np.array(region[["time", "depth"]]) for _, region in grouped]
+
+            # Convert corresponding region_id to int.
+            filtered_region_id = [int(id) for id, _ in grouped]
+
+            # Convert ping_time to unix_time since the masking does not work on datetime objects.
+            da_Sv = da_Sv.assign_coords(
+                unix_time=(
+                    "ping_time",
+                    matplotlib.dates.date2num(da_Sv.coords["ping_time"].values),
+                )
+            )
+
+            # Create mask
+            r = regionmask.Regions(outlines=regions_np, names=filtered_region_id, name=mask_name)
+            mask_da = r.mask_3D(
                 da_Sv["unix_time"],
                 da_Sv["depth"],
                 wrap_lon=False,
+            ).astype(
+                int
+            )  # This maps False to 0 and True to 1
+
+            # Replace region coords with region_id coords
+            mask_da = mask_da.rename({"names": "region_id"})
+            mask_da = mask_da.swap_dims({"region": "region_id"})
+
+            # Remove all coords other than depth, ping_time, region_id
+            mask_da = mask_da.drop_vars(
+                mask_da.coords._names.difference({"depth", "ping_time", "region_id"})
             )
-        except ValueError as ve:
-            warnings.warn(
-                "Most likely using deprecated regionmask version."
-                "Make sure to use regionmask==0.8.0 or more recent versions.",
-                DeprecationWarning,
-                stacklevel=2,
+
+            # Transpose mask_da
+            mask_da = mask_da.transpose("region_id", "depth", "ping_time")
+
+            # Remove attribute standard_name
+            mask_da.attrs.pop("standard_name")
+
+            # Rename Data Array to mask_name
+            mask_da = mask_da.rename(mask_name)
+
+            # Set mask_labels_da
+            masked_region_id = mask_da.region_id.values.tolist()
+            subset_mask_labels = [
+                mask_labels[key] for key in masked_region_id if key in mask_labels
+            ]
+            mask_labels_da = xr.DataArray(
+                subset_mask_labels,
+                dims="region_id",
+                coords={"region_id": masked_region_id},
             )
-            raise ve
 
-        if isinstance(mask_labels, list):
-            # Convert default labels to mask_labels.
-            S = xr.where(~M.isnull(), 0, M)
-            S = M
-            for idx, label in enumerate(mask_labels):
-                S = xr.where(M == idx, label, S)
-            M = S
+            # Create dataset
+            mask_ds = xr.Dataset()
+            mask_ds["mask_labels"] = mask_labels_da
+            mask_ds["mask_3d"] = mask_da
 
-        # Assign specific name to mask array, otherwise 'mask'.
-        if mask_var:
-            M = M.rename(mask_var)
+            if collapse_to_2d:
+                # Convert 3d mask to 2d mask
+                mask_ds = convert_mask_3d_to_2d(mask_ds)
 
-        return M
+            return mask_ds
 
     def transect_mask(
         self,
@@ -503,6 +533,7 @@ class Regions2D:
         bbox_distance_threshold: float
             The maximum value for how far apart the left and right bounding box for each transect
             value region. Default is set to 1 minute.
+
         Returns
         -------
         M : Data Array
@@ -520,8 +551,7 @@ class Regions2D:
         # Check that there are 4 unique transect strings
         if len(transect_strs) != len(set(transect_strs)):
             raise ValueError(
-                "There exist duplicate values in transect_dict. "
-                "All values must be unique."
+                "There exist duplicate values in transect_dict. " "All values must be unique."
             )
         for transect_str in transect_strs:
             if not isinstance(transect_str, str):
@@ -540,9 +570,9 @@ class Regions2D:
         ].copy()
 
         # Create a new column which stores the transect_type without the transect number
-        transect_df.loc[:, "transect_type"] = transect_df.loc[
-            :, "region_name"
-        ].str.extract(rf"({start_str}|{break_str}|{resume_str}|{end_str})")
+        transect_df.loc[:, "transect_type"] = transect_df.loc[:, "region_name"].str.extract(
+            rf"({start_str}|{break_str}|{resume_str}|{end_str})"
+        )
 
         # Check if for all transects, there exists 1 start_str transect type.
         # If there does not exists a start_str transect, set the first region
@@ -586,9 +616,7 @@ class Regions2D:
 
         # Checking the maximum width of a transect log region bbox.
         # If over a minute, throw an error.
-        max_time = (
-            transect_df["region_bbox_right"] - transect_df["region_bbox_left"]
-        ).max()
+        max_time = (transect_df["region_bbox_right"] - transect_df["region_bbox_left"]).max()
         max_time_minutes = max_time.total_seconds() / 60
         if max_time_minutes > bbox_distance_threshold:
             Warning(
@@ -605,18 +633,14 @@ class Regions2D:
         transect_df = transect_df.sort_values(by="region_bbox_left")
         # Create new shifted columns with the next transect log type and next region
         # bbox left datetime value.
-        transect_df.loc[:, "transect_type_next"] = transect_df.loc[
-            :, "transect_type"
-        ].shift(-1)
-        transect_df.loc[:, "region_bbox_left_next"] = transect_df.loc[
-            :, "region_bbox_left"
-        ].shift(-1)
+        transect_df.loc[:, "transect_type_next"] = transect_df.loc[:, "transect_type"].shift(-1)
+        transect_df.loc[:, "region_bbox_left_next"] = transect_df.loc[:, "region_bbox_left"].shift(
+            -1
+        )
 
         # Check if start_str followed by break_str/end_str.
         start_transect_rows = transect_df[transect_df["transect_type"] == start_str]
-        start_transect_type_next_list = list(
-            start_transect_rows["transect_type_next"].values
-        )
+        start_transect_type_next_list = list(start_transect_rows["transect_type_next"].values)
         for transect_type_next in start_transect_type_next_list:
             if transect_type_next not in [break_str, end_str]:
                 raise ValueError(
@@ -627,9 +651,7 @@ class Regions2D:
 
         # Check if break_str followed by resume_str.
         break_transect_rows = transect_df[transect_df["transect_type"] == break_str]
-        break_transect_type_next_list = list(
-            break_transect_rows["transect_type_next"].values
-        )
+        break_transect_type_next_list = list(break_transect_rows["transect_type_next"].values)
         for transect_type_next in break_transect_type_next_list:
             if transect_type_next != resume_str:
                 raise ValueError(
@@ -639,9 +661,7 @@ class Regions2D:
 
         # Check if resume_str followed by break_str/end_str.
         resume_transect_rows = transect_df[transect_df["transect_type"] == resume_str]
-        resume_transect_type_next_list = list(
-            resume_transect_rows["transect_type_next"].values
-        )
+        resume_transect_type_next_list = list(resume_transect_rows["transect_type_next"].values)
         for transect_type_next in resume_transect_type_next_list:
             if transect_type_next not in [break_str, end_str]:
                 raise ValueError(
@@ -652,9 +672,7 @@ class Regions2D:
 
         # Check if end_str followed by start_str or if NA.
         end_transect_rows = transect_df[transect_df["transect_type"] == end_str]
-        end_transect_type_next_list = list(
-            end_transect_rows["transect_type_next"].values
-        )
+        end_transect_type_next_list = list(end_transect_rows["transect_type_next"].values)
         for transect_type_next in end_transect_type_next_list:
             # If this value is not NA, check if it is start_str.
             if not isna(transect_type_next):

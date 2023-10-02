@@ -8,8 +8,7 @@ import xarray as xr
 from xarray import DataArray
 
 import echoregions as er
-
-from ..lines.lines import Lines
+from echoregions.lines.lines import Lines
 
 DATA_DIR = Path("./echoregions/test_data/")
 EVL_PATH = DATA_DIR / "transect.evl"
@@ -168,16 +167,12 @@ def test_replace_nan_depth() -> None:
     """
 
     lines_1 = er.read_evl(EVL_PATH, nan_depth_value=20)
-    lines_1.data.loc[
-        0, "depth"
-    ] = -10000.99  # Replace a value with the one used for nans
+    lines_1.data.loc[0, "depth"] = -10000.99  # Replace a value with the one used for nans
     lines_1.replace_nan_depth(inplace=True)
     assert lines_1.data.loc[0, "depth"] == 20
 
     lines_2 = er.read_evl(EVL_PATH, nan_depth_value=20)
-    lines_2.data.loc[
-        0, "depth"
-    ] = -10000.99  # Replace a value with the one used for nans
+    lines_2.data.loc[0, "depth"] = -10000.99  # Replace a value with the one used for nans
     regions = lines_2.replace_nan_depth(inplace=False)
     assert regions.loc[0, "depth"] == 20
 
