@@ -1,6 +1,6 @@
 # Publish archives to PyPI and TestPyPI using GitHub Actions
 name: Publish to PyPI
-on: [push, pull_request, workflow_dispatch]
+on: [workflow_dispatch]
 jobs:
 
   build-artifact:
@@ -93,6 +93,7 @@ jobs:
 
   publish-pypi:
     name: Push echoregions to production pypi
+    needs: test-built-dist
     runs-on: ubuntu-latest
     steps:
     - uses: actions/download-artifact@v3
