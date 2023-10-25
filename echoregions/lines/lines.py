@@ -200,15 +200,8 @@ class Lines:
                 set(list(pd.DataFrame(sonar_index)[0]) + list(filtered_bottom.index))
             )
 
-            # interpolate on the sonar coordinates
-            # nearest interpolation has a problem when points are far from each other
-            # TODO There exists a problem where when we use .loc prior to reindexing
-            # we are hit with a key not found error. Potentially investigate this
-            # after major changes have been completed.
-            bottom_interpolated = filtered_bottom.reindex(joint_index).loc[sonar_index]
             # max_depth to set the NAs to after interpolation
             max_depth = float(da_Sv.depth.max())
-            bottom_interpolated = bottom_interpolated.fillna(max_depth)
 
             # Check for correct interpolation inputs.
             # TODO Add spline and krogh and their associated kwargs.
@@ -243,18 +236,17 @@ class Lines:
                                 inside, outside."
                 )
 
-            # Interpolate on the sonar coordinates. Note that nearest interpolation has a problem
-            # when points are far from each other.
-            try:
-                bottom_interpolated = (
-                    filtered_bottom.reindex(joint_index)
-                    .interpolate(method=method, limit_area=limit_area)
-                    .loc[sonar_index]
-                ).fillna(max_depth)
-            except Exception as e:
-                # For all other such errors that may not necessarily deal with
-                # the specific values of method and limit_area.
-                print(e)
+            # Interpolate on the sonar coordinates. Note that nearest interpolation
+            # has a problem when points are far from each other.
+            # TODO There exists a problem where when we use .loc prior to reindexing
+            # we are hit with a key not found error. Potentially investigate this
+            # after major changes have been completed.
+            bottom_interpolated = (
+                filtered_bottom[["depth"]]
+                .reindex(joint_index)
+                .interpolate(method=method, limit_area=limit_area)
+                .loc[sonar_index]
+            ).fillna(max_depth)
 
             # convert to data array for bottom
             bottom_da = bottom_interpolated["depth"].to_xarray()  # .rename({'index':'ping_time'})
