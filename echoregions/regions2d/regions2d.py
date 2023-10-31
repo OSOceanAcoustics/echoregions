@@ -457,19 +457,15 @@ class Regions2D:
 
             # Create mask
             r = regionmask.Regions(
-                outlines=regions_np, names=filtered_region_id, name=mask_name, overlap=True
+                outlines=regions_np, names=filtered_region_id, name=mask_name, overlap=False
             )
             mask_da = r.mask_3D(
                 da_Sv["unix_time"],
                 da_Sv["depth"],
                 wrap_lon=False,
-                drop=False,
             ).astype(
                 int
             )  # This maps False to 0 and True to 1
-
-            # Drop arrays along the region dimension that are all 0s
-            mask_da = mask_da.isel(region=~(mask_da == 0).all(dim=["ping_time", "depth"]))
 
             # Replace region coords with region_id coords
             mask_da = mask_da.rename({"names": "region_id"})
