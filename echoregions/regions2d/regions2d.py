@@ -456,7 +456,10 @@ class Regions2D:
             )
 
             # Create mask
-            r = regionmask.Regions(outlines=regions_np, names=filtered_region_id, name=mask_name)
+            r = regionmask.Regions(outlines=regions_np,
+                                   names=filtered_region_id,
+                                   name=mask_name,
+                                   overlap=True)
             mask_da = r.mask_3D(
                 da_Sv["unix_time"],
                 da_Sv["depth"],
