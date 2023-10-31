@@ -467,6 +467,8 @@ class Regions2D:
                 int
             )  # This maps False to 0 and True to 1
 
+            print(mask_da)
+
             # Replace region coords with region_id coords
             mask_da = mask_da.rename({"names": "region_id"})
             mask_da = mask_da.swap_dims({"region": "region_id"})
