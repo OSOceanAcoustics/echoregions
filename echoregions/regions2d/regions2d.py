@@ -469,9 +469,7 @@ class Regions2D:
             )  # This maps False to 0 and True to 1
 
             # Drop arrays along the region dimension that are all 0s
-            mask_da = mask_da.isel(
-                region=~(mask_da == 0).all(dim=['ping_time', 'depth'])
-            )
+            mask_da = mask_da.isel(region=~(mask_da == 0).all(dim=["ping_time", "depth"]))
 
             # Replace region coords with region_id coords
             mask_da = mask_da.rename({"names": "region_id"})
