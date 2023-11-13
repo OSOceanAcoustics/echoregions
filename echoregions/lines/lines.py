@@ -186,7 +186,7 @@ class Lines:
         lines_df = self.data
 
         # new index
-        sonar_index = list(da_Sv.ping_time.data)
+        sonar_ping_time = list(da_Sv.ping_time.data)
 
         # filter bottom within start and end time
         start_time = da_Sv.ping_time.data.min()
@@ -197,7 +197,7 @@ class Lines:
         if len(filtered_bottom) > 0:
             # create joint index
             joint_index = list(
-                set(list(pd.DataFrame(sonar_index)[0]) + list(filtered_bottom.index))
+                set(list(pd.DataFrame(sonar_ping_time)[0]) + list(filtered_bottom.index))
             )
 
             # max_depth to set the NAs to after interpolation
@@ -239,13 +239,12 @@ class Lines:
             # Interpolate on the sonar coordinates. Note that nearest interpolation
             # has a problem when points are far from each other.
             # TODO There exists a problem where when we use .loc prior to reindexing
-            # we are hit with a key not found error. Potentially investigate this
-            # after major changes have been completed.
+            # we are hit with a key not found error.
             bottom_interpolated = (
                 filtered_bottom[["depth"]]
                 .reindex(joint_index)
                 .interpolate(method=method, limit_area=limit_area)
-                .loc[sonar_index]
+                .loc[sonar_ping_time]
             ).fillna(max_depth)
 
             # convert to data array for bottom
