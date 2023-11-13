@@ -166,6 +166,13 @@ class Lines:
         bottom_mask : Xarray DataArray
             Matrix of coordinates (ping_time, depth) with values such that bottom: False,
             otherwise: True
+
+        Notes
+        -----
+        Prior to creating the mask, this method performs interpolation on the bottom data
+        points found in the lines.data dataframe.
+        The nearest interpolation method from Pandas has a problem when points are far
+        from each other.
         """
 
         if not isinstance(da_Sv, DataArray):
