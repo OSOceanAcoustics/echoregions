@@ -455,7 +455,7 @@ def test_mask_empty_no_overlap(regions2d_fixture: Regions2D, da_Sv_fixture: Data
 
     # Create mask with regions that have no overlap with the Sv Data Array
     mask_3d_ds = regions2d_fixture.mask(da_Sv_fixture.isel(channel=0), [8, 9, 10])
-    mask_3d_ds.mask_3d.isnull().all()
+    assert mask_3d_ds.mask_3d.isnull().all()
 
 
 @pytest.mark.regions2d
