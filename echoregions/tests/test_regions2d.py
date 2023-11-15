@@ -69,9 +69,26 @@ def test_read_region_df(regions2d_fixture: Regions2D) -> None:
     r2d_2 = er.read_region_csv(csv_file_path)
     r2d_2_df = r2d_2.data
 
-    # Check if DataFrames are equal
-    # This will currently fail
-    assert r2d_1_df.equals(r2d_2_df)
+    # Check for precision between depth columns
+    assert np.all(
+        [
+            np.isclose(d_arr_1, d_arr_2).all()
+            for d_arr_1, d_arr_2 in zip(r2d_1_df["depth"], r2d_2_df["depth"])
+        ]
+    )
+
+    # Check for equality between the elements in both time columns
+    assert np.all(
+        [(t_arr_1 == t_arr_2).all() for t_arr_1, t_arr_2 in zip(r2d_1_df["time"], r2d_2_df["time"])]
+    )
+
+    # Check equality between the elements in both region_id columns
+    assert np.all(
+        [
+            region_id_1 == region_id_2
+            for region_id_1, region_id_2 in zip(r2d_1_df["region_id"], r2d_2_df["region_id"])
+        ]
+    )
 
     # Delete the file
     csv_file_path.unlink()

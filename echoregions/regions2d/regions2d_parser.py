@@ -67,7 +67,7 @@ def parse_evr(input_file: str):
             top = None
             bottom = None
         return {
-            "region_id": int(line[2]),
+            "region_id": str(line[2]),
             "region_structure_version": line[0],  # 13 currently
             "region_point_count": line[1],  # Number of points in the region
             "region_selected": line[3],  # Always 0
@@ -169,39 +169,8 @@ def parse_region_df(input_file: str) -> pd.DataFrame:
     # Check for validity of input_file.
     check_file(input_file, "CSV")
 
-    # Assuming self.data is a DataFrame with the expected data types
-    column_types = {
-        "file_name": "string",
-        "file_type": "string",
-        "evr_file_format_number": "string",
-        "echoview_version": "string",
-        "region_id": "Int64",
-        "region_structure_version": "string",
-        "region_point_count": "string",
-        "region_selected": "string",
-        "region_creation_type": "string",
-        "dummy": "string",
-        "region_bbox_calculated": "Int64",
-        "region_bbox_left": "datetime64[ns]",
-        "region_bbox_right": "datetime64[ns]",
-        "region_bbox_top": "Float64",
-        "region_bbox_bottom": "Float64",
-        "region_class": "string",
-        "region_type": "string",
-        "region_name": "string",
-        "time": "object",
-        "depth": "object",
-        "region_notes": "object",
-        "region_detection_settings": "object",
-    }
-
     # Read data from CSV file
     data = pd.read_csv(input_file)
-
-    # Enforce column types for existing columns
-    for col in data.columns:
-        if col in column_types:
-            data[col] = data[col].astype(column_types[col])
 
     # Define the expected columns
     expected_columns = ["region_id", "time", "depth"]
@@ -210,6 +179,17 @@ def parse_region_df(input_file: str) -> pd.DataFrame:
     for column in expected_columns:
         if column not in data.columns:
             raise ValueError(f"Missing required column: {column}")
+
+    # Strip [] and apply np.fromstring to each element in the "depth" column
+    data["depth"] = data["depth"].map(lambda x: np.fromstring(x.strip("[]"), sep=" "))
+
+    # Extract datetime strings enclosed in single quotes and split them
+    data["time"] = data["time"].apply(
+        lambda x: np.array([dt.strip("'") for dt in x.strip("[]").split()], dtype="datetime64[ns]")
+    )
+
+    # Set region_id values to strings
+    data["region_id"] = data["region_id"].apply(lambda x: str(x))
 
     # Check for unique region_id values
     if not data["region_id"].is_unique:
