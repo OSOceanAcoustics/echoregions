@@ -45,6 +45,38 @@ def da_Sv_fixture() -> DataArray:
     return da_Sv
 
 
+@pytest.mark.test
+def test_read_region_df(regions2d_fixture: Regions2D) -> None:
+    """
+    Ensures that read_region_df provides the same Regions2D object
+    as read_evr.
+
+    Parameters
+    ----------
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
+    """
+
+    # Get Regions2D object and DataFrame
+    r2d_1 = regions2d_fixture
+    r2d_1_df = r2d_1.data
+
+    # Send to CSV
+    csv_file_path = DATA_DIR / "r2d_to_csv_file.csv"
+    r2d_1.to_csv(csv_file_path)
+
+    # Read Region CSV and extract DataFrame
+    r2d_2 = er.read_region_csv(csv_file_path)
+    r2d_2_df = r2d_2.data
+
+    # Check if DataFrames are equal
+    # This will currently fail
+    assert r2d_1_df.equals(r2d_2_df)
+
+    # Delete the file
+    csv_file_path.unlink()
+
+
 @pytest.mark.regions2d
 def test_empty_regions2d_parsing() -> None:
     """

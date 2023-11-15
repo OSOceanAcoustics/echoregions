@@ -1,4 +1,5 @@
 import os
+from ast import literal_eval
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -34,7 +35,7 @@ COLUMNS = [
 ]
 
 
-def parse_regions_file(input_file: str):
+def parse_evr(input_file: str):
     """Parse EVR Regions2D File and place data in Pandas Dataframe.
 
     Parameters
@@ -144,4 +145,74 @@ def parse_regions_file(input_file: str):
     else:
         df = pd.concat(rows, ignore_index=True)
         data = df[rows[0].keys()].convert_dtypes()
+    return data
+
+
+def parse_region_df(input_file: str) -> pd.DataFrame:
+    """Check the validity of parsed data.
+
+    Parameters
+    ----------
+    input_file : str
+        Input EVR file to be parsed.
+
+    Returns
+    -------
+    data : pd.DataFrame
+        The parsed data if all checks pass.
+
+    Raises
+    ------
+    ValueError
+        If the parsed data does not match the expected structure.
+    """
+    # Check for validity of input_file.
+    check_file(input_file, "CSV")
+
+    # Assuming self.data is a DataFrame with the expected data types
+    column_types = {
+        "file_name": "string",
+        "file_type": "string",
+        "evr_file_format_number": "string",
+        "echoview_version": "string",
+        "region_id": "Int64",
+        "region_structure_version": "string",
+        "region_point_count": "string",
+        "region_selected": "string",
+        "region_creation_type": "string",
+        "dummy": "string",
+        "region_bbox_calculated": "Int64",
+        "region_bbox_left": "datetime64[ns]",
+        "region_bbox_right": "datetime64[ns]",
+        "region_bbox_top": "Float64",
+        "region_bbox_bottom": "Float64",
+        "region_class": "string",
+        "region_type": "string",
+        "region_name": "string",
+        "time": "object",
+        "depth": "object",
+        "region_notes": "object",
+        "region_detection_settings": "object",
+    }
+
+    # Read data from CSV file
+    data = pd.read_csv(input_file)
+
+    # Enforce column types for existing columns
+    for col in data.columns:
+        if col in column_types:
+            data[col] = data[col].astype(column_types[col])
+
+    # Define the expected columns
+    expected_columns = ["region_id", "time", "depth"]
+
+    # Check if all expected columns are present
+    for column in expected_columns:
+        if column not in data.columns:
+            raise ValueError(f"Missing required column: {column}")
+
+    # Check for unique region_id values
+    if not data["region_id"].is_unique:
+        raise ValueError("Non-unique values found in 'region_id' column.")
+
     return data

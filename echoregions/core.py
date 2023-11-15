@@ -19,7 +19,31 @@ def read_evr(filepath: str, min_depth: float = 0.0, max_depth: float = 1000.0) -
     Regions2D
         Object that contains the EVR data and metadata with methods for saving to file.
     """
-    return Regions2D(input_file=str(filepath), min_depth=min_depth, max_depth=max_depth)
+    return Regions2D(
+        input_file=str(filepath), min_depth=min_depth, max_depth=max_depth, input_type="EVR"
+    )
+
+
+def read_region_csv(filepath: str, min_depth: float = 0.0, max_depth: float = 1000.0) -> Regions2D:
+    """Read a region dataframe file into a Regions2D object.
+
+    Parameters
+    ----------
+    filepath : str, Path object
+        A valid path to an region dataframe file
+    min_depth : float, default 0
+        Depth value in meters to set -9999.99 depth edges to.
+    max_depth : float, default 1000
+        Depth value in meters to set 9999.99 depth edges to.
+
+    Returns
+    -------
+    Regions2D
+        Object that contains the EVR data and metadata with methods for saving to file.
+    """
+    return Regions2D(
+        input_file=str(filepath), min_depth=min_depth, max_depth=max_depth, input_type="CSV"
+    )
 
 
 def read_evl(filepath: str, nan_depth_value: float = None) -> Lines:

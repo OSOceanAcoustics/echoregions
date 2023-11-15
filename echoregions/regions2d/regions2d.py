@@ -14,7 +14,7 @@ from xarray import DataArray, Dataset
 from ..utils.api import convert_mask_3d_to_2d
 from ..utils.io import validate_path
 from ..utils.time import parse_simrad_fname_time
-from .regions2d_parser import parse_regions_file
+from .regions2d_parser import parse_evr, parse_region_df
 
 
 class Regions2D:
@@ -27,9 +27,15 @@ class Regions2D:
         input_file: str,
         min_depth: Union[int, float] = None,
         max_depth: Union[int, float] = None,
+        input_type: str = "EVR",
     ):
         self.input_file = input_file
-        self.data = parse_regions_file(input_file)
+        if input_type == "EVR":
+            self.data = parse_evr(input_file)
+        elif input_type == "CSV":
+            self.data = parse_region_df(input_file)
+        else:
+            raise ValueError(f"Regions2D input_type must be EVR or CSV. Got {input_type} instead.")
         self.output_file = []
 
         self.min_depth = min_depth
@@ -51,8 +57,11 @@ class Regions2D:
         """
         # Check if the save directory is safe
         save_path = validate_path(save_path=save_path, input_file=self.input_file, ext=".csv")
-        # Reorder columns and export to csv
+
+        # Save to CSV
         self.data.to_csv(save_path, index=False)
+
+        # Append save_path
         self.output_file.append(save_path)
 
     def to_json(self, save_path: str = None) -> None:
