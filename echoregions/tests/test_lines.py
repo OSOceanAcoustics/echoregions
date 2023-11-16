@@ -280,7 +280,7 @@ def test_lines_mask_empty(lines_fixture: Lines, da_Sv_fixture: DataArray) -> Non
     # Assert that bottom_contours is empty
     assert bottom_contours_1.empty
 
-    # Place bottom contours in Lines object
+    # Use bottom contours to create Lines object
     lines_2 = Lines(bottom_contours_1, None, input_type="CSV")
 
     # Run lines masking to check if masking runs

@@ -177,6 +177,8 @@ class Lines:
         bottom_mask : Xarray DataArray
             Matrix of coordinates (ping_time, depth) with values such that bottom: False,
             otherwise: True
+        bottom_contours : pd.DataFrame
+            DataFrame containing depth and time.
 
         Notes
         -----
