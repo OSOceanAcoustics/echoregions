@@ -67,7 +67,7 @@ def parse_evr(input_file: str):
             top = None
             bottom = None
         return {
-            "region_id": str(line[2]),
+            "region_id": int(line[2]),
             "region_structure_version": line[0],  # 13 currently
             "region_point_count": line[1],  # Number of points in the region
             "region_selected": line[3],  # Always 0
@@ -188,8 +188,8 @@ def parse_region_df(input_file: str) -> pd.DataFrame:
         lambda x: np.array([dt.strip("'") for dt in x.strip("[]").split()], dtype="datetime64[ns]")
     )
 
-    # Set region_id values to strings
-    data["region_id"] = data["region_id"].apply(lambda x: str(x))
+    # Set region_id values to integers
+    data["region_id"] = data["region_id"].apply(lambda x: int(x))
 
     # Check for unique region_id values
     if not data["region_id"].is_unique:

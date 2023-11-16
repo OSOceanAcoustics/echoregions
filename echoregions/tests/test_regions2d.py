@@ -45,7 +45,7 @@ def da_Sv_fixture() -> DataArray:
     return da_Sv
 
 
-@pytest.mark.test
+@pytest.mark.regions2d
 def test_read_region_df(regions2d_fixture: Regions2D) -> None:
     """
     Ensures that read_region_df provides the same Regions2D object
