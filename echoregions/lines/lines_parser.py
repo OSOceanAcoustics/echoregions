@@ -72,8 +72,8 @@ def parse_lines_df(input_file: Union[str, pd.DataFrame]) -> pd.DataFrame:
 
     Parameters
     ----------
-    input_file : str
-        Input lines CSV to be parsed.
+    input_file : str or pd.DataFrame
+        Input lines CSV / DataFrame to be parsed.
 
     Returns
     -------
@@ -96,7 +96,7 @@ def parse_lines_df(input_file: Union[str, pd.DataFrame]) -> pd.DataFrame:
         data = input_file
     else:
         raise ValueError(
-            "Input file is neither of type str (string path to file) "
+            "Input file must be of type str (string path to file) "
             f"nor pd.DataFrame. It is of type {type(input_file)}."
         )
 
@@ -108,10 +108,12 @@ def parse_lines_df(input_file: Union[str, pd.DataFrame]) -> pd.DataFrame:
         if column not in data.columns:
             raise ValueError(f"Missing required column: {column}")
 
-    # Convert time to np.float64
-    data["depth"] = data["depth"].apply(lambda x: np.float64(x))
+    if not pd.api.types.is_float_dtype(data["depth"]):
+        # Convert time to np.float64
+        data["depth"] = data["depth"].apply(lambda x: np.float64(x))
 
-    # Convert time to np.datetime64
-    data["time"] = data["time"].apply(lambda x: np.datetime64(x))
+    if not pd.api.types.is_datetime64_any_dtype(data["time"]):
+        # Convert time to np.datetime64
+        data["time"] = data["time"].apply(lambda x: np.datetime64(x))
 
     return data
