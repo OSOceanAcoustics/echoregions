@@ -14,7 +14,7 @@ from xarray import DataArray, Dataset
 from ..utils.api import convert_mask_3d_to_2d
 from ..utils.io import validate_path
 from ..utils.time import parse_simrad_fname_time
-from .regions2d_parser import parse_evr, parse_region_df
+from .regions2d_parser import parse_evr, parse_regions_df
 
 
 class Regions2D:
@@ -33,7 +33,7 @@ class Regions2D:
         if input_type == "EVR":
             self.data = parse_evr(input_file)
         elif input_type == "CSV":
-            self.data = parse_region_df(input_file)
+            self.data = parse_regions_df(input_file)
         else:
             raise ValueError(f"Regions2D input_type must be EVR or CSV. Got {input_type} instead.")
         self.output_file = []

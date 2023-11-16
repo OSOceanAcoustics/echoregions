@@ -148,18 +148,18 @@ def parse_evr(input_file: str):
     return data
 
 
-def parse_region_df(input_file: str) -> pd.DataFrame:
+def parse_regions_df(input_file: str) -> pd.DataFrame:
     """Check the validity of parsed data.
 
     Parameters
     ----------
     input_file : str
-        Input EVR file to be parsed.
+        Input regions CSV to be parsed.
 
     Returns
     -------
     data : pd.DataFrame
-        The parsed data if all checks pass.
+        The parsed regions data if all checks pass.
 
     Raises
     ------

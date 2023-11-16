@@ -46,7 +46,7 @@ def da_Sv_fixture() -> DataArray:
 
 
 @pytest.mark.regions2d
-def test_read_region_df(regions2d_fixture: Regions2D) -> None:
+def test_read_regions_df(regions2d_fixture: Regions2D) -> None:
     """
     Ensures that read_region_df provides the same Regions2D object
     as read_evr.
@@ -65,8 +65,8 @@ def test_read_region_df(regions2d_fixture: Regions2D) -> None:
     csv_file_path = DATA_DIR / "r2d_to_csv_file.csv"
     r2d_1.to_csv(csv_file_path)
 
-    # Read Region CSV and extract DataFrame
-    r2d_2 = er.read_region_csv(csv_file_path)
+    # Read Regions CSV and extract DataFrame
+    r2d_2 = er.read_regions_csv(csv_file_path)
     r2d_2_df = r2d_2.data
 
     # Check for precision between depth columns

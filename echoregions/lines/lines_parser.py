@@ -1,12 +1,13 @@
 import os
 
+import numpy as np
 import pandas as pd
 
 from ..utils.io import check_file
 from ..utils.time import parse_time
 
 
-def parse_line_file(input_file: str):
+def parse_evl(input_file: str):
     """Parse EVL Line File and place data in Pandas Dataframe.
 
     Parameters
@@ -61,5 +62,46 @@ def parse_line_file(input_file: str):
     df.loc[:, "time"] = df.loc[:, "time"].apply(parse_time)
     order = list(data_dict["metadata"].keys()) + list(data_dict["points"][0].keys())
     data = df[order]
+
+    return data
+
+
+def parse_lines_df(input_file: str) -> pd.DataFrame:
+    """Check the validity of parsed data.
+
+    Parameters
+    ----------
+    input_file : str
+        Input lines CSV to be parsed.
+
+    Returns
+    -------
+    data : pd.DataFrame
+        The parsed lines data if all checks pass.
+
+    Raises
+    ------
+    ValueError
+        If the parsed data does not match the expected structure.
+    """
+    # Check for validity of input_file.
+    check_file(input_file, "CSV")
+
+    # Read data from CSV file
+    data = pd.read_csv(input_file)
+
+    # Define the expected columns
+    expected_columns = ["time", "depth"]
+
+    # Check if all expected columns are present
+    for column in expected_columns:
+        if column not in data.columns:
+            raise ValueError(f"Missing required column: {column}")
+
+    # Convert time to np.float64
+    data["depth"] = data["depth"].apply(lambda x: np.float64(x))
+
+    # Convert time to np.datetime64
+    data["time"] = data["time"].apply(lambda x: np.datetime64(x))
 
     return data

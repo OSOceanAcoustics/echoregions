@@ -8,7 +8,7 @@ from pandas import DataFrame, Timestamp
 from xarray import DataArray
 
 from ..utils.io import validate_path
-from .lines_parser import parse_line_file
+from .lines_parser import parse_evl, parse_lines_df
 
 ECHOVIEW_NAN_DEPTH_VALUE = -10000.99
 
@@ -18,9 +18,19 @@ class Lines:
     Class that contains and performs operations with Depth/Lines data from Echoview EVL files.
     """
 
-    def __init__(self, input_file: str, nan_depth_value: float = None):
+    def __init__(
+        self,
+        input_file: str,
+        nan_depth_value: float = None,
+        input_type: str = "EVL",
+    ):
         self.input_file = input_file
-        self.data = parse_line_file(input_file)
+        if input_type == "EVL":
+            self.data = parse_evl(input_file)
+        elif input_type == "CSV":
+            self.data = parse_lines_df(input_file)
+        else:
+            raise ValueError(f"Lines input_type must be EVL or CSV. Got {input_type} instead.")
         self.output_file = []
 
         self._nan_depth_value = None  # Set to replace -10000.99 depth values with (EVL only)
