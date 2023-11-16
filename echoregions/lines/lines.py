@@ -2,6 +2,7 @@ import json
 from typing import Dict, Iterable, List, Union
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import xarray as xr
 from pandas import DataFrame, Timestamp
@@ -20,7 +21,7 @@ class Lines:
 
     def __init__(
         self,
-        input_file: str,
+        input_file: Union[str, pd.DataFrame],
         nan_depth_value: float = None,
         input_type: str = "EVL",
     ):
@@ -257,7 +258,7 @@ class Lines:
             # has a problem when points are far from each other.
             # TODO There exists a problem where when we use .loc prior to reindexing
             # we are hit with a key not found error.
-            bottom_interpolated = (
+            bottom_contours = (
                 filtered_bottom[["depth"]]
                 .reindex(joint_index)
                 .interpolate(method=method, limit_area=limit_area)
@@ -265,7 +266,7 @@ class Lines:
             ).fillna(max_depth)
 
             # convert to data array for bottom
-            bottom_da = bottom_interpolated["depth"].to_xarray()  # .rename({'index':'ping_time'})
+            bottom_da = bottom_contours["depth"].to_xarray()  # .rename({'index':'ping_time'})
             bottom_da = bottom_da.rename({"time": "ping_time"})
 
             # create a data array of depths
@@ -275,11 +276,17 @@ class Lines:
             # bottom: False, otherwise: True
             bottom_mask = depth_da < bottom_da
 
+            # Reset bottom_contours index so that time index becomes time column
+            bottom_contours = bottom_contours.reset_index()
+
         else:
-            # set everything to False
+            # Set everything to False
             bottom_mask = xr.full_like(da_Sv, False)
 
-        # bottom: False becomes 0, otherwise: True becomes 1
+            # Set bottom contours to empty DataFrame with time and depth columns
+            bottom_contours = pd.DataFrame(columns=["depth", "time"])
+
+        # Bottom: False becomes 0, otherwise: True becomes 1
         bottom_mask = bottom_mask.where(True, 1, 0)
 
-        return bottom_mask
+        return bottom_mask, bottom_contours

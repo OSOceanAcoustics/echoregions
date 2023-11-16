@@ -1,4 +1,5 @@
 import os
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -66,7 +67,7 @@ def parse_evl(input_file: str):
     return data
 
 
-def parse_lines_df(input_file: str) -> pd.DataFrame:
+def parse_lines_df(input_file: Union[str, pd.DataFrame]) -> pd.DataFrame:
     """Check the validity of parsed data.
 
     Parameters
@@ -84,11 +85,20 @@ def parse_lines_df(input_file: str) -> pd.DataFrame:
     ValueError
         If the parsed data does not match the expected structure.
     """
-    # Check for validity of input_file.
-    check_file(input_file, "CSV")
+    if isinstance(input_file, str):
+        # Check for validity of input_file.
+        check_file(input_file, "CSV")
 
-    # Read data from CSV file
-    data = pd.read_csv(input_file)
+        # Read data from CSV file
+        data = pd.read_csv(input_file)
+    elif isinstance(input_file, pd.DataFrame):
+        # Set data as input_file
+        data = input_file
+    else:
+        raise ValueError(
+            "Input file is neither of type str (string path to file) "
+            f"nor pd.DataFrame. It is of type {type(input_file)}."
+        )
 
     # Define the expected columns
     expected_columns = ["time", "depth"]
