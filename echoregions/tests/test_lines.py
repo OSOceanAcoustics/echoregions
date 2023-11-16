@@ -245,7 +245,7 @@ def test_lines_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
     # Place bottom contours in Lines object
     lines_2 = Lines(bottom_contours, None, input_type="CSV")
 
-    # Run lines masking to see if masking runs
+    # Run lines masking to check if masking runs
     _, _ = lines_2.mask(da_Sv_fixture.isel(channel=0))
 
 
@@ -264,7 +264,7 @@ def test_lines_mask_empty(lines_fixture: Lines, da_Sv_fixture: DataArray) -> Non
     # Create empty lines object
     lines_fixture.data = lines_fixture.data[0:0]
 
-    M, bottom_contours = lines_fixture.mask(da_Sv_fixture.isel(channel=0))
+    M, bottom_contours_1 = lines_fixture.mask(da_Sv_fixture.isel(channel=0))
 
     # Compute unique values
     unique_values = np.unique(M.compute().data, return_counts=True)
@@ -278,7 +278,16 @@ def test_lines_mask_empty(lines_fixture: Lines, da_Sv_fixture: DataArray) -> Non
     assert values[0] == 0
 
     # Assert that bottom_contours is empty
-    assert bottom_contours.empty
+    assert bottom_contours_1.empty
+
+    # Place bottom contours in Lines object
+    lines_2 = Lines(bottom_contours_1, None, input_type="CSV")
+
+    # Run lines masking to check if masking runs
+    _, bottom_contours_2 = lines_2.mask(da_Sv_fixture.isel(channel=0))
+
+    # Assert that bottom_contours is empty
+    assert bottom_contours_2.empty
 
 
 @pytest.mark.lines
