@@ -47,19 +47,21 @@ class Regions2D:
     def __getitem__(self, val: int) -> Series:
         return self.data.iloc[val]
 
-    def to_csv(self, save_path: bool = None) -> None:
+    def to_csv(self, save_path: bool = None, mode="w") -> None:
         """Save a Dataframe to a .csv file
 
         Parameters
         ----------
         save_path : str
-            path to save the CSV file to
+            Path to save the CSV file to.
+        mode : str
+            Write mode arg for to_csv.
         """
         # Check if the save directory is safe
         save_path = validate_path(save_path=save_path, input_file=self.input_file, ext=".csv")
 
         # Save to CSV
-        self.data.to_csv(save_path, index=False)
+        self.data.to_csv(save_path, index=False, mode=mode)
 
         # Append save_path
         self.output_file.append(save_path)
