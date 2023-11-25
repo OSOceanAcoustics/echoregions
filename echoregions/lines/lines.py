@@ -290,7 +290,7 @@ class Lines:
             # Set bottom contours to empty DataFrame with time and depth columns
             bottom_contours = pd.DataFrame(columns=["depth", "time"])
 
-        # Bottom: False becomes 0, otherwise: True becomes 1
+        # Bottom: True becomes 1, False becomes 0
         bottom_mask = bottom_mask.where(True, 1, 0)
 
         return bottom_mask, bottom_contours
