@@ -191,6 +191,10 @@ def parse_regions_df(input_file: Union[str, pd.DataFrame]) -> pd.DataFrame:
         if column not in data.columns:
             raise ValueError(f"Missing required column: {column}")
 
+    # Check for unique region_id values
+    if not data["region_id"].is_unique:
+        raise ValueError("Non-unique values found in 'region_id' column.")
+
     # Check if all time data is in the form of an array that is of type string
     if all(isinstance(value, str) and "[" in value and "]" in value for value in data["depth"]):
         # Strip [] and apply np.fromstring to each element in the "depth" column
@@ -207,9 +211,5 @@ def parse_regions_df(input_file: Union[str, pd.DataFrame]) -> pd.DataFrame:
 
     # Set region_id values to integers
     data["region_id"] = data["region_id"].apply(lambda x: int(x))
-
-    # Check for unique region_id values
-    if not data["region_id"].is_unique:
-        raise ValueError("Non-unique values found in 'region_id' column.")
 
     return data
