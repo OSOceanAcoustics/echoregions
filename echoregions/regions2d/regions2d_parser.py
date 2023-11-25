@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -34,7 +34,7 @@ COLUMNS = [
 ]
 
 
-def parse_regions_file(input_file: str):
+def parse_evr(input_file: str):
     """Parse EVR Regions2D File and place data in Pandas Dataframe.
 
     Parameters
@@ -144,4 +144,72 @@ def parse_regions_file(input_file: str):
     else:
         df = pd.concat(rows, ignore_index=True)
         data = df[rows[0].keys()].convert_dtypes()
+    return data
+
+
+def parse_regions_df(input_file: Union[str, pd.DataFrame]) -> pd.DataFrame:
+    """
+    Parses regions dataframe data. This function assumes that the input_file is output
+    from regions2d object's to_csv function or the input_file is region_contour output
+    from regions2d object's mask function.
+
+    Parameters
+    ----------
+    input_file : str or pd.DataFrame
+        Input regions CSV / DataFrame to be parsed.
+
+    Returns
+    -------
+    data : pd.DataFrame
+        The parsed regions data if all checks pass.
+
+    Raises
+    ------
+    ValueError
+        If the parsed data does not match the expected structure.
+    """
+    if isinstance(input_file, str):
+        # Check for validity of input_file.
+        check_file(input_file, "CSV")
+
+        # Read data from CSV file
+        data = pd.read_csv(input_file)
+    elif isinstance(input_file, pd.DataFrame):
+        # Set data as input_file
+        data = input_file
+    else:
+        raise ValueError(
+            "Input file must be of type str (string path to file) "
+            f"nor pd.DataFrame. It is of type {type(input_file)}."
+        )
+
+    # Define the expected columns
+    expected_columns = ["region_id", "time", "depth"]
+
+    # Check if all expected columns are present
+    for column in expected_columns:
+        if column not in data.columns:
+            raise ValueError(f"Missing required column: {column}")
+
+    # Check for unique region_id values
+    if not data["region_id"].is_unique:
+        raise ValueError("Non-unique values found in 'region_id' column.")
+
+    # Check if all time data is in the form of an array that is of type string
+    if all(isinstance(value, str) and "[" in value and "]" in value for value in data["depth"]):
+        # Strip [] and apply np.fromstring to each element in the "depth" column
+        data["depth"] = data["depth"].map(lambda x: np.fromstring(x.strip("[]"), sep=" "))
+
+    # Check if all time data is in the form of an array that is of type string
+    if all(isinstance(value, str) and "[" in value and "]" in value for value in data["time"]):
+        # Extract datetime strings enclosed in single quotes and split them
+        data["time"] = data["time"].apply(
+            lambda x: np.array(
+                [dt.strip("'") for dt in x.strip("[]").split()], dtype="datetime64[ns]"
+            )
+        )
+
+    # Set region_id values to integers
+    data["region_id"] = data["region_id"].apply(lambda x: int(x))
+
     return data

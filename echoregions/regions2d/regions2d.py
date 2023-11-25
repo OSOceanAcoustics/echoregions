@@ -14,7 +14,7 @@ from xarray import DataArray, Dataset
 from ..utils.api import convert_mask_3d_to_2d
 from ..utils.io import validate_path
 from ..utils.time import parse_simrad_fname_time
-from .regions2d_parser import parse_regions_file
+from .regions2d_parser import parse_evr, parse_regions_df
 
 
 class Regions2D:
@@ -27,9 +27,15 @@ class Regions2D:
         input_file: str,
         min_depth: Union[int, float] = None,
         max_depth: Union[int, float] = None,
+        input_type: str = "EVR",
     ):
         self.input_file = input_file
-        self.data = parse_regions_file(input_file)
+        if input_type == "EVR":
+            self.data = parse_evr(input_file)
+        elif input_type == "CSV":
+            self.data = parse_regions_df(input_file)
+        else:
+            raise ValueError(f"Regions2D input_type must be EVR or CSV. Got {input_type} instead.")
         self.output_file = []
 
         self.min_depth = min_depth
@@ -41,18 +47,23 @@ class Regions2D:
     def __getitem__(self, val: int) -> Series:
         return self.data.iloc[val]
 
-    def to_csv(self, save_path: bool = None) -> None:
+    def to_csv(self, save_path: bool = None, mode="w") -> None:
         """Save a Dataframe to a .csv file
 
         Parameters
         ----------
         save_path : str
-            path to save the CSV file to
+            Path to save the CSV file to.
+        mode : str
+            Write mode arg for to_csv.
         """
         # Check if the save directory is safe
         save_path = validate_path(save_path=save_path, input_file=self.input_file, ext=".csv")
-        # Reorder columns and export to csv
-        self.data.to_csv(save_path, index=False)
+
+        # Save to CSV
+        self.data.to_csv(save_path, index=False, mode=mode)
+
+        # Append save_path
         self.output_file.append(save_path)
 
     def to_json(self, save_path: str = None) -> None:
@@ -385,7 +396,8 @@ class Regions2D:
                 areas.
             Also contains a data variable (`mask_labels`) with mask labels
             corresponding to region_id values.
-
+        region_contours : pd.DataFrame
+            DataFrame containing region_id, depth, and time.
         """
         if isinstance(region_id, list):
             if len(region_id) == 0:
@@ -456,7 +468,9 @@ class Regions2D:
             )
 
             # Create mask
-            r = regionmask.Regions(outlines=regions_np, names=filtered_region_id, name=mask_name)
+            r = regionmask.Regions(
+                outlines=regions_np, numbers=filtered_region_id, name=mask_name, overlap=True
+            )
             mask_da = r.mask_3D(
                 da_Sv["unix_time"],
                 da_Sv["depth"],
@@ -465,9 +479,8 @@ class Regions2D:
                 int
             )  # This maps False to 0 and True to 1
 
-            # Replace region coords with region_id coords
-            mask_da = mask_da.rename({"names": "region_id"})
-            mask_da = mask_da.swap_dims({"region": "region_id"})
+            # Rename region coords with region_id coords
+            mask_da = mask_da.rename({"region": "region_id"})
 
             # Remove all coords other than depth, ping_time, region_id
             mask_da = mask_da.drop_vars(
@@ -503,7 +516,12 @@ class Regions2D:
                 # Convert 3d mask to 2d mask
                 mask_ds = convert_mask_3d_to_2d(mask_ds)
 
-            return mask_ds
+            # Get region_contours
+            region_contours = region_df[region_df["region_id"].isin(masked_region_id)][
+                ["region_id", "time", "depth"]
+            ]
+
+            return mask_ds, region_contours
 
     def transect_mask(
         self,

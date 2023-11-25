@@ -1,12 +1,14 @@
 import os
+from typing import Union
 
+import numpy as np
 import pandas as pd
 
 from ..utils.io import check_file
 from ..utils.time import parse_time
 
 
-def parse_line_file(input_file: str):
+def parse_evl(input_file: str):
     """Parse EVL Line File and place data in Pandas Dataframe.
 
     Parameters
@@ -61,5 +63,60 @@ def parse_line_file(input_file: str):
     df.loc[:, "time"] = df.loc[:, "time"].apply(parse_time)
     order = list(data_dict["metadata"].keys()) + list(data_dict["points"][0].keys())
     data = df[order]
+
+    return data
+
+
+def parse_lines_df(input_file: Union[str, pd.DataFrame]) -> pd.DataFrame:
+    """
+    Parses lines dataframe data. This function assumes that the input_file is output
+    from lines object's to_csv function or the input_file is bottom_contour output
+    from lines object's mask function.
+
+    Parameters
+    ----------
+    input_file : str or pd.DataFrame
+        Input lines CSV / DataFrame to be parsed.
+
+    Returns
+    -------
+    data : pd.DataFrame
+        The parsed lines data if all checks pass.
+
+    Raises
+    ------
+    ValueError
+        If the parsed data does not match the expected structure.
+    """
+    if isinstance(input_file, str):
+        # Check for validity of input_file.
+        check_file(input_file, "CSV")
+
+        # Read data from CSV file
+        data = pd.read_csv(input_file)
+    elif isinstance(input_file, pd.DataFrame):
+        # Set data as input_file
+        data = input_file
+    else:
+        raise ValueError(
+            "Input file must be of type str (string path to file) "
+            f"nor pd.DataFrame. It is of type {type(input_file)}."
+        )
+
+    # Define the expected columns
+    expected_columns = ["time", "depth"]
+
+    # Check if all expected columns are present
+    for column in expected_columns:
+        if column not in data.columns:
+            raise ValueError(f"Missing required column: {column}")
+
+    if not pd.api.types.is_float_dtype(data["depth"]):
+        # Convert time to np.float64
+        data["depth"] = data["depth"].apply(lambda x: np.float64(x))
+
+    if not pd.api.types.is_datetime64_any_dtype(data["time"]):
+        # Convert time to np.datetime64
+        data["time"] = data["time"].apply(lambda x: np.datetime64(x))
 
     return data

@@ -143,3 +143,6 @@ __main__.py
 *.json
 *.png
 !x1.zarr
+
+# Setup
+_echoregions_version.py

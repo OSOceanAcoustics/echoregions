@@ -2,13 +2,14 @@ import json
 from typing import Dict, Iterable, List, Union
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import xarray as xr
 from pandas import DataFrame, Timestamp
 from xarray import DataArray
 
 from ..utils.io import validate_path
-from .lines_parser import parse_line_file
+from .lines_parser import parse_evl, parse_lines_df
 
 ECHOVIEW_NAN_DEPTH_VALUE = -10000.99
 
@@ -18,9 +19,19 @@ class Lines:
     Class that contains and performs operations with Depth/Lines data from Echoview EVL files.
     """
 
-    def __init__(self, input_file: str, nan_depth_value: float = None):
+    def __init__(
+        self,
+        input_file: Union[str, pd.DataFrame],
+        nan_depth_value: float = None,
+        input_type: str = "EVL",
+    ):
         self.input_file = input_file
-        self.data = parse_line_file(input_file)
+        if input_type == "EVL":
+            self.data = parse_evl(input_file)
+        elif input_type == "CSV":
+            self.data = parse_lines_df(input_file)
+        else:
+            raise ValueError(f"Lines input_type must be EVL or CSV. Got {input_type} instead.")
         self.output_file = []
 
         self._nan_depth_value = None  # Set to replace -10000.99 depth values with (EVL only)
@@ -56,18 +67,20 @@ class Lines:
         if not inplace:
             return regions
 
-    def to_csv(self, save_path: bool = None) -> None:
+    def to_csv(self, save_path: bool = None, mode="w") -> None:
         """Save a Dataframe to a .csv file
 
         Parameters
         ----------
         save_path : str
-            path to save the CSV file to
+            Path to save the CSV file to.
+        mode : str
+            Write mode arg for to_csv.
         """
         # Check if the save directory is safe
         save_path = validate_path(save_path=save_path, input_file=self.input_file, ext=".csv")
         # Reorder columns and export to csv
-        self.data.to_csv(save_path, index=False)
+        self.data.to_csv(save_path, index=False, mode=mode)
         self.output_file.append(save_path)
 
     def to_json(self, save_path: str = None, pretty: bool = True, **kwargs) -> None:
@@ -166,6 +179,15 @@ class Lines:
         bottom_mask : Xarray DataArray
             Matrix of coordinates (ping_time, depth) with values such that bottom: False,
             otherwise: True
+        bottom_contours : pd.DataFrame
+            DataFrame containing depth and time.
+
+        Notes
+        -----
+        Prior to creating the mask, this method performs interpolation on the bottom data
+        points found in the lines.data dataframe.
+        The nearest interpolation method from Pandas has a problem when points are far
+        from each other.
         """
 
         if not isinstance(da_Sv, DataArray):
@@ -186,7 +208,7 @@ class Lines:
         lines_df = self.data
 
         # new index
-        sonar_index = list(da_Sv.ping_time.data)
+        sonar_ping_time = list(da_Sv.ping_time.data)
 
         # filter bottom within start and end time
         start_time = da_Sv.ping_time.data.min()
@@ -197,18 +219,11 @@ class Lines:
         if len(filtered_bottom) > 0:
             # create joint index
             joint_index = list(
-                set(list(pd.DataFrame(sonar_index)[0]) + list(filtered_bottom.index))
+                set(list(pd.DataFrame(sonar_ping_time)[0]) + list(filtered_bottom.index))
             )
 
-            # interpolate on the sonar coordinates
-            # nearest interpolation has a problem when points are far from each other
-            # TODO There exists a problem where when we use .loc prior to reindexing
-            # we are hit with a key not found error. Potentially investigate this
-            # after major changes have been completed.
-            bottom_interpolated = filtered_bottom.reindex(joint_index).loc[sonar_index]
             # max_depth to set the NAs to after interpolation
             max_depth = float(da_Sv.depth.max())
-            bottom_interpolated = bottom_interpolated.fillna(max_depth)
 
             # Check for correct interpolation inputs.
             # TODO Add spline and krogh and their associated kwargs.
@@ -243,21 +258,19 @@ class Lines:
                                 inside, outside."
                 )
 
-            # Interpolate on the sonar coordinates. Note that nearest interpolation has a problem
-            # when points are far from each other.
-            try:
-                bottom_interpolated = (
-                    filtered_bottom.reindex(joint_index)
-                    .interpolate(method=method, limit_area=limit_area)
-                    .loc[sonar_index]
-                ).fillna(max_depth)
-            except Exception as e:
-                # For all other such errors that may not necessarily deal with
-                # the specific values of method and limit_area.
-                print(e)
+            # Interpolate on the sonar coordinates. Note that nearest interpolation
+            # has a problem when points are far from each other.
+            # TODO There exists a problem where when we use .loc prior to reindexing
+            # we are hit with a key not found error.
+            bottom_contours = (
+                filtered_bottom[["depth"]]
+                .reindex(joint_index)
+                .interpolate(method=method, limit_area=limit_area)
+                .loc[sonar_ping_time]
+            ).fillna(max_depth)
 
             # convert to data array for bottom
-            bottom_da = bottom_interpolated["depth"].to_xarray()  # .rename({'index':'ping_time'})
+            bottom_da = bottom_contours["depth"].to_xarray()  # .rename({'index':'ping_time'})
             bottom_da = bottom_da.rename({"time": "ping_time"})
 
             # create a data array of depths
@@ -267,11 +280,17 @@ class Lines:
             # bottom: False, otherwise: True
             bottom_mask = depth_da < bottom_da
 
+            # Reset bottom_contours index so that time index becomes time column
+            bottom_contours = bottom_contours.reset_index()
+
         else:
-            # set everything to False
+            # Set everything to False
             bottom_mask = xr.full_like(da_Sv, False)
 
-        # bottom: False becomes 0, otherwise: True becomes 1
+            # Set bottom contours to empty DataFrame with time and depth columns
+            bottom_contours = pd.DataFrame(columns=["depth", "time"])
+
+        # Bottom: True becomes 1, False becomes 0
         bottom_mask = bottom_mask.where(True, 1, 0)
 
-        return bottom_mask
+        return bottom_mask, bottom_contours

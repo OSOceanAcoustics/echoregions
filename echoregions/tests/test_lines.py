@@ -46,6 +46,40 @@ def da_Sv_fixture() -> DataArray:
 
 
 @pytest.mark.lines
+def test_lines_region_df(lines_fixture: Lines) -> None:
+    """
+    Ensures that read_region_df provides the same Regions2D object
+    as read_evr.
+
+    Parameters
+    ----------
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
+    """
+
+    # Get Lines object and DataFrame
+    lines_1 = lines_fixture
+    lines_1_df = lines_1.data
+
+    # Send to CSV
+    csv_file_path = DATA_DIR / "lines_to_csv_file.csv"
+    lines_1.to_csv(csv_file_path)
+
+    # Read Lines CSV and extract DataFrame
+    lines_2 = er.read_lines_csv(csv_file_path)
+    lines_2_df = lines_2.data
+
+    # Check equality between the elements in both depth columns
+    assert np.all([d_1 == d_2 for d_1, d_2 in zip(lines_1_df["depth"], lines_2_df["depth"])])
+
+    # Check equality between the elements in both time columns
+    assert np.all([t_1 == t_2 for t_1, t_2 in zip(lines_1_df["time"], lines_2_df["time"])])
+
+    # Delete the file
+    csv_file_path.unlink()
+
+
+@pytest.mark.lines
 def test_lines_parsing(lines_fixture: Lines) -> None:
     """
     Test parsing of lines via checking individual values and aggregate values.
@@ -189,7 +223,7 @@ def test_lines_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
         DataArray containing Sv data of test zarr file.
     """
 
-    M = lines_fixture.mask(da_Sv_fixture.isel(channel=0))
+    M, bottom_contours = lines_fixture.mask(da_Sv_fixture.isel(channel=0))
 
     # Compute unique values
     unique_values = np.unique(M.compute().data, return_counts=True)
@@ -201,6 +235,18 @@ def test_lines_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
     # Assert that there are more masked points then there are unmasked points
     assert values[0] == 0 and values[1] == 1
     assert counts[0] < counts[1]
+
+    # Assert that time is datetime64
+    assert pd.api.types.is_datetime64_any_dtype(bottom_contours["time"])
+
+    # Assert that depth is float64
+    assert pd.api.types.is_float_dtype(bottom_contours["depth"])
+
+    # Place bottom contours in Lines object
+    lines_2 = Lines(bottom_contours, None, input_type="CSV")
+
+    # Run lines masking to check if masking runs
+    _, _ = lines_2.mask(da_Sv_fixture.isel(channel=0))
 
 
 @pytest.mark.lines
@@ -218,7 +264,7 @@ def test_lines_mask_empty(lines_fixture: Lines, da_Sv_fixture: DataArray) -> Non
     # Create empty lines object
     lines_fixture.data = lines_fixture.data[0:0]
 
-    M = lines_fixture.mask(da_Sv_fixture.isel(channel=0))
+    M, bottom_contours_1 = lines_fixture.mask(da_Sv_fixture.isel(channel=0))
 
     # Compute unique values
     unique_values = np.unique(M.compute().data, return_counts=True)
@@ -230,6 +276,18 @@ def test_lines_mask_empty(lines_fixture: Lines, da_Sv_fixture: DataArray) -> Non
     # Assert that the only unique value is 0
     assert len(values) == 1 and len(counts) == 1
     assert values[0] == 0
+
+    # Assert that bottom_contours is empty
+    assert bottom_contours_1.empty
+
+    # Use bottom contours to create Lines object
+    lines_2 = Lines(bottom_contours_1, None, input_type="CSV")
+
+    # Run lines masking to check if masking runs
+    _, bottom_contours_2 = lines_2.mask(da_Sv_fixture.isel(channel=0))
+
+    # Assert that bottom_contours is empty
+    assert bottom_contours_2.empty
 
 
 @pytest.mark.lines
