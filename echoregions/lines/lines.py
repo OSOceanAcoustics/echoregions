@@ -162,9 +162,9 @@ class Lines:
 
     def mask(self, da_Sv: DataArray, method: str = "nearest", limit_area: str = None):
         """
-        Subsets a bottom dataset to the range of an Sv dataset
-        Create a mask of same shape as data found in Sonar object;
-        bottom: True, otherwise: False.
+        Subsets a bottom dataset to the range of an Sv dataset. Create a mask of
+        same shape as data found in Sonar object:
+        Bottom: True, Otherwise: False.
 
         Parameters
         ----------
