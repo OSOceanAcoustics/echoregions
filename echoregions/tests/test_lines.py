@@ -234,7 +234,7 @@ def test_lines_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
 
     # Assert that there are more masked points then there are unmasked points
     assert values[0] == 0 and values[1] == 1
-    assert counts[0] < counts[1]
+    assert counts[0] > counts[1]
 
     # Assert that time is datetime64
     assert pd.api.types.is_datetime64_any_dtype(bottom_contours["time"])

@@ -163,7 +163,8 @@ class Lines:
     def mask(self, da_Sv: DataArray, method: str = "nearest", limit_area: str = None):
         """
         Subsets a bottom dataset to the range of an Sv dataset
-        Create a mask of same shape as data found in Sonar object; bottom: False, otherwise: True
+        Create a mask of same shape as data found in Sonar object;
+        bottom: True, otherwise: False.
 
         Parameters
         ----------
@@ -192,7 +193,7 @@ class Lines:
 
         if not isinstance(da_Sv, DataArray):
             raise TypeError(
-                "Input da_Sv must be of type DataArray. da_Sv was instead" f" of type {type(da_Sv)}"
+                f"Input da_Sv must be of type DataArray. da_Sv was instead of type {type(da_Sv)}"
             )
 
         def filter_bottom(bottom, start_date, end_date):
@@ -270,15 +271,15 @@ class Lines:
             ).fillna(max_depth)
 
             # convert to data array for bottom
-            bottom_da = bottom_contours["depth"].to_xarray()  # .rename({'index':'ping_time'})
+            bottom_da = bottom_contours["depth"].to_xarray()
             bottom_da = bottom_da.rename({"time": "ping_time"})
 
             # create a data array of depths
             depth_da = da_Sv["depth"] + xr.zeros_like(da_Sv)
 
             # create a mask for the bottom:
-            # bottom: False, otherwise: True
-            bottom_mask = depth_da < bottom_da
+            # bottom: True, otherwise: False
+            bottom_mask = depth_da > bottom_da
 
             # Reset bottom_contours index so that time index becomes time column
             bottom_contours = bottom_contours.reset_index()
