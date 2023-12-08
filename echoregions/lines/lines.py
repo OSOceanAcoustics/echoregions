@@ -221,7 +221,9 @@ class Lines:
                 set(list(pd.DataFrame(sonar_ping_time)[0]) + list(filtered_bottom.index))
             )
 
-            # Interpolate on the sonar coordinates.
+            # Interpolate on the sonar coordinates. Note that some interpolation kwaargs
+            # will result in some interpolation NaN values. The ffill and bfill lines
+            # are there to fill in these NaN values.
             # TODO There exists a problem where when we use .loc prior to reindexing
             # we are hit with a key not found error.
             bottom_contours = (
@@ -229,6 +231,8 @@ class Lines:
                 .reindex(joint_index)
                 .interpolate(**kwargs)
                 .loc[sonar_ping_time]
+                .ffill()
+                .bfill()
             )
 
             # convert to data array for bottom
