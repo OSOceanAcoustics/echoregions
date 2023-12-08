@@ -221,8 +221,7 @@ class Lines:
                 set(list(pd.DataFrame(sonar_ping_time)[0]) + list(filtered_bottom.index))
             )
 
-            # Interpolate on the sonar coordinates. Note that nearest interpolation
-            # has a problem when points are far from each other.
+            # Interpolate on the sonar coordinates.
             # TODO There exists a problem where when we use .loc prior to reindexing
             # we are hit with a key not found error.
             bottom_contours = (
