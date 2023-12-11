@@ -178,12 +178,14 @@ class Regions2D:
 
         return region
 
-    def close_region(self, region_id: List = None) -> DataFrame:
+    def close_region(
+        self, region_id: Union[float, int, str, List[Union[float, int, str]]] = None
+    ) -> DataFrame:
         """Close a region by appending the first point to end of the list of points.
 
         Parameters
         ----------
-        region_id : List, ``None``
+        region_id : Union[float, int, str, List[Union[float, int, str]]], ``None``
             region(s) to select raw files with
             If ``None``, select all regions. Defaults to ``None``
 
@@ -200,9 +202,10 @@ class Regions2D:
     def select_sonar_file(
         self,
         sonar_file_names: List[str],
-        region: Union[float, str, list, Series, DataFrame] = None,
+        region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
     ) -> List:
-        """Finds SIMRAD sonar files in the time domain that encompasses region or list of regions.
+        """Finds SIMRAD sonar files in the time domain that encompasses a region or
+        list of regions.
 
         SIMRAD Format Explained with the example Summer2017-D20170625-T205018.nc:
 
@@ -216,8 +219,8 @@ class Regions2D:
         ----------
         files : list
             Raw filenames in SIMRAD format.
-        region : float, str, list, Series, DataFrame, ``None``
-            Region(s) to select sonar files with.
+        region_id : Union[float, int, str, List[Union[float, int, str]]], ``None``
+            Region IDs to select sonar files with.
             If ``None``, select all regions. Defaults to ``None``
 
         Returns
@@ -240,7 +243,7 @@ class Regions2D:
         ).values
 
         # Ensure that region is a DataFrame
-        region = self.select_region(region)
+        region = self.select_region(region_id)
 
         # Extract region time values
         region_times = np.hstack(region["time"].values)
@@ -300,7 +303,7 @@ class Regions2D:
 
     def plot(
         self,
-        region_id: List = None,
+        region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
         close_regions: bool = False,
         **kwargs,
     ) -> None:
@@ -309,7 +312,7 @@ class Regions2D:
 
         Parameters
         ---------
-        region_id : List, ``None``
+        region_id : Union[float, int, str, List[Union[float, int, str]]], ``None``
             Region(s) to select raw files with
             If ``None``, select all regions. Defaults to ``None``
         close_region : bool
@@ -318,7 +321,7 @@ class Regions2D:
             Additional arguments passed to matplotlib plot
         """
 
-        # Ensure that region is a DataFrame
+        # Select Region
         region = self.select_region(region_id)
 
         if close_regions:
@@ -329,7 +332,7 @@ class Regions2D:
     def mask(
         self,
         da_Sv: DataArray,
-        region_id: List = None,
+        region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
         mask_name: str = "mask",
         mask_labels: dict = None,
         collapse_to_2d: bool = False,
@@ -342,7 +345,7 @@ class Regions2D:
         ----------
         da_Sv : Data Array
             DataArray of shape (ping_time, depth) containing Sv data.
-        region_id : list
+        region_id : List[Union[float, int, str]]], ``None``
             list IDs of regions to create mask for
         mask_name : str
             If provided, used to name the output mask array, otherwise `mask`
