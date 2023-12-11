@@ -533,6 +533,7 @@ class Regions2D:
             "end": "ET",
         },
         bbox_distance_threshold: float = 1.0,
+        must_pass_check: bool = False,
     ) -> DataArray:
         """Mask data from Data Array containing Sv data based off of a Regions2D object
         and its transect_values.
@@ -551,6 +552,9 @@ class Regions2D:
         bbox_distance_threshold: float
             The maximum value for how far apart the left and right bounding box for each transect
             value region. Default is set to 1 minute.
+        must_pass_check : bool
+            To determine whether fail if transect sequence check strings exist or pass and print
+            the transect sequence checks.
 
         Returns
         -------
@@ -565,6 +569,14 @@ class Regions2D:
         resume_str = transect_dict["resume"]
         end_str = transect_dict["end"]
         transect_strs = [start_str, break_str, resume_str, end_str]
+
+        # Create transect next allowable dictionary
+        transect_next_allowable = {
+            start_str: [break_str, end_str],
+            break_str: [resume_str],
+            resume_str: [break_str, end_str],
+            end_str: [start_str],
+        }
 
         # Check that there are 4 unique transect strings
         if len(transect_strs) != len(set(transect_strs)):
@@ -592,58 +604,6 @@ class Regions2D:
             rf"({start_str}|{break_str}|{resume_str}|{end_str})"
         )
 
-        # Check if for all transects, there exists 1 start_str transect type.
-        # If there does not exists a start_str transect, set the first region
-        # to be the start_str transect.
-        if not (
-            transect_df.groupby("file_name").apply(
-                lambda x: x[x["transect_type"] == start_str].count()
-            )["file_name"]
-            == 1
-        ).all():
-            warnings.warn(
-                UserWarning(
-                    f"There exists a transect that does not contain a single {start_str} "
-                    "transect_type."
-                )
-            )
-            # Modify first row of original dataframe such that its transect type has value start_str
-            # and add it into transect df as its first row.
-            first_row = region_df.loc[region_df.index[0]].copy().to_frame().T
-            first_row["transect_type"] = start_str
-            transect_df = pd.concat([first_row, transect_df]).reset_index(drop=True)
-
-        # Check if for all transects, there exists 1 end_str transect type.
-        if not (
-            transect_df.groupby("file_name").apply(
-                lambda x: x[x["transect_type"] == end_str].count()
-            )["file_name"]
-            == 1
-        ).all():
-            warnings.warn(
-                UserWarning(
-                    f"There exists a transect that does not contain a single {end_str} "
-                    "transect type."
-                )
-            )
-            # Modify last row of original dataframe such that its transect type has value end_str
-            # and add it into transect df as its last row.
-            last_row = region_df.tail(1).copy()
-            last_row["transect_type"] = end_str
-            transect_df = pd.concat([transect_df, last_row]).reset_index(drop=True)
-
-        # Checking the maximum width of a transect log region bbox.
-        # If over a minute, throw an error.
-        max_time = (transect_df["region_bbox_right"] - transect_df["region_bbox_left"]).max()
-        max_time_minutes = max_time.total_seconds() / 60
-        if max_time_minutes > bbox_distance_threshold:
-            Warning(
-                f"Maximum width in time of transect log region bboxs is "
-                f"too large i.e. over {bbox_distance_threshold} minute(s). "
-                f"The maximum width is: {max_time_minutes}.",
-                UserWarning,
-            )
-
         # Drop time duplicates
         transect_df = transect_df.drop_duplicates(subset=["region_bbox_left"])
 
@@ -656,49 +616,67 @@ class Regions2D:
             -1
         )
 
-        # Check if start_str followed by break_str/end_str.
-        start_transect_rows = transect_df[transect_df["transect_type"] == start_str]
-        start_transect_type_next_list = list(start_transect_rows["transect_type_next"].values)
-        for transect_type_next in start_transect_type_next_list:
-            if transect_type_next not in [break_str, end_str]:
-                raise ValueError(
-                    f"Transect start string is followed by invalid value "
-                    f"{transect_type_next}. Must be followed by either "
-                    f"{break_str} or {end_str}"
-                )
+        # Reset Transect Dataframe Index
+        transect_df.reset_index(inplace=True)
 
-        # Check if break_str followed by resume_str.
-        break_transect_rows = transect_df[transect_df["transect_type"] == break_str]
-        break_transect_type_next_list = list(break_transect_rows["transect_type_next"].values)
-        for transect_type_next in break_transect_type_next_list:
-            if transect_type_next != resume_str:
-                raise ValueError(
-                    f"Transect break string is followed by invalid value "
-                    f"{transect_type_next}. Must be followed by {resume_str}."
-                )
+        # Create an empty list to collect error messages.
+        warning_messages = []
 
-        # Check if resume_str followed by break_str/end_str.
-        resume_transect_rows = transect_df[transect_df["transect_type"] == resume_str]
-        resume_transect_type_next_list = list(resume_transect_rows["transect_type_next"].values)
-        for transect_type_next in resume_transect_type_next_list:
-            if transect_type_next not in [break_str, end_str]:
-                raise ValueError(
-                    f"Transect resume string is followed by invalid value "
-                    f"{transect_type_next}. Must be followed by either "
-                    f"{break_str} or {end_str}."
-                )
+        # Set transect_type_next values to be empty strings if they are NAs.
+        transect_df["transect_type_next"] = transect_df.apply(
+            lambda x: "" if isna(x["transect_type_next"]) else x["transect_type_next"],
+            axis=1,
+        )
 
-        # Check if end_str followed by start_str or if NA.
-        end_transect_rows = transect_df[transect_df["transect_type"] == end_str]
-        end_transect_type_next_list = list(end_transect_rows["transect_type_next"].values)
-        for transect_type_next in end_transect_type_next_list:
-            # If this value is not NA, check if it is start_str.
-            if not isna(transect_type_next):
-                if transect_type_next != start_str:
-                    raise ValueError(
-                        f"Transect end string is followed by invalid value "
-                        f"{transect_type_next}. Must be followed by {start_str}."
-                    )
+        # Ensure correct sequence of transect types occur. If they do not, append to warning_messages.
+        for index, row in transect_df.iterrows():
+            transect_type = row["transect_type"]
+            transect_type_next = row["transect_type_next"]
+            type_next_warning_message = (
+                f"Error in row {index + 2}: Transect string {transect_type} is followed by "
+                f"invalid value {transect_type_next}. Must be followed by "
+                f"{transect_next_allowable[transect_type]}"
+            )
+            if transect_type in [start_str, break_str, resume_str]:
+                # Check for correct transect_type_next values
+                if transect_type_next not in transect_next_allowable[transect_type]:
+                    warning_messages.append(type_next_warning_message)
+            elif transect_type == end_str:
+                # Check if end_str followed by start_str or if empty. If empty then, we allow it to be
+                # empty in the case where it is in the last row.
+                if transect_type_next == "" and index + 1 != len(transect_df.index):
+                    warning_messages.append(type_next_warning_message)
+                # Check for correct transect_type_next values
+                elif (
+                    transect_type_next != ""
+                    and transect_type_next not in transect_next_allowable[end_str]
+                ):
+                    warning_messages.append(type_next_warning_message)
+            else:
+                # Throw error message when value is not in allowable transect strings
+                type_warning_message = (
+                    f"Error in row {index + 2}: Transect type is of value {transect_type}. This is not "
+                    f"within the allowable transect string values {transect_strs}."
+                )
+                warning_messages.append(type_warning_message)
+
+        # Checking the maximum width of a transect log region bbox.
+        # If over a minute, throw an error.
+        max_time = (transect_df["region_bbox_right"] - transect_df["region_bbox_left"]).max()
+        max_time_minutes = max_time.total_seconds() / 60
+        if max_time_minutes > bbox_distance_threshold:
+            warning_messages.append(
+                f"Maximum width in time of transect log region bboxs is "
+                f"too large i.e. over {bbox_distance_threshold} minute(s). "
+                f"The maximum width is: {max_time_minutes}.",
+            )
+
+        # Raise an exception if there are any warning messages and must_pass_check is True.
+        # Else, print warning messages.
+        if len(warning_messages) > 0 and must_pass_check:
+            raise Exception("\n".join(warning_messages))
+        else:
+            print("\n".join(warning_messages))
 
         # Create binary variable indicating within transect segments.
         transect_df["within_transect"] = False

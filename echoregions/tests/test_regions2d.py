@@ -809,31 +809,6 @@ def test_within_transect(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray)
 
 
 @pytest.mark.regions2d
-def test_within_transect_no_ET_ST(da_Sv_fixture: DataArray) -> None:
-    """
-    Tests functionality for evr file with no ST and for evr file with no ET.
-    Should raise appropriate UserWarning and should use first row for ST
-    and last row for ET.
-
-
-    Parameters
-    ----------
-    da_Sv_fixture : DataArray
-        DataArray containing Sv data of test zarr file.
-    """
-
-    transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
-    with pytest.warns(UserWarning):
-        evr_path = DATA_DIR / "transect_no_ST.evr"
-        r2d = er.read_evr(evr_path)
-        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
-    with pytest.warns(UserWarning):
-        evr_path = DATA_DIR / "transect_no_ET.evr"
-        r2d = er.read_evr(evr_path)
-        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
-
-
-@pytest.mark.regions2d
 def test_within_transect_bad_dict(da_Sv_fixture: DataArray) -> None:
     """
     Tests functionality for transect_mask with invalid dictionary values.
@@ -878,26 +853,34 @@ def test_within_transect_invalid_next(da_Sv_fixture: DataArray) -> None:
     # Initialize proper dictionary
     transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
 
-    # Should raise value error as ST is followed by ST
-    with pytest.raises(ValueError):
+    # Should raise Exception if ST is followed by ST
+    with pytest.raises(Exception):
         evr_path = DATA_DIR / "x1_ST_ST.evr"
         r2d = er.read_evr(evr_path)
-        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
+        _ = r2d.transect_mask(
+            da_Sv=da_Sv_fixture, transect_dict=transect_dict, must_pass_check=True
+        )
 
-    # Should raise value error as RT is followed by RT
-    with pytest.raises(ValueError):
+    # Should raise Exception if RT is followed by RT
+    with pytest.raises(Exception):
         evr_path = DATA_DIR / "x1_RT_RT.evr"
         r2d = er.read_evr(evr_path)
-        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
+        _ = r2d.transect_mask(
+            da_Sv=da_Sv_fixture, transect_dict=transect_dict, must_pass_check=True
+        )
 
-    # Should raise value error as BT is followed by ET
-    with pytest.raises(ValueError):
+    # Should raise value Exception if BT is followed by ET
+    with pytest.raises(Exception):
         evr_path = DATA_DIR / "x1_BT_ET.evr"
         r2d = er.read_evr(evr_path)
-        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
+        _ = r2d.transect_mask(
+            da_Sv=da_Sv_fixture, transect_dict=transect_dict, must_pass_check=True
+        )
 
-    # Should raise value error as ET is followed by RT
-    with pytest.raises(ValueError):
+    # Should raises Exception if ET is followed by RT
+    with pytest.raises(Exception):
         evr_path = DATA_DIR / "x1_ET_RT.evr"
         r2d = er.read_evr(evr_path)
-        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
+        _ = r2d.transect_mask(
+            da_Sv=da_Sv_fixture, transect_dict=transect_dict, must_pass_check=True
+        )
