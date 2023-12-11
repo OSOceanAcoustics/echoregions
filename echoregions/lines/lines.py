@@ -160,19 +160,18 @@ class Lines:
         else:
             plt.plot(df.time, df.depth, fmt, **kwargs)
 
-    def mask(self, da_Sv: DataArray, method: str = "nearest", limit_area: str = None):
+    def mask(self, da_Sv: DataArray, **kwargs):
         """
-        Subsets a bottom dataset to the range of an Sv dataset
-        Create a mask of same shape as data found in Sonar object; bottom: False, otherwise: True
+        Subsets a bottom dataset to the range of an Sv dataset. Create a mask of
+        the same shape as data found in the Sonar object:
+        Bottom: True, Otherwise: False.
 
         Parameters
         ----------
         da_Sv : Xarray DataArray
             Matrix of coordinates (ping_time, depth) that contains Sv values.
-        method : str
-            Contains Pandas/Scipy parameter for interpolation method.
-        limit_area : str
-            Contains Pandas parameter for determining filling restriction for NA values.
+        **kwargs : dict
+            Keyword arguments to be passed to pandas.DataFrame.interpolate.
 
         Returns
         -------
@@ -192,7 +191,7 @@ class Lines:
 
         if not isinstance(da_Sv, DataArray):
             raise TypeError(
-                "Input da_Sv must be of type DataArray. da_Sv was instead" f" of type {type(da_Sv)}"
+                f"Input da_Sv must be of type DataArray. da_Sv was instead of type {type(da_Sv)}"
             )
 
         def filter_bottom(bottom, start_date, end_date):
@@ -222,63 +221,30 @@ class Lines:
                 set(list(pd.DataFrame(sonar_ping_time)[0]) + list(filtered_bottom.index))
             )
 
-            # max_depth to set the NAs to after interpolation
-            max_depth = float(da_Sv.depth.max())
-
-            # Check for correct interpolation inputs.
-            # TODO Add spline and krogh and their associated kwargs.
-            if method not in [
-                None,
-                "linear",
-                "time",
-                "index",
-                "pad",
-                "nearest",
-                "zero",
-                "slinear",
-                "quadratic",
-                "cubic",
-                "barycentric",
-                "polynomial",
-                "piecewise_polynomial",
-                "pchip",
-                "akima",
-                "cubicspline",
-                "from_derivatives",
-            ]:
-                raise ValueError(
-                    f"Input method is {method}. Must be of value None, linear, \
-                                time, index, pad, nearest, zero, slinear, quadratic, \
-                                cubic, barycentric, polynomial, krogh, \
-                                from_derivatives."
-                )
-            if limit_area not in [None, "inside", "outside"]:
-                raise ValueError(
-                    f"Input limit_area is {limit_area}. Must be of value None, \
-                                inside, outside."
-                )
-
-            # Interpolate on the sonar coordinates. Note that nearest interpolation
-            # has a problem when points are far from each other.
+            # Interpolate on the sonar coordinates. Note that some interpolation kwaargs
+            # will result in some interpolation NaN values. The ffill and bfill lines
+            # are there to fill in these NaN values.
             # TODO There exists a problem where when we use .loc prior to reindexing
             # we are hit with a key not found error.
             bottom_contours = (
                 filtered_bottom[["depth"]]
                 .reindex(joint_index)
-                .interpolate(method=method, limit_area=limit_area)
+                .interpolate(**kwargs)
                 .loc[sonar_ping_time]
-            ).fillna(max_depth)
+                .ffill()
+                .bfill()
+            )
 
             # convert to data array for bottom
-            bottom_da = bottom_contours["depth"].to_xarray()  # .rename({'index':'ping_time'})
+            bottom_da = bottom_contours["depth"].to_xarray()
             bottom_da = bottom_da.rename({"time": "ping_time"})
 
             # create a data array of depths
             depth_da = da_Sv["depth"] + xr.zeros_like(da_Sv)
 
             # create a mask for the bottom:
-            # bottom: False, otherwise: True
-            bottom_mask = depth_da < bottom_da
+            # bottom: True, otherwise: False
+            bottom_mask = depth_da > bottom_da
 
             # Reset bottom_contours index so that time index becomes time column
             bottom_contours = bottom_contours.reset_index()

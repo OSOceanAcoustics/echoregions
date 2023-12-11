@@ -223,7 +223,13 @@ def test_lines_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
         DataArray containing Sv data of test zarr file.
     """
 
-    M, bottom_contours = lines_fixture.mask(da_Sv_fixture.isel(channel=0))
+    M, bottom_contours = lines_fixture.mask(
+        da_Sv_fixture.isel(channel=0),
+        method="slinear",
+        limit=5,
+        limit_area=None,
+        limit_direction="both",
+    )
 
     # Compute unique values
     unique_values = np.unique(M.compute().data, return_counts=True)
@@ -234,7 +240,7 @@ def test_lines_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
 
     # Assert that there are more masked points then there are unmasked points
     assert values[0] == 0 and values[1] == 1
-    assert counts[0] < counts[1]
+    assert counts[0] > counts[1]
 
     # Assert that time is datetime64
     assert pd.api.types.is_datetime64_any_dtype(bottom_contours["time"])
