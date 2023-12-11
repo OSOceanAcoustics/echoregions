@@ -361,6 +361,7 @@ def test_select_region(regions2d_fixture: Regions2D) -> None:
 
     # Set parameters to select on
     region_id = 2
+    region_class = "Trawl"
     time_range = [
         pd.to_datetime("2019-07-02T19:00:00.000000000"),
         pd.to_datetime("2019-07-02T20:00:00.000000000"),
@@ -369,19 +370,23 @@ def test_select_region(regions2d_fixture: Regions2D) -> None:
 
     # Perform selection and receive sampled dataframes
     df_1 = regions2d_fixture.select_region(region_id=region_id)
-    df_2 = regions2d_fixture.select_region(time_range=time_range)
-    df_3 = regions2d_fixture.select_region(depth_range=depth_range)
+    df_2 = regions2d_fixture.select_region(region_class=region_class)
+    df_3 = regions2d_fixture.select_region(time_range=time_range)
+    df_4 = regions2d_fixture.select_region(depth_range=depth_range)
 
     # Check for correct region_id
     for df_region_id in df_1["region_id"]:
         assert df_region_id == region_id
+    # Check for correct region_class
+    for df_region_class in df_2["region_class"]:
+        assert df_region_class == region_class
     # Check for correct time ranges
-    for time_array in df_2["time"]:
+    for time_array in df_3["time"]:
         for time in time_array:
             assert pd.to_datetime(time) >= time_range[0]
             assert pd.to_datetime(time) <= time_range[1]
     # Check for correct depth ranges
-    for depth_array in df_3["depth"]:
+    for depth_array in df_4["depth"]:
         for depth in depth_array:
             assert depth >= depth_range[0]
             assert depth <= depth_range[1]
@@ -403,6 +408,12 @@ def test_select_region_errors(regions2d_fixture: Regions2D) -> None:
         regions2d_fixture.select_region(region_id=())
     with pytest.raises(TypeError):
         regions2d_fixture.select_region(region_id=[1, []])
+
+    # Check incorrect region_class type
+    with pytest.raises(TypeError):
+        regions2d_fixture.select_region(region_class=())
+    with pytest.raises(TypeError):
+        regions2d_fixture.select_region(region_class=["1", []])
 
     # Check time range type:
     with pytest.raises(TypeError):

@@ -81,6 +81,7 @@ class Regions2D:
     def select_region(
         self,
         region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
+        region_class: Union[str, List[str]] = None,
         time_range: List[Timestamp] = None,
         depth_range: List[Union[float, int]] = None,
         copy=True,
@@ -89,8 +90,10 @@ class Regions2D:
 
         Parameters
         ----------
-        region_id : float, int, str, list, ``None``
+        region_id : Union[float, int, str, List[Union[float, int, str]]], ``None``
             A region id provided as a number, a string, or a list of these.
+        region_class : Union[str, List[str]], ``None``
+            A region class or a list of region classes.
         time_range : List of 2 Pandas Timestamps.
             Datetime range for the expected output of subselected DataFrame. 1st
             index value must be later than 0th index value.
@@ -128,7 +131,25 @@ class Regions2D:
                 )
             region = region[region["region_id"].isin(region_id)]
 
-        # Check and subset for time range
+        # Check and subset for region_class
+        if region_class is not None:
+            if isinstance(region_class, str):
+                region_class = [region_class]
+            elif isinstance(region_class, list):
+                for value in region_class:
+                    if not isinstance(value, str):
+                        raise TypeError(
+                            f"Invalid element in list region_class. Is of type: "
+                            f"{type(value)}. Must be of type str."
+                        )
+            else:
+                raise TypeError(
+                    f"Invalid region_class type: {type(region_class)}. "
+                    "Must be of type str, list, or None."
+                )
+            region = region[region["region_class"].isin(region_class)]
+
+        # Check and subset for time_range
         if time_range is not None:
             if not isinstance(time_range, list):
                 raise TypeError("Invalid time_range type. It must be a list.")
@@ -152,7 +173,7 @@ class Regions2D:
                 )
             ]
 
-        # Check and subset for depth range
+        # Check and subset for depth_range
         if depth_range is not None:
             if not isinstance(depth_range, list):
                 raise TypeError("Invalid depth_range type. It must be a list.")
@@ -179,7 +200,9 @@ class Regions2D:
         return region
 
     def close_region(
-        self, region_id: Union[float, int, str, List[Union[float, int, str]]] = None
+        self,
+        region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
+        region_class: Union[str, List[str]] = None,
     ) -> DataFrame:
         """Close a region by appending the first point to end of the list of points.
 
@@ -188,13 +211,15 @@ class Regions2D:
         region_id : Union[float, int, str, List[Union[float, int, str]]], ``None``
             region(s) to select raw files with
             If ``None``, select all regions. Defaults to ``None``
+        region_class : Union[str, List[str]], ``None``
+            A region class or a list of region classes.
 
         Returns
         -------
         DataFrame
             Returns a new DataFrame with closed regions
         """
-        region = self.select_region(region_id, copy=True)
+        region = self.select_region(region_id, region_class, copy=True)
         region["time"] = region.apply(lambda row: np.append(row["time"], row["time"][0]), axis=1)
         region["depth"] = region.apply(lambda row: np.append(row["depth"], row["depth"][0]), axis=1)
         return region
@@ -203,6 +228,7 @@ class Regions2D:
         self,
         sonar_file_names: List[str],
         region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
+        region_class: Union[str, List[str]] = None,
     ) -> List:
         """Finds SIMRAD sonar files in the time domain that encompasses a region or
         list of regions.
@@ -217,11 +243,13 @@ class Regions2D:
 
         Parameters
         ----------
-        files : list
+        sonar_file_names : list
             Raw filenames in SIMRAD format.
         region_id : Union[float, int, str, List[Union[float, int, str]]], ``None``
             Region IDs to select sonar files with.
             If ``None``, select all regions. Defaults to ``None``
+        region_class : Union[str, List[str]], ``None``
+            A region class or a list of region classes.
 
         Returns
         -------
@@ -242,8 +270,8 @@ class Regions2D:
             [Path(fname).name for fname in sonar_file_names]
         ).values
 
-        # Ensure that region is a DataFrame
-        region = self.select_region(region_id)
+        # Select region(s)
+        region = self.select_region(region_id, region_class)
 
         # Extract region time values
         region_times = np.hstack(region["time"].values)
@@ -304,6 +332,7 @@ class Regions2D:
     def plot(
         self,
         region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
+        region_class: Union[str, List[str]] = None,
         close_regions: bool = False,
         **kwargs,
     ) -> None:
@@ -313,16 +342,17 @@ class Regions2D:
         Parameters
         ---------
         region_id : Union[float, int, str, List[Union[float, int, str]]], ``None``
-            Region(s) to select raw files with
-            If ``None``, select all regions. Defaults to ``None``
+            Region ID(s) to select raw files with
+        region_class : Union[str, List[str]], ``None``
+            A region class or a list of region classes.
         close_region : bool
             Plot the region as a closed polygon. Defaults to False
         kwargs : keyword arguments
             Additional arguments passed to matplotlib plot
         """
 
-        # Select Region
-        region = self.select_region(region_id)
+        # Select Region(s)
+        region = self.select_region(region_id, region_class)
 
         if close_regions:
             region = self.close_region(region)
@@ -333,6 +363,7 @@ class Regions2D:
         self,
         da_Sv: DataArray,
         region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
+        region_class: Union[str, List[str]] = None,
         mask_name: str = "mask",
         mask_labels: dict = None,
         collapse_to_2d: bool = False,
@@ -346,7 +377,9 @@ class Regions2D:
         da_Sv : Data Array
             DataArray of shape (ping_time, depth) containing Sv data.
         region_id : List[Union[float, int, str]]], ``None``
-            list IDs of regions to create mask for
+            list IDs of regions to create mask for.
+        region_class : Union[str, List[str]], ``None``
+            A region class or a list of region classes.
         mask_name : str
             If provided, used to name the output mask array, otherwise `mask`
         mask_labels : dict
@@ -396,7 +429,7 @@ class Regions2D:
             )
 
         # Dataframe containing region information.
-        region_df = self.select_region(region_id)
+        region_df = self.select_region(region_id, region_class)
 
         # Select only important columns
         region_df = region_df[["region_id", "time", "depth"]]
