@@ -884,3 +884,24 @@ def test_within_transect_invalid_next(da_Sv_fixture: DataArray) -> None:
         _ = r2d.transect_mask(
             da_Sv=da_Sv_fixture, transect_dict=transect_dict, must_pass_check=True
         )
+
+
+@pytest.mark.regions2d
+def test_within_transect_small_bbox_distance_threshold(da_Sv_fixture: DataArray) -> None:
+    """
+    Tests functionality for transect_mask with small bbox distance threshold.
+
+    Parameters
+    ----------
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
+    """
+
+    # Get Regions2D Object
+    evr_path = DATA_DIR / "transect.evr"
+    r2d = er.read_evr(evr_path)
+
+    with pytest.raises(Exception):
+        _ = r2d.transect_mask(
+            da_Sv=da_Sv_fixture, bbox_distance_threshold=0.001, must_pass_check=True
+        )
