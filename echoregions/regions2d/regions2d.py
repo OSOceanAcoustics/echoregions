@@ -575,7 +575,7 @@ class Regions2D:
             start_str: [break_str, end_str],
             break_str: [resume_str],
             resume_str: [break_str, end_str],
-            end_str: [start_str],
+            end_str: [start_str, ""],
         }
 
         # Check that there are 4 unique transect strings
@@ -637,28 +637,9 @@ class Regions2D:
                 f"invalid value {transect_type_next}. Must be followed by "
                 f"{transect_next_allowable[transect_type]}"
             )
-            if transect_type in [start_str, break_str, resume_str]:
-                # Check for correct transect_type_next values
-                if transect_type_next not in transect_next_allowable[transect_type]:
-                    warning_messages.append(type_next_warning_message)
-            elif transect_type == end_str:
-                # Check if end_str followed by start_str or if empty. If empty then, we allow it to be
-                # empty in the case where it is in the last row.
-                if transect_type_next == "" and index + 1 != len(transect_df.index):
-                    warning_messages.append(type_next_warning_message)
-                # Check for correct transect_type_next values
-                elif (
-                    transect_type_next != ""
-                    and transect_type_next not in transect_next_allowable[end_str]
-                ):
-                    warning_messages.append(type_next_warning_message)
-            else:
-                # Throw error message when value is not in allowable transect strings
-                type_warning_message = (
-                    f"Error in row {index + 2}: Transect type is of value {transect_type}. This is not "
-                    f"within the allowable transect string values {transect_strs}."
-                )
-                warning_messages.append(type_warning_message)
+            # Check for correct transect_type_next values
+            if transect_type_next not in transect_next_allowable[transect_type]:
+                warning_messages.append(type_next_warning_message)
 
         # Checking the maximum width of a transect log region bbox.
         # If over a minute, throw an error.
