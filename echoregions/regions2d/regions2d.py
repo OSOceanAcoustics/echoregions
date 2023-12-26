@@ -550,7 +550,7 @@ class Regions2D:
         transect_dict : dict
             Dictionary for transect values. Values must be unique.
         bbox_distance_threshold: float
-            Maximum allowable value between the left and right bounding box timestamps 
+            Maximum allowable value between the left and right bounding box timestamps
             for each transect value region. Default is set to 1 minute.
         must_pass_check : bool
             To determine whether fail if transect sequence check strings exist or pass and print
