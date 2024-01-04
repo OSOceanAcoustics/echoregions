@@ -792,8 +792,10 @@ def test_within_transect(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray)
     """
 
     # Create transect mask with no errors
-    transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
-    M = regions2d_fixture.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict).compute()
+    transect_sequence_type_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
+    M = regions2d_fixture.transect_mask(
+        da_Sv=da_Sv_fixture, transect_sequence_type_dict=transect_sequence_type_dict
+    ).compute()
 
     # Check M dimensions
     assert M.shape == (3955, 1681)
@@ -824,19 +826,23 @@ def test_within_transect_bad_dict(da_Sv_fixture: DataArray) -> None:
     r2d = er.read_evr(evr_path)
 
     # Create dictionary with duplicates
-    transect_dict_duplicate = {
+    transect_sequence_type_dict_duplicate = {
         "start": "BT",
         "break": "BT",
         "resume": "RT",
         "end": "ET",
     }
     with pytest.raises(ValueError):
-        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict_duplicate)
+        _ = r2d.transect_mask(
+            da_Sv=da_Sv_fixture, transect_sequence_type_dict=transect_sequence_type_dict_duplicate
+        )
 
     # Create dictionary with integers
-    transect_dict_int = {"start": "ST", "break": "BT", "resume": "RT", "end": 4}
+    transect_sequence_type_dict_int = {"start": "ST", "break": "BT", "resume": "RT", "end": 4}
     with pytest.raises(TypeError):
-        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict_int)
+        _ = r2d.transect_mask(
+            da_Sv=da_Sv_fixture, transect_sequence_type_dict=transect_sequence_type_dict_int
+        )
 
 
 @pytest.mark.regions2d
@@ -851,38 +857,46 @@ def test_within_transect_invalid_next(da_Sv_fixture: DataArray) -> None:
     """
 
     # Initialize proper dictionary
-    transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
+    transect_sequence_type_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
 
     # Should raise Exception if ST is followed by ST
     with pytest.raises(Exception):
         evr_path = DATA_DIR / "x1_ST_ST.evr"
         r2d = er.read_evr(evr_path)
         _ = r2d.transect_mask(
-            da_Sv=da_Sv_fixture, transect_dict=transect_dict, must_pass_check=True
+            da_Sv=da_Sv_fixture,
+            transect_sequence_type_dict=transect_sequence_type_dict,
+            must_pass_check=True,
         )
 
     # Should raise Exception if RT is followed by RT
     with pytest.raises(Exception):
-        evr_path = DATA_DIR / "x1_RT_RT.evr"
+        evr_path = DATA_DIR / "transect_RT_RT.evr"
         r2d = er.read_evr(evr_path)
         _ = r2d.transect_mask(
-            da_Sv=da_Sv_fixture, transect_dict=transect_dict, must_pass_check=True
+            da_Sv=da_Sv_fixture,
+            transect_sequence_type_dict=transect_sequence_type_dict,
+            must_pass_check=True,
         )
 
     # Should raise value Exception if BT is followed by ET
     with pytest.raises(Exception):
-        evr_path = DATA_DIR / "x1_BT_ET.evr"
+        evr_path = DATA_DIR / "transect_BT_ET.evr"
         r2d = er.read_evr(evr_path)
         _ = r2d.transect_mask(
-            da_Sv=da_Sv_fixture, transect_dict=transect_dict, must_pass_check=True
+            da_Sv=da_Sv_fixture,
+            transect_sequence_type_dict=transect_sequence_type_dict,
+            must_pass_check=True,
         )
 
     # Should raises Exception if ET is followed by RT
     with pytest.raises(Exception):
-        evr_path = DATA_DIR / "x1_ET_RT.evr"
+        evr_path = DATA_DIR / "transect_ET_RT.evr"
         r2d = er.read_evr(evr_path)
         _ = r2d.transect_mask(
-            da_Sv=da_Sv_fixture, transect_dict=transect_dict, must_pass_check=True
+            da_Sv=da_Sv_fixture,
+            transect_sequence_type_dict=transect_sequence_type_dict,
+            must_pass_check=True,
         )
 
 
