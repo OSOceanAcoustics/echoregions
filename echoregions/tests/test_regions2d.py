@@ -402,6 +402,9 @@ def test_select_region_errors(regions2d_fixture: Regions2D) -> None:
     regions2d_fixture : Regions2D
         Object containing data of test EVR file.
     """
+    # Check incorrect user input behavior of both non-NaN region id and region class
+    with pytest.raises(ValueError):
+        regions2d_fixture.select_region(region_id=1, region_class="Hake")
 
     # Check incorrect region_id type
     with pytest.raises(TypeError):
