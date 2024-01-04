@@ -696,8 +696,28 @@ class Regions2D:
         ].isin(transect_sequence_type_next_allowable_dict[resume_str])
         transect_df.loc[rt_indices, "within_transect"] = True
 
-        # Create list of masks for each file name to be queried.
-        within_transect_df = transect_df.query(f"within_transect == True")
+        # Extract the min and max timestamps for filtering
+        min_timestamp = da_Sv.ping_time.min().values
+        max_timestamp = da_Sv.ping_time.max().values
+
+        # Find the index of the row right before min_timestamp
+        first_index_before_min = transect_df.loc[
+            transect_df["region_bbox_left"] < min_timestamp, "region_bbox_left"
+        ].idxmax()
+
+        # Find the index of the row right after max_timestamp
+        first_index_after_max = transect_df.loc[
+            transect_df["region_bbox_left"] > max_timestamp, "region_bbox_left"
+        ].idxmin()
+
+        # Filter transect_df to get the within transect df
+        within_transect_df = transect_df[
+            (transect_df["within_transect"])
+            & (transect_df.index >= first_index_before_min)
+            & (transect_df.index <= first_index_after_max)
+        ]
+
+        # Create within transect mask
         M = xr.zeros_like(da_Sv)
         for _, row in within_transect_df.iterrows():
             M = M + xr.where(
