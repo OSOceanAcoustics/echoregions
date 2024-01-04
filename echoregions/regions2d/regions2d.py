@@ -139,7 +139,7 @@ class Regions2D:
                 for value in region_class:
                     if not isinstance(value, str):
                         raise TypeError(
-                            f"Invalid element in list region_class. Is of type: "
+                            f"Invalid element in list region_class of type: "
                             f"{type(value)}. Must be of type str."
                         )
             else:
