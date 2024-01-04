@@ -107,9 +107,17 @@ class Regions2D:
         -------
         DataFrame
             There is a row for each region id provided by the ``region_id`` parameter,
-            and each row has time and depth within or on the boundaries passed
-            in by the ``time_range`` and ``depth_range`` values.
+            and each row has region_class, time, depth within or on the boundaries passed
+            in by the input ``region_class``, ``time_range``, and ``depth_range`` values.
         """
+        # Check that at least one of either region_class or region_id are None.
+        if region_id and region_class:
+            raise ValueError(
+                "Only one of region_id or region_class should be non-NaN. "
+                "If the user wishes to select a specific region_id with a specific "
+                "region_class they should just pass in the region_id."
+            )
+
         # Make copy of the original dataframe; else, use the original dataframe in selection.
         region = self.data.copy() if copy else self.data
 
