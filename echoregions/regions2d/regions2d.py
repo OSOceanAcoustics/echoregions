@@ -111,7 +111,7 @@ class Regions2D:
             The filtered Region2D dataframe (``Region2D.data``) that
             either contains rows of the specified ``region_id``,
             or rows of the specified ``region_class``.
-            The Region2D dataframe is also filtered to be within the boundaries 
+            The Region2D dataframe is also filtered to be within the boundaries
             specified by the input ``time_range``, and ``depth_range`` values.
         """
         # Check that at least one of either region_class or region_id are None.
