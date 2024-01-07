@@ -92,8 +92,10 @@ class Regions2D:
         ----------
         region_id : Union[float, int, str, List[Union[float, int, str]]], ``None``
             A region id provided as a number, a string, or a list of these.
+            Only one of ``region_id`` or ``region_class`` should be given.
         region_class : Union[str, List[str]], ``None``
             A region class or a list of region classes.
+            Only one of ``region_id`` or ``region_class`` should be given.
         time_range : List of 2 Pandas Timestamps.
             Datetime range for the expected output of subselected DataFrame. 1st
             index value must be later than 0th index value.
@@ -106,9 +108,11 @@ class Regions2D:
         Returns
         -------
         DataFrame
-            There is a row for each region id provided by the ``region_id`` parameter,
-            and each row has region_class, time, depth within or on the boundaries passed
-            in by the input ``region_class``, ``time_range``, and ``depth_range`` values.
+            The filtered Region2D dataframe (``Region2D.data``) that
+            either contains rows of the specified ``region_id``,
+            or rows of the specified ``region_class``.
+            The Region2D dataframe is also filtered to be within the boundaries 
+            specified by the input ``time_range``, and ``depth_range`` values.
         """
         # Check that at least one of either region_class or region_id are None.
         if region_id and region_class:
