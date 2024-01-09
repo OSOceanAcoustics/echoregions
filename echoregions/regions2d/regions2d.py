@@ -13,7 +13,6 @@ from xarray import DataArray, Dataset
 
 from ..utils.api import convert_mask_3d_to_2d
 from ..utils.io import validate_path
-from ..utils.time import parse_simrad_fname_time
 from .regions2d_parser import parse_evr, parse_regions_df
 
 
@@ -238,25 +237,22 @@ class Regions2D:
 
     def select_sonar_file(
         self,
-        sonar_file_names: List[str],
+        Sv_list: Union[xr.DataArray, xr.Dataset, List[Union[xr.DataArray, xr.Dataset]]],
+        time_variable: str = "ping_time",
         region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
         region_class: Union[str, List[str]] = None,
     ) -> List:
-        """Finds SIMRAD sonar files in the time domain that encompasses a region or
-        list of regions.
-
-        SIMRAD Format Explained with the example Summer2017-D20170625-T205018.nc:
-
-        The letter "D" is a prefix indicating the date in the format following it. In this case,
-        "20170625" represents the date June 25, 2017. The letter "T" is a prefix indicating the
-        time in the format following it. In this case, "205018" represents the time 20:50:18
-        (8:50:18 PM) in 24-hour format. The .nc is a file extension that denotes a NetCDF (Network
-        Common Data Form) file.
+        """
+        Selects Echopype processed Sv files (xarray datasets) based on variable
+        start and end time.
 
         Parameters
         ----------
-        sonar_file_names : list
-            Raw filenames in SIMRAD format.
+        Sv_list : Union[xr.DataArray, xr.Dataset, List[xr.DataArray, xr.Dataset]]
+            Echopype processed Sv files.
+        time_variable : str
+            Time variable for Sv files.
+            Defaults to 'ping_time'.
         region_id : Union[float, int, str, List[Union[float, int, str]]], ``None``
             Region IDs to select sonar files with.
             If ``None``, select all regions. Defaults to ``None``
@@ -265,22 +261,27 @@ class Regions2D:
 
         Returns
         -------
-        files: list
-            list of raw/Sv sonar file(s) spanning the encompassing region or list of regions.
+        selected_Sv : list[Union[xr.DataArray, xr.Dataset]]
+            list of Sv data spanning the encompassing region or list of regions.
         """
-        # Check that sonar_file_names is a list
-        if not isinstance(sonar_file_names, list):
-            raise TypeError(
-                f"sonar_file_names must be type list. Filenames is of type {type(sonar_file_names)}"
-            )
-
-        # Sort sonar file names
-        sonar_file_names.sort()
-
-        # Parse simrad filenames
-        sonar_file_times = parse_simrad_fname_time(
-            [Path(fname).name for fname in sonar_file_names]
-        ).values
+        # Check Sv files type
+        if not isinstance(Sv_list, list):
+            if isinstance(Sv_list, (xr.DataArray, xr.Dataset)):
+                Sv_list = [Sv_list]
+            else:
+                raise TypeError(
+                    f"Sv_list is of type {type(Sv_list)}. "
+                    "Must be of type Union[xr.DataArray, xr.Dataset] or "
+                    "List[Union[xr.DataArray, xr.Dataset]]."
+                )
+        else:
+            for Sv in Sv_list:
+                # Check if each element is an xarray DataArray or Dataset
+                if not isinstance(Sv, (xr.DataArray, xr.Dataset)):
+                    raise TypeError(
+                        f"Element {Sv} in Sv_files is of type {type(Sv)}. "
+                        "All elements must be of type Union[xr.DataArray, xr.Dataset]."
+                    )
 
         # Select region(s)
         region = self.select_region(region_id, region_class)
@@ -288,23 +289,22 @@ class Regions2D:
         # Extract region time values
         region_times = np.hstack(region["time"].values)
 
-        # Check if all sonar file times are completely below or above all region times
-        if np.all(sonar_file_times < region_times.min()) or np.all(
-            sonar_file_times > region_times.max()
-        ):
-            print("Sonar file times did not overlap at all with region times. Returning empty list")
-            return []
-        else:
-            # Get lower and upper index of filetimes
-            lower_idx = np.searchsorted(sonar_file_times, region_times.min()) - 1
-            upper_idx = np.searchsorted(sonar_file_times, region_times.max())
+        # Initialize empty list to store selected Sv
+        selected_Sv = []
 
-            # Set lower idx to 0 if at -1
-            lower_idx = 0 if lower_idx < 0 else lower_idx
+        for Sv in Sv_list:
+            # Get Sv time variable
+            Sv_time_var = Sv[time_variable]
+            if len(Sv_time_var.data) != 0:
+                # Get the time range from the xarray dataset
+                Sv_time_min = pd.to_datetime(Sv_time_var.min().item())
+                Sv_time_max = pd.to_datetime(Sv_time_var.max().item())
 
-            # Subset sonar file names based on lower and upper index
-            sonar_file_names = sonar_file_names[lower_idx:upper_idx]
-            return sonar_file_names
+                # Check if the time range overlaps with region times
+                if Sv_time_max >= region_times.min() and Sv_time_min <= region_times.max():
+                    selected_Sv.append(Sv)
+
+        return selected_Sv
 
     def replace_nan_depth(self, inplace: bool = False) -> DataFrame:
         """Replace 9999.99 or -9999.99 depth values with user-specified min_depth and max_depth
