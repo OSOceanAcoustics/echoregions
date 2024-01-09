@@ -280,7 +280,7 @@ def test_empty_select_sonar_file(regions2d_fixture: Regions2D) -> None:
     empty_da = xr.DataArray([], dims="ping_time")
 
     # Check for empty Sv files
-    selected_Sv = regions2d_fixture.select_sonar_file([empty_da, empty_da])
+    selected_Sv = regions2d_fixture.select_sonar_file(empty_da)
     assert selected_Sv == []
 
 
