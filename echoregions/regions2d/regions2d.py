@@ -727,7 +727,7 @@ class Regions2D:
             if region_bbox_left_prior.empty:
                 last_index_before_min = transect_df["region_bbox_left"].idxmin()
             else:
-                last_index_before_min = region_bbox_left_prior.idxmin()
+                last_index_before_min = region_bbox_left_prior.idxmax()
             # Find the first index after max_timestamp if it exists.
             # Else choose the maximum row.
             region_bbox_right_after = transect_df.loc[
