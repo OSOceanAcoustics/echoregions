@@ -279,7 +279,7 @@ class Regions2D:
                 # Check if each element is an xarray DataArray or Dataset
                 if not isinstance(Sv, (xr.DataArray, xr.Dataset)):
                     raise TypeError(
-                        f"Element {Sv} in Sv_files is of type {type(Sv)}. "
+                        f"Element {Sv} in Sv_list is of type {type(Sv)}. "
                         "All elements must be of type Union[xr.DataArray, xr.Dataset]."
                     )
 
