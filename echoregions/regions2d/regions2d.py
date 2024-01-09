@@ -574,8 +574,8 @@ class Regions2D:
         Returns
         -------
         M : Data Array
-            A binary DataArray with dimensions (ping_time, depth) where 0s are within transect
-            and 1s are outside transect.
+            A binary DataArray with dimensions (ping_time, depth) where 1s are within transect
+            and 0s are outside transect.
         """
 
         def _check_transect_sequences(transect_df, must_pass_check):
@@ -653,69 +653,82 @@ class Regions2D:
             | region_df.loc[:, "region_name"].str.startswith(end_str)
         ].copy()
 
-        # Drop time duplicates, sort the dataframe by datetime, and reset Transect Dataframe Index.
-        transect_df = (
-            transect_df.drop_duplicates(subset=["region_bbox_left"])
-            .sort_values(by="region_bbox_left")
-            .reset_index()
-        )
+        if not transect_df.empty:
+            # Drop time duplicates, sort the dataframe by datetime, and reset Transect Dataframe Index.
+            transect_df = (
+                transect_df.drop_duplicates(subset=["region_bbox_left"])
+                .sort_values(by="region_bbox_left")
+                .reset_index()
+            )
 
-        # Create a new column which stores the transect_type without the transect number
-        transect_df.loc[:, "transect_type"] = transect_df.loc[:, "region_name"].str.extract(
-            rf"({start_str}|{break_str}|{resume_str}|{end_str})"
-        )
+            # Create a new column which stores the transect_type without the transect number
+            transect_df.loc[:, "transect_type"] = transect_df.loc[:, "region_name"].str.extract(
+                rf"({start_str}|{break_str}|{resume_str}|{end_str})"
+            )
 
-        # Create new shifted columns with the next transect log type and next region
-        # bbox left datetime value.
-        transect_df.loc[:, "transect_type_next"] = transect_df.loc[:, "transect_type"].shift(-1)
-        transect_df.loc[:, "region_bbox_left_next"] = transect_df.loc[:, "region_bbox_left"].shift(
-            -1
-        )
+            # Create new shifted columns with the next transect log type and next region
+            # bbox left datetime value.
+            transect_df.loc[:, "transect_type_next"] = transect_df.loc[:, "transect_type"].shift(-1)
+            transect_df.loc[:, "region_bbox_left_next"] = transect_df.loc[
+                :, "region_bbox_left"
+            ].shift(-1)
 
-        # Set transect_type_next values to be empty strings if they are NAs.
-        transect_df["transect_type_next"] = transect_df.apply(
-            lambda x: "" if isna(x["transect_type_next"]) else x["transect_type_next"],
-            axis=1,
-        )
+            # Set transect_type_next values to be empty strings if they are NAs.
+            transect_df["transect_type_next"] = transect_df.apply(
+                lambda x: "" if isna(x["transect_type_next"]) else x["transect_type_next"],
+                axis=1,
+            )
 
-        # Check transect sequences
-        _check_transect_sequences(transect_df, must_pass_check)
+            # Check transect sequences
+            _check_transect_sequences(transect_df, must_pass_check)
 
-        # Create binary variable indicating within transect segments.
-        transect_df["within_transect"] = False
+            # Create binary variable indicating within transect segments.
+            transect_df["within_transect"] = False
 
-        # Indices where start_str followed by break_str/end_str
-        st_indices = (transect_df["transect_type"] == start_str) & transect_df[
-            "transect_type_next"
-        ].isin(transect_sequence_type_next_allowable_dict[start_str])
-        transect_df.loc[st_indices, "within_transect"] = True
+            # Indices where start_str followed by break_str/end_str
+            st_indices = (transect_df["transect_type"] == start_str) & transect_df[
+                "transect_type_next"
+            ].isin(transect_sequence_type_next_allowable_dict[start_str])
+            transect_df.loc[st_indices, "within_transect"] = True
 
-        # Indices where resume_str followed by break_str/end_str
-        rt_indices = (transect_df["transect_type"] == resume_str) & transect_df[
-            "transect_type_next"
-        ].isin(transect_sequence_type_next_allowable_dict[resume_str])
-        transect_df.loc[rt_indices, "within_transect"] = True
+            # Indices where resume_str followed by break_str/end_str
+            rt_indices = (transect_df["transect_type"] == resume_str) & transect_df[
+                "transect_type_next"
+            ].isin(transect_sequence_type_next_allowable_dict[resume_str])
+            transect_df.loc[rt_indices, "within_transect"] = True
 
-        # Extract the min and max timestamps for filtering
-        min_timestamp = da_Sv.ping_time.min().values
-        max_timestamp = da_Sv.ping_time.max().values
+            # Extract the min and max timestamps for filtering
+            min_timestamp = da_Sv.ping_time.min().values
+            max_timestamp = da_Sv.ping_time.max().values
 
-        # Find the index of the row right before min_timestamp
-        first_index_before_min = transect_df.loc[
-            transect_df["region_bbox_left"] < min_timestamp, "region_bbox_left"
-        ].idxmax()
+            # Find the last of the row right before min_timestamp if it exists.
+            # Else choose the minimum row.
+            region_bbox_left_prior = transect_df.loc[
+                transect_df["region_bbox_left"] < min_timestamp, "region_bbox_left"
+            ]
+            if region_bbox_left_prior.empty:
+                last_index_before_min = transect_df["region_bbox_left"].idxmin()
+            else:
+                last_index_before_min = region_bbox_left_prior.idxmin()
+            # Find the first index after max_timestamp if it exists.
+            # Else choose the maximum row.
+            region_bbox_right_after = transect_df.loc[
+                transect_df["region_bbox_right"] > max_timestamp, "region_bbox_right"
+            ]
+            if region_bbox_right_after.empty:
+                first_index_after_max = transect_df["region_bbox_right"].idxmax()
+            else:
+                first_index_after_max = region_bbox_right_after.idxmin()
 
-        # Find the index of the row right after max_timestamp
-        first_index_after_max = transect_df.loc[
-            transect_df["region_bbox_left"] > max_timestamp, "region_bbox_left"
-        ].idxmin()
-
-        # Filter transect_df to get the within transect df
-        within_transect_df = transect_df[
-            (transect_df["within_transect"])
-            & (transect_df.index >= first_index_before_min)
-            & (transect_df.index <= first_index_after_max)
-        ]
+            # Filter transect_df to get the within transect df
+            within_transect_df = transect_df[
+                (transect_df["within_transect"])
+                & (transect_df.index >= last_index_before_min)
+                & (transect_df.index <= first_index_after_max)
+            ]
+        else:
+            # Create empty within transect df
+            within_transect_df = pd.DataFrame()
 
         # Create within transect mask
         M = xr.zeros_like(da_Sv)

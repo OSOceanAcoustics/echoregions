@@ -793,6 +793,41 @@ def test_within_transect(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray)
 
     # Create transect mask with no errors
     transect_sequence_type_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
+    df = regions2d_fixture.data
+    df.loc[df["region_id"] == 5, "region_name"] = "Log"  # Remove early ST
+    df.loc[df["region_id"] == 13, "region_name"] = "ST22"  # Place ST towards middle
+    df.loc[df["region_id"] == 19, "region_name"] = "Log"  # Remove late ET
+    df.loc[df["region_id"] == 14, "region_name"] = "ET22"  # Place ET towards middle
+    regions2d_fixture.data = df
+    M = regions2d_fixture.transect_mask(
+        da_Sv=da_Sv_fixture, transect_sequence_type_dict=transect_sequence_type_dict
+    ).compute()
+
+    # Check M dimensions
+    assert M.shape == (3955, 1681)
+
+    # Check values
+    assert len(list(np.unique(M.data))) == 2
+
+    # Test number of 1 values
+    assert np.unique(M.data, return_counts=True)[1][0] == 5687290
+
+
+@pytest.mark.regions2d
+def test_within_transect_all(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+    """
+    Tests functionality for transect_mask with all values in the da_Sv within transect.
+
+    Parameters
+    ----------
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
+    """
+
+    # Create transect mask with no errors
+    transect_sequence_type_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
     M = regions2d_fixture.transect_mask(
         da_Sv=da_Sv_fixture, transect_sequence_type_dict=transect_sequence_type_dict
     ).compute()
@@ -808,6 +843,31 @@ def test_within_transect(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray)
 
     # Test number of 1 values
     assert np.unique(M.data, return_counts=True)[1][0] == 6648355
+
+
+@pytest.mark.regions2d
+def test_within_transect_no_regions(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+    """
+    Tests functionality for transect_mask for empty r2d object.
+
+    Parameters
+    ----------
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
+    """
+
+    # Create transect mask with no errors
+    r2d_empty = er.read_regions_csv(pd.DataFrame(columns=regions2d_fixture.data.columns))
+    M = r2d_empty.transect_mask(da_Sv=da_Sv_fixture).compute()
+
+    # Check M dimensions
+    assert M.shape == (3955, 1681)
+
+    # This entire output should be empty.
+    assert len(list(np.unique(M.data))) == 1
+    assert list(np.unique(M.data))[0] == 0
 
 
 @pytest.mark.regions2d
