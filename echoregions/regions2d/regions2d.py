@@ -719,7 +719,7 @@ class Regions2D:
             min_timestamp = da_Sv.ping_time.min().values
             max_timestamp = da_Sv.ping_time.max().values
 
-            # Find the last of the row right before min_timestamp if it exists.
+            # Find the last index right before min_timestamp if it exists.
             # Else choose the minimum row.
             region_bbox_left_prior = transect_df.loc[
                 transect_df["region_bbox_left"] < min_timestamp, "region_bbox_left"
