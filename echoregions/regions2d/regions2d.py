@@ -81,6 +81,7 @@ class Regions2D:
     def select_region(
         self,
         region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
+        region_class: Union[str, List[str]] = None,
         time_range: List[Timestamp] = None,
         depth_range: List[Union[float, int]] = None,
         copy=True,
@@ -89,13 +90,17 @@ class Regions2D:
 
         Parameters
         ----------
-        region_id : float, int, str, list, ``None``
-            A region id provided as a number, a string, or list of these.
+        region_id : Union[float, int, str, List[Union[float, int, str]]], ``None``
+            A region id provided as a number, a string, or a list of these.
+            Only one of ``region_id`` or ``region_class`` should be given.
+        region_class : Union[str, List[str]], ``None``
+            A region class or a list of region classes.
+            Only one of ``region_id`` or ``region_class`` should be given.
         time_range : List of 2 Pandas Timestamps.
-            Datetime range for expected output of subselected DataFrame. 1st
+            Datetime range for the expected output of subselected DataFrame. 1st
             index value must be later than 0th index value.
         depth_range : List of 2 floats.
-            Depth range for expected output of subselected DataFrame. 1st
+            Depth range for the expected output of subselected DataFrame. 1st
             index value must be larger than 0th index value.
         copy : bool
             Return a copy of the `data` DataFrame
@@ -103,126 +108,130 @@ class Regions2D:
         Returns
         -------
         DataFrame
-            There is a row for each region id provided by the ``region_id`` parameter,
-            and each row has time and depth within or on the boundaries passed
-            in by the ``time_range`` and ``depth_range`` values.
+            The filtered Region2D dataframe (``Region2D.data``) that
+            either contains rows of the specified ``region_id``,
+            or rows of the specified ``region_class``.
+            The Region2D dataframe is also filtered to be within the boundaries
+            specified by the input ``time_range``, and ``depth_range`` values.
         """
-        # Make copy of original dataframe; else, use original dataframe in selection.
-        if copy:
-            region = self.data.copy()
-        else:
-            region = self.data
+        # Check that at least one of either region_class or region_id are None.
+        if region_id and region_class:
+            raise ValueError(
+                "Only one of region_id or region_class should be non-NaN. "
+                "If the user wishes to select a specific region_id with a specific "
+                "region_class they should just pass in the region_id."
+            )
+
+        # Make copy of the original dataframe; else, use the original dataframe in selection.
+        region = self.data.copy() if copy else self.data
+
+        # Check and subset for region_id
         if region_id is not None:
             if isinstance(region_id, (float, int, str)):
                 region_id = [region_id]
-            elif not isinstance(region_id, list):
+            elif isinstance(region_id, list):
+                for value in region_id:
+                    if not isinstance(value, (float, int, str)):
+                        raise TypeError(
+                            f"Invalid element in list region_id of type: "
+                            f"{type(value)}. Must be of type float, int, str."
+                        )
+            else:
                 raise TypeError(
-                    f"Invalid region_id type: {type(region_id)}. Must be \
-                                of type float, int, str, list, ``None``."
+                    f"Invalid region_id type: {type(region_id)}. "
+                    "Must be of type float, int, str, list, or None."
                 )
-            # Select row by column id
-            for value in region_id:
-                if not isinstance(value, (float, int, str)):
-                    raise TypeError(
-                        f"Invalid element in list region_id. Is of \
-                            type: {type(value)}Must be \
-                            of type float, int, str."
-                    )
-            region = self.data[self.data["region_id"].isin(region_id)]
+            region = region[region["region_id"].isin(region_id)]
+
+        # Check and subset for region_class
+        if region_class is not None:
+            if isinstance(region_class, str):
+                region_class = [region_class]
+            elif isinstance(region_class, list):
+                for value in region_class:
+                    if not isinstance(value, str):
+                        raise TypeError(
+                            f"Invalid element in list region_class of type: "
+                            f"{type(value)}. Must be of type str."
+                        )
+            else:
+                raise TypeError(
+                    f"Invalid region_class type: {type(region_class)}. "
+                    "Must be of type str, list, or None."
+                )
+            region = region[region["region_class"].isin(region_class)]
+
+        # Check and subset for time_range
         if time_range is not None:
-            if isinstance(time_range, List):
-                if len(time_range) == 2:
-                    if isinstance(time_range[0], Timestamp) and isinstance(
-                        time_range[1], Timestamp
-                    ):
-                        if time_range[0] < time_range[1]:
-                            # Select rows with time values that are all within time range
-                            region = region[
-                                region["time"].apply(
-                                    lambda time_array: all(
-                                        time_range[0] <= Timestamp(x)
-                                        and time_range[1] >= Timestamp(x)
-                                        for x in time_array
-                                    )
-                                )
-                            ]
-                        else:
-                            raise ValueError(
-                                f"1st index value must be later than 0th index \
-                                             value. Currently 0th index value is {time_range[0]} \
-                                             and 1st index value is {time_range[1]}"
-                            )
-                    else:
-                        raise TypeError(
-                            f"Invalid time_range value types: \
-                                        {type(time_range[0])} and {type(time_range[1])}. Must \
-                                        be both of type Timestamp."
-                        )
-                else:
-                    raise ValueError(
-                        f"Invalid time_range size: {len(time_range)}. \
-                        Must be of size 2."
-                    )
-            else:
+            if not isinstance(time_range, list):
+                raise TypeError("Invalid time_range type. It must be a list.")
+            if len(time_range) != 2:
+                raise ValueError("Invalid time_range size. It must be a list of size 2.")
+            if not all(isinstance(t, Timestamp) for t in time_range):
                 raise TypeError(
-                    f"Invalid time_range type: {type(time_range)}. Must be \
-                                of type List."
+                    "Invalid time_range format. It must be a list of 2 Pandas Timestamps."
                 )
+            if time_range[0] >= time_range[1]:
+                raise ValueError(
+                    "1st index value must be later than 0th index value. "
+                    f"Currently 0th index value is {time_range[0]} "
+                    f"and 1st index value is {time_range[1]}"
+                )
+            region = region[
+                region["time"].apply(
+                    lambda time_array: all(
+                        time_range[0] <= Timestamp(x) <= time_range[1] for x in time_array
+                    )
+                )
+            ]
+
+        # Check and subset for depth_range
         if depth_range is not None:
-            if isinstance(depth_range, List):
-                if len(depth_range) == 2:
-                    if isinstance(depth_range[0], (float, int)) and isinstance(
-                        depth_range[1], (float, int)
-                    ):
-                        if depth_range[0] < depth_range[1]:
-                            # Select rows with depth values that are all within depth range
-                            region = region[
-                                region["time"].apply(
-                                    lambda depth_array: all(
-                                        depth_range[0] <= float(x) and depth_range[1] >= float(x)
-                                        for x in depth_array
-                                    )
-                                )
-                            ]
-                        else:
-                            raise ValueError(
-                                f"1st index value must be later than 0th index \
-                                             value. Currently 0th index value is {depth_range[0]} \
-                                             and 1st index value is {depth_range[1]}"
-                            )
-                    else:
-                        raise TypeError(
-                            f"Invalid depth_range value types: \
-                                        {type(depth_range[0])} and {type(depth_range[1])}. Must \
-                                        be both of type either float or int."
-                        )
-                else:
-                    raise ValueError(
-                        f"Invalid depth_range size: {len(depth_range)}. \
-                        Must be of size 2."
-                    )
-            else:
+            if not isinstance(depth_range, list):
+                raise TypeError("Invalid depth_range type. It must be a list.")
+            if len(depth_range) != 2:
+                raise ValueError("Invalid depth_range size. It must be a list of size 2.")
+            if not all(isinstance(d, (float, int)) for d in depth_range):
                 raise TypeError(
-                    f"Invalid depth_range type: {type(depth_range)}. Must be \
-                                of type List."
+                    "Invalid depth_range format. It must be a list of 2 floats or ints."
                 )
+            if depth_range[0] >= depth_range[1]:
+                raise ValueError(
+                    f"1st index value must be later than 0th index value. Currently "
+                    f"0th index value is {depth_range[0]} and 1st index value is "
+                    f"{depth_range[1]}."
+                )
+            region = region[
+                region["time"].apply(
+                    lambda depth_array: all(
+                        depth_range[0] <= float(x) <= depth_range[1] for x in depth_array
+                    )
+                )
+            ]
+
         return region
 
-    def close_region(self, region_id: List = None) -> DataFrame:
+    def close_region(
+        self,
+        region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
+        region_class: Union[str, List[str]] = None,
+    ) -> DataFrame:
         """Close a region by appending the first point to end of the list of points.
 
         Parameters
         ----------
-        region_id : List, ``None``
+        region_id : Union[float, int, str, List[Union[float, int, str]]], ``None``
             region(s) to select raw files with
             If ``None``, select all regions. Defaults to ``None``
+        region_class : Union[str, List[str]], ``None``
+            A region class or a list of region classes.
 
         Returns
         -------
         DataFrame
             Returns a new DataFrame with closed regions
         """
-        region = self.select_region(region_id, copy=True)
+        region = self.select_region(region_id, region_class, copy=True)
         region["time"] = region.apply(lambda row: np.append(row["time"], row["time"][0]), axis=1)
         region["depth"] = region.apply(lambda row: np.append(row["depth"], row["depth"][0]), axis=1)
         return region
@@ -230,9 +239,11 @@ class Regions2D:
     def select_sonar_file(
         self,
         sonar_file_names: List[str],
-        region: Union[float, str, list, Series, DataFrame] = None,
+        region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
+        region_class: Union[str, List[str]] = None,
     ) -> List:
-        """Finds SIMRAD sonar files in the time domain that encompasses region or list of regions.
+        """Finds SIMRAD sonar files in the time domain that encompasses a region or
+        list of regions.
 
         SIMRAD Format Explained with the example Summer2017-D20170625-T205018.nc:
 
@@ -244,11 +255,13 @@ class Regions2D:
 
         Parameters
         ----------
-        files : list
+        sonar_file_names : list
             Raw filenames in SIMRAD format.
-        region : float, str, list, Series, DataFrame, ``None``
-            Region(s) to select sonar files with.
+        region_id : Union[float, int, str, List[Union[float, int, str]]], ``None``
+            Region IDs to select sonar files with.
             If ``None``, select all regions. Defaults to ``None``
+        region_class : Union[str, List[str]], ``None``
+            A region class or a list of region classes.
 
         Returns
         -------
@@ -269,8 +282,8 @@ class Regions2D:
             [Path(fname).name for fname in sonar_file_names]
         ).values
 
-        # Ensure that region is a DataFrame
-        region = self.select_region(region)
+        # Select region(s)
+        region = self.select_region(region_id, region_class)
 
         # Extract region time values
         region_times = np.hstack(region["time"].values)
@@ -330,7 +343,8 @@ class Regions2D:
 
     def plot(
         self,
-        region_id: List = None,
+        region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
+        region_class: Union[str, List[str]] = None,
         close_regions: bool = False,
         **kwargs,
     ) -> None:
@@ -339,17 +353,18 @@ class Regions2D:
 
         Parameters
         ---------
-        region_id : List, ``None``
-            Region(s) to select raw files with
-            If ``None``, select all regions. Defaults to ``None``
+        region_id : Union[float, int, str, List[Union[float, int, str]]], ``None``
+            Region ID(s) to select raw files with
+        region_class : Union[str, List[str]], ``None``
+            A region class or a list of region classes.
         close_region : bool
             Plot the region as a closed polygon. Defaults to False
         kwargs : keyword arguments
             Additional arguments passed to matplotlib plot
         """
 
-        # Ensure that region is a DataFrame
-        region = self.select_region(region_id)
+        # Select Region(s)
+        region = self.select_region(region_id, region_class)
 
         if close_regions:
             region = self.close_region(region)
@@ -359,7 +374,8 @@ class Regions2D:
     def mask(
         self,
         da_Sv: DataArray,
-        region_id: List = None,
+        region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
+        region_class: Union[str, List[str]] = None,
         mask_name: str = "mask",
         mask_labels: dict = None,
         collapse_to_2d: bool = False,
@@ -372,8 +388,10 @@ class Regions2D:
         ----------
         da_Sv : Data Array
             DataArray of shape (ping_time, depth) containing Sv data.
-        region_id : list
-            list IDs of regions to create mask for
+        region_id : List[Union[float, int, str]]], ``None``
+            list IDs of regions to create mask for.
+        region_class : Union[str, List[str]], ``None``
+            A region class or a list of region classes.
         mask_name : str
             If provided, used to name the output mask array, otherwise `mask`
         mask_labels : dict
@@ -423,7 +441,7 @@ class Regions2D:
             )
 
         # Dataframe containing region information.
-        region_df = self.select_region(region_id)
+        region_df = self.select_region(region_id, region_class)
 
         # Select only important columns
         region_df = region_df[["region_id", "time", "depth"]]
