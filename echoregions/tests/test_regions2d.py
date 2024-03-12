@@ -249,9 +249,10 @@ def test_plot(regions2d_fixture: Regions2D) -> None:
 
 
 @pytest.mark.regions2d
-def test_select_sonar_file(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+@pytest.mark.test
+def test_select_sonar(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
-    Tests select sonar file.
+    Tests select_sonar.
 
     Parameters
     ----------
@@ -260,9 +261,52 @@ def test_select_sonar_file(regions2d_fixture: Regions2D, da_Sv_fixture: DataArra
     da_Sv_fixture : DataArray
         DataArray containing Sv data of test zarr file.
     """
+    # Test with full fixture and empty array
     selected_Sv = regions2d_fixture.select_sonar_file(
         [da_Sv_fixture, xr.DataArray([], dims="ping_time")]
     )
+    assert len(selected_Sv) == 1
+    assert selected_Sv[0].equals(da_Sv_fixture)
+
+    # Test with subseted and partitioned fixture
+    ping_time_index_partitions = [slice(0, 100), slice(200, 500), slice(800, 1600)]
+    partitioned_fixture_list = [
+        da_Sv_fixture.isel(ping_time=ping_time_index_partition)
+        for ping_time_index_partition in ping_time_index_partitions
+    ]
+    selected_Sv = regions2d_fixture.select_sonar_file(partitioned_fixture_list)
+    assert len(selected_Sv) == 3
+    assert selected_Sv == partitioned_fixture_list
+
+    # Test with original full fixture and modified two index fixture with 1 ping_time value outside
+    # of regions2d_fixture ping_time, and the other ping_time value inside
+    inside_ping_time = np.datetime64(
+        np.hstack(regions2d_fixture.data["time"].values).max()
+    ) - np.timedelta64(1, "ns")
+    outside_ping_time = np.datetime64(
+        np.hstack(regions2d_fixture.data["time"].values).max()
+    ) + np.timedelta64(1, "ns")
+    two_ping_times_isel_da_Sv = da_Sv_fixture.isel(ping_time=slice(1678, 1680)).compute()
+    two_ping_times_isel_da_Sv = two_ping_times_isel_da_Sv.assign_coords(
+        {"ping_time": [inside_ping_time, outside_ping_time]}
+    )
+    selected_Sv = regions2d_fixture.select_sonar_file([da_Sv_fixture, two_ping_times_isel_da_Sv])
+    assert len(selected_Sv) == 2
+    assert selected_Sv == [da_Sv_fixture, two_ping_times_isel_da_Sv]
+
+    # Test with original full fixture and modified two index fixture with both ping_time values
+    # outside of regions2d_fixture ping_time
+    first_outside_ping_time = np.datetime64(
+        np.hstack(regions2d_fixture.data["time"].values).max()
+    ) + np.timedelta64(1, "ns")
+    second_outside_ping_time = np.datetime64(
+        np.hstack(regions2d_fixture.data["time"].values).max()
+    ) + np.timedelta64(2, "ns")
+    two_ping_times_isel_da_Sv = da_Sv_fixture.isel(ping_time=slice(1678, 1680)).compute()
+    two_ping_times_isel_da_Sv = two_ping_times_isel_da_Sv.assign_coords(
+        {"ping_time": [first_outside_ping_time, second_outside_ping_time]}
+    )
+    selected_Sv = regions2d_fixture.select_sonar_file([da_Sv_fixture, two_ping_times_isel_da_Sv])
     assert len(selected_Sv) == 1
     assert selected_Sv[0].equals(da_Sv_fixture)
 
