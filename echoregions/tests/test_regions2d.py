@@ -249,7 +249,6 @@ def test_plot(regions2d_fixture: Regions2D) -> None:
 
 
 @pytest.mark.regions2d
-@pytest.mark.test
 def test_select_sonar(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Tests select_sonar.
