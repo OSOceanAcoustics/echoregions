@@ -19,7 +19,11 @@ The underlying annotation data is stored as a Pandas dataframe, which allows use
 
 We thank the NOAA Northwest Fisheries Science Center (NWFSC) Fisheries Engineering and Acoustics Team (FEAT) for supporting this project.
 
-<img src="docs/images/noaa_fisheries_logo.png" alt="NOAA_fisheries_logo" width="200">
+```{image} images/noaa_fisheries_logo.png
+:alt: NOAA_fisheries_logo
+:width: 200px
+```
+<!-- <img src="docs/source/images/noaa_fisheries_logo.png" alt="NOAA_fisheries_logo" width="200"> -->
 
 
 
