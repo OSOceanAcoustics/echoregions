@@ -3,6 +3,8 @@
 
 Echoregions is a tool that interfaces annotations and masks for water column sonar data for machine learning developments.
 
+
+## Functionalities
 Current Echoregions contains functions to:
 - read and organize manual annotations (lines or regions) from Echoview, which is widely used in fisheries acoustics community for labeling the presence of different animal species on echograms
 - read and organize annotations stored as general dataframes
