@@ -32,7 +32,7 @@ See the [API documentation](https://echoregions.readthedocs.io/en/latest/api.htm
 
 We thank the NOAA Northwest Fisheries Science Center (NWFSC) Fisheries Engineering and Acoustics Team (FEAT) for supporting this project.
 
-<img src="docs/images/noaa_fisheries_logo.png" alt="NOAA_fisheries_logo" width="200">
+<img src="docs/source/images/noaa_fisheries_logo.png" alt="NOAA_fisheries_logo" width="200">
 
 
 
