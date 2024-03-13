@@ -249,70 +249,82 @@ def test_plot(regions2d_fixture: Regions2D) -> None:
 
 
 @pytest.mark.regions2d
-def test_select_sonar_file(regions2d_fixture: Regions2D) -> None:
+def test_select_sonar_file(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
-    Test sonar file selection based on region bounds.
+    Tests select_sonar_file.
 
     Parameters
     ----------
     regions2d_fixture : Regions2D
         Object containing data of test EVR file.
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
     """
-    raw_files = [
-        "Summer2019-D20190702-T171948.raw",
-        "Summer2019-D20190702-T175136.raw",
-        "Summer2019-D20190702-T181701.raw",
-        "Summer2019-D20190702-T184227.raw",
-        "Summer2019-D20190702-T190753.raw",
-        "Summer2019-D20190702-T193400.raw",
-        "Summer2019-D20190702-T195927.raw",
-        "Summer2019-D20190702-T202452.raw",
-        "Summer2019-D20190702-T205018.raw",
-    ]
+    # Test with full fixture and empty array
+    selected_Sv = regions2d_fixture.select_sonar_file(
+        [da_Sv_fixture, xr.DataArray([], dims="ping_time")]
+    )
+    assert len(selected_Sv) == 1
+    assert selected_Sv[0].equals(da_Sv_fixture)
 
-    # Check for correct sonar file
-    # Note, below are the region times for region 11:
-    # [
-    #   '2019-07-02T18:11:51.190000000' '2019-07-02T18:11:51.190000000'
-    #   '2019-07-02T18:11:52.540000000' '2019-07-02T18:11:52.540000000'
-    # ]
-    # So the idea is that the file Summer2019-D20190702-T175136.raw
-    # encompasses the time period between 2019-07-02T17:51:36.000000000
-    # and 2019-07-02T18:17:01.000000000 since it is proceeded by file
-    # Summer2019-D20190702-T181701.raw.
-    raw = regions2d_fixture.select_sonar_file(raw_files, 11)
-    assert raw == ["Summer2019-D20190702-T175136.raw"]
+    # Test with subseted and partitioned fixture
+    ping_time_index_partitions = [slice(0, 100), slice(200, 500), slice(800, 1600)]
+    partitioned_fixture_list = [
+        da_Sv_fixture.isel(ping_time=ping_time_index_partition)
+        for ping_time_index_partition in ping_time_index_partitions
+    ]
+    selected_Sv = regions2d_fixture.select_sonar_file(partitioned_fixture_list)
+    assert len(selected_Sv) == 3
+    assert selected_Sv == partitioned_fixture_list
+
+    # Test with original full fixture and modified two index fixture with 1 ping_time value outside
+    # of regions2d_fixture ping_time, and the other ping_time value inside
+    inside_ping_time = np.datetime64(
+        np.hstack(regions2d_fixture.data["time"].values).max()
+    ) - np.timedelta64(1, "ns")
+    outside_ping_time = np.datetime64(
+        np.hstack(regions2d_fixture.data["time"].values).max()
+    ) + np.timedelta64(1, "ns")
+    two_ping_times_isel_da_Sv = da_Sv_fixture.isel(ping_time=slice(1678, 1680)).compute()
+    two_ping_times_isel_da_Sv = two_ping_times_isel_da_Sv.assign_coords(
+        {"ping_time": [inside_ping_time, outside_ping_time]}
+    )
+    selected_Sv = regions2d_fixture.select_sonar_file([da_Sv_fixture, two_ping_times_isel_da_Sv])
+    assert len(selected_Sv) == 2
+    assert selected_Sv == [da_Sv_fixture, two_ping_times_isel_da_Sv]
+
+    # Test with original full fixture and modified two index fixture with both ping_time values
+    # outside of regions2d_fixture ping_time
+    first_outside_ping_time = np.datetime64(
+        np.hstack(regions2d_fixture.data["time"].values).max()
+    ) + np.timedelta64(1, "ns")
+    second_outside_ping_time = np.datetime64(
+        np.hstack(regions2d_fixture.data["time"].values).max()
+    ) + np.timedelta64(2, "ns")
+    two_ping_times_isel_da_Sv = da_Sv_fixture.isel(ping_time=slice(1678, 1680)).compute()
+    two_ping_times_isel_da_Sv = two_ping_times_isel_da_Sv.assign_coords(
+        {"ping_time": [first_outside_ping_time, second_outside_ping_time]}
+    )
+    selected_Sv = regions2d_fixture.select_sonar_file([da_Sv_fixture, two_ping_times_isel_da_Sv])
+    assert len(selected_Sv) == 1
+    assert selected_Sv[0].equals(da_Sv_fixture)
 
 
 @pytest.mark.regions2d
 def test_empty_select_sonar_file(regions2d_fixture: Regions2D) -> None:
     """
-    Test sonar file selection for raw files not in the specified year.
-    This should come out as null.
+    Test sonar file selection for empty datasets. This should come out as empty.
 
     Parameters
     ----------
     regions2d_fixture : Regions2D
         Object containing data of test EVR file.
     """
-    raw_2017_files = [
-        "Summer2017-D20170625-T124834.raw",
-        "Summer2017-D20170625-T132103.raw",
-        "Summer2017-D20170625-T134400.raw",
-        "Summer2017-D20170625-T140924.raw",
-    ]
-    raw_2021_files = [
-        "Summer2021-D20210625-T124834.raw",
-        "Summer2021-D20210625-T132103.raw",
-        "Summer2021-D20210625-T134400.raw",
-        "Summer2021-D20210625-T140924.raw",
-    ]
+    empty_da = xr.DataArray([], dims="ping_time")
 
-    # Check for empty sonar files
-    subset_raw_2017_files = regions2d_fixture.select_sonar_file(raw_2017_files, 11)
-    assert subset_raw_2017_files == []
-    subset_raw_2021_files = regions2d_fixture.select_sonar_file(raw_2021_files, 11)
-    assert subset_raw_2021_files == []
+    # Check for empty Sv files
+    selected_Sv = regions2d_fixture.select_sonar_file(empty_da)
+    assert selected_Sv == []
 
 
 @pytest.mark.regions2d
@@ -326,26 +338,12 @@ def test_invalid_select_sonar_file(regions2d_fixture: Regions2D) -> None:
         Object containing data of test EVR file.
     """
     raw_files_str = "Summer2017-D20170625-T124834.raw"
-    raw_files_with_int = [
-        "Summer2017-D20170625-T124834.raw",
-        10,
-    ]
-    raw_files_with_invalid_simrad_format = [
-        "Summer2019-D20190625-T181701.raw",
-        "Summer2019-D20190625-T184227.raw",
-        "Summer2019-Z20190625-M190753.raw",
-        "Summer2019-D20190625-T193400.raw",
-    ]
 
     # Check that type errors are correctly thrown
     with pytest.raises(TypeError):
-        regions2d_fixture.select_sonar_file(raw_files_str, 11)
+        regions2d_fixture.select_sonar_file(raw_files_str, "ping_time")
     with pytest.raises(TypeError):
-        regions2d_fixture.select_sonar_file(raw_files_with_int, 11)
-
-    # Check that value error is correctly thrown
-    with pytest.raises(ValueError):
-        regions2d_fixture.select_sonar_file(raw_files_with_invalid_simrad_format, 11)
+        regions2d_fixture.select_sonar_file([raw_files_str], "ping_time")
 
 
 @pytest.mark.regions2d

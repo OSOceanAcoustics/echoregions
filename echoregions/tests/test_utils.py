@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from echoregions.utils.io import check_file, validate_path
-from echoregions.utils.time import parse_simrad_fname_time, parse_time
+from echoregions.utils.time import parse_time
 
 DATA_DIR = Path("./echoregions/test_data/")
 EVR_PATH = DATA_DIR / "transect.evr"
@@ -20,18 +20,6 @@ def test_parse_time() -> None:
     """
     timestamp = "20170625 1539223320"
     assert parse_time(timestamp) == np.datetime64("2017-06-25T15:39:22.3320")
-
-
-@pytest.mark.utils
-def test_parse_filename_time() -> None:
-    """
-    Test parsing Simrad-style filename for timestamp.
-    """
-
-    Sv_2017_fname = ["TestString2017-D20170625-T124834.Sv"]
-    assert parse_simrad_fname_time(Sv_2017_fname) == np.datetime64("2017-06-25T12:48:34.0000")
-    raw_2019_fname = ["Summer2019-D20190625-T124834.raw"]
-    assert parse_simrad_fname_time(raw_2019_fname) == np.datetime64("2019-06-25T12:48:34.0000")
 
 
 @pytest.mark.utils
