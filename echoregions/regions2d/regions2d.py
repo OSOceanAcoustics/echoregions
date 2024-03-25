@@ -238,25 +238,22 @@ class Regions2D:
 
     def select_sonar_file(
         self,
-        sonar_file_names: List[str],
+        Sv_list: Union[xr.DataArray, xr.Dataset, List[Union[xr.DataArray, xr.Dataset]]],
+        time_variable: str = "ping_time",
         region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
         region_class: Union[str, List[str]] = None,
     ) -> List:
-        """Finds SIMRAD sonar files in the time domain that encompasses a region or
-        list of regions.
-
-        SIMRAD Format Explained with the example Summer2017-D20170625-T205018.nc:
-
-        The letter "D" is a prefix indicating the date in the format following it. In this case,
-        "20170625" represents the date June 25, 2017. The letter "T" is a prefix indicating the
-        time in the format following it. In this case, "205018" represents the time 20:50:18
-        (8:50:18 PM) in 24-hour format. The .nc is a file extension that denotes a NetCDF (Network
-        Common Data Form) file.
+        """
+        Selects Echopype processed Sv files (xarray datasets) based on variable
+        start and end time.
 
         Parameters
         ----------
-        sonar_file_names : list
-            Raw filenames in SIMRAD format.
+        Sv_list : Union[xr.DataArray, xr.Dataset, List[xr.DataArray, xr.Dataset]]
+            Echopype processed Sv files.
+        time_variable : str
+            Time variable for Sv files.
+            Defaults to 'ping_time'.
         region_id : Union[float, int, str, List[Union[float, int, str]]], ``None``
             Region IDs to select sonar files with.
             If ``None``, select all regions. Defaults to ``None``
