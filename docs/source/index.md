@@ -1,9 +1,4 @@
 # Echoregions
-<a href="https://echoregions.readthedocs.io/en/latest/?badge=latest">
-<img src="https://readthedocs.org/projects/echoregions/badge/?version=latest"/>
-</a>
-
-![example workflow](https://github.com/OSOceanAcoustics/echoregions/actions/workflows/pytest.yml/badge.svg)
 
 Echoregions is a tool that interfaces annotations from Echoview and masks for water column sonar data for Machine Learning (ML) developments. Manual annotations from Echoview are widely used in fisheries acoustics community for labeling the presence of different animal species, and the presence of bottoms on echograms. Echoregions is designed to be used as an intermediate software between Echoview annotation data products and conventional Python Machine Learning data products. The end goal for Echoregions is to allow the user to easily go from Echoview -> ML data products, and ML -> Echoview data products. Presently, the Echoview -> ML data products pipeline has been built.
 
@@ -17,17 +12,15 @@ We plan to add additional functions to build the ML -> Echoview data products pi
 
 The underlying annotation data is stored as a Pandas dataframe, which allows users to leverage the powerful indexing and computational tools provided by Pandas.
 
-## Documentation
-
-Learn more about Echoregions functions in the documentation at https://echoregions.readthedocs.io.
-
-See the [API documentation](https://echoregions.readthedocs.io/en/latest/api.html) for all of the classes and functions available in echoregions.
-
 ## Acknowledgement
 
 We thank the NOAA Northwest Fisheries Science Center (NWFSC) Fisheries Engineering and Acoustics Team (FEAT) for supporting this project.
 
-<img src="docs/source/images/noaa_fisheries_logo.png" alt="NOAA_fisheries_logo" width="200">
+```{image} images/noaa_fisheries_logo.png
+:alt: NOAA_fisheries_logo
+:width: 200px
+```
+<!-- <img src="docs/source/images/noaa_fisheries_logo.png" alt="NOAA_fisheries_logo" width="200"> -->
 
 ## Contributors
 

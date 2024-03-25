@@ -3,7 +3,6 @@ from typing import List, Union
 
 import numpy as np
 import pandas as pd
-from numpy import datetime64
 from pandas import Timestamp
 
 SIMRAD_FILENAME_MATCHER = re.compile(
@@ -41,38 +40,3 @@ def parse_time(
     if unix:
         t = (t - pd.Timestamp("1970-01-01")) / pd.Timedelta("1s")
     return t
-
-
-def parse_simrad_fname_time(filenames: List[str]) -> datetime64:
-    """Convert SIMRAD-style datetime to a numpy datetime64 object
-
-    Parameters
-    ----------
-    filenames : list
-        SIMRAD-style filename
-
-    Returns
-    -------
-    datetime : np.datetime64
-        converted input datetime
-    """
-    if isinstance(filenames, list):
-        f_list = []
-        for f in filenames:
-            if isinstance(f, str):
-                groups = SIMRAD_FILENAME_MATCHER.match(f)
-                try:
-                    f_list.append(groups["date"] + " " + groups["time"])
-                except:
-                    raise ValueError(
-                        f"Invalid value {f} in filenames."
-                        "Read documentation on correct SIMRAD format"
-                        "in the API reference for Regions2D's select_sonar_file."
-                    )
-            else:
-                raise TypeError(
-                    "Filenames contains non string element." f"Invalid element is of type {type(f)}"
-                )
-    else:
-        raise TypeError(f"Filenames must be type list. Filenames is of type {type(filenames)}")
-    return parse_time(f_list, "%Y%m%d %H%M%S")
