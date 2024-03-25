@@ -170,6 +170,7 @@ class Regions2D:
             if not all(isinstance(t, Timestamp) for t in time_range):
                 raise TypeError(
                     "Invalid time_range format. It must be a list of 2 Pandas Timestamps."
+
                 )
             if time_range[0] >= time_range[1]:
                 raise ValueError(
