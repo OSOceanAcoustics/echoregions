@@ -199,7 +199,7 @@ class Regions2D:
                 raise ValueError(
                     f"1st index value must be later than 0th index value. Currently "
                     f"0th index value is {depth_range[0]} and 1st index value is "
-                    f"{depth_range[1]}. "
+                    f"{depth_range[1]}."
                 )
             region = region[
                 region["time"].apply(
