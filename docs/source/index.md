@@ -4,9 +4,9 @@ Echoregions is a tool that interfaces annotations of water column sonar data wit
 
 The annotations are typically regions indicating the presence of specific animal species or lines delineating ocean boundaries, such as the seafloor or sea surface, in the "echogram" (sonar images formed by echo returns). The interfacing functionalities operate in two directions:
 - Annotation to ML: Parsing and organizing manual annotations for preparing training and test datasets for ML developments
-- ML to annotation: Generating annotations from ML predictions that can be used for further downstream processing
+- ML to Annotation: Generating annotations from ML predictions that can be used for further downstream processing
 
-At present, functionalities in the Annotation to ML direction have been built for interfacing the Echoview software that is widely used in the fisheries acoustics community. We plan to add functionalities in the ML to Annotation direction in the near future.
+At present, functionalities in the Annotation to ML direction have been built for interfacing manual annotations from the Echoview software, which is widely used in the fisheries acoustics community. We plan to add functionalities in the ML to Annotation direction in the near future.
 
 ## Functionalities
 
