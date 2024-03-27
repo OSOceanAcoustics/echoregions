@@ -804,8 +804,45 @@ def test_within_transect(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray)
     """
 
     # Create transect mask with no errors
-    transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
-    M = regions2d_fixture.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict).compute()
+    transect_sequence_type_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
+    df = regions2d_fixture.data
+    df.loc[df["region_id"] == 5, "region_name"] = "Log"  # Remove early ST
+    df.loc[df["region_id"] == 13, "region_name"] = "ST22"  # Place ST towards middle
+    df.loc[df["region_id"] == 19, "region_name"] = "Log"  # Remove late ET
+    df.loc[df["region_id"] == 14, "region_name"] = "ET22"  # Place ET towards middle
+    regions2d_fixture.data = df
+    M = regions2d_fixture.transect_mask(
+        da_Sv=da_Sv_fixture, transect_sequence_type_dict=transect_sequence_type_dict
+    ).compute()
+
+    # Check M dimensions
+    assert M.shape == (3955, 1681)
+
+    # Check values
+    assert len(list(np.unique(M.data))) == 2
+
+    # Test number of 1 values
+    assert np.unique(M.data, return_counts=True)[1][0] == 5687290
+
+
+@pytest.mark.regions2d
+def test_within_transect_all(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+    """
+    Tests functionality for transect_mask with all values in the da_Sv within transect.
+
+    Parameters
+    ----------
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
+    """
+
+    # Create transect mask with no errors
+    transect_sequence_type_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
+    M = regions2d_fixture.transect_mask(
+        da_Sv=da_Sv_fixture, transect_sequence_type_dict=transect_sequence_type_dict
+    ).compute()
 
     # Check M dimensions
     assert M.shape == (3955, 1681)
@@ -821,28 +858,28 @@ def test_within_transect(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray)
 
 
 @pytest.mark.regions2d
-def test_within_transect_no_ET_ST(da_Sv_fixture: DataArray) -> None:
+def test_within_transect_no_regions(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
-    Tests functionality for evr file with no ST and for evr file with no ET.
-    Should raise appropriate UserWarning and should use first row for ST
-    and last row for ET.
-
+    Tests functionality for transect_mask for empty r2d object.
 
     Parameters
     ----------
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
     da_Sv_fixture : DataArray
         DataArray containing Sv data of test zarr file.
     """
 
-    transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
-    with pytest.warns(UserWarning):
-        evr_path = DATA_DIR / "transect_no_ST.evr"
-        r2d = er.read_evr(evr_path)
-        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
-    with pytest.warns(UserWarning):
-        evr_path = DATA_DIR / "transect_no_ET.evr"
-        r2d = er.read_evr(evr_path)
-        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
+    # Create transect mask with no errors
+    r2d_empty = er.read_regions_csv(pd.DataFrame(columns=regions2d_fixture.data.columns))
+    M = r2d_empty.transect_mask(da_Sv=da_Sv_fixture).compute()
+
+    # Check M dimensions
+    assert M.shape == (3955, 1681)
+
+    # This entire output should be empty.
+    assert len(list(np.unique(M.data))) == 1
+    assert list(np.unique(M.data))[0] == 0
 
 
 @pytest.mark.regions2d
@@ -861,19 +898,23 @@ def test_within_transect_bad_dict(da_Sv_fixture: DataArray) -> None:
     r2d = er.read_evr(evr_path)
 
     # Create dictionary with duplicates
-    transect_dict_duplicate = {
+    transect_sequence_type_dict_duplicate = {
         "start": "BT",
         "break": "BT",
         "resume": "RT",
         "end": "ET",
     }
     with pytest.raises(ValueError):
-        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict_duplicate)
+        _ = r2d.transect_mask(
+            da_Sv=da_Sv_fixture, transect_sequence_type_dict=transect_sequence_type_dict_duplicate
+        )
 
     # Create dictionary with integers
-    transect_dict_int = {"start": "ST", "break": "BT", "resume": "RT", "end": 4}
+    transect_sequence_type_dict_int = {"start": "ST", "break": "BT", "resume": "RT", "end": 4}
     with pytest.raises(TypeError):
-        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict_int)
+        _ = r2d.transect_mask(
+            da_Sv=da_Sv_fixture, transect_sequence_type_dict=transect_sequence_type_dict_int
+        )
 
 
 @pytest.mark.regions2d
@@ -888,28 +929,65 @@ def test_within_transect_invalid_next(da_Sv_fixture: DataArray) -> None:
     """
 
     # Initialize proper dictionary
-    transect_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
+    transect_sequence_type_dict = {"start": "ST", "break": "BT", "resume": "RT", "end": "ET"}
 
-    # Should raise value error as ST is followed by ST
-    with pytest.raises(ValueError):
+    # Should raise Exception if ST is followed by ST
+    with pytest.raises(Exception):
         evr_path = DATA_DIR / "x1_ST_ST.evr"
         r2d = er.read_evr(evr_path)
-        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
+        _ = r2d.transect_mask(
+            da_Sv=da_Sv_fixture,
+            transect_sequence_type_dict=transect_sequence_type_dict,
+            must_pass_check=True,
+        )
 
-    # Should raise value error as RT is followed by RT
-    with pytest.raises(ValueError):
-        evr_path = DATA_DIR / "x1_RT_RT.evr"
+    # Should raise Exception if RT is followed by RT
+    with pytest.raises(Exception):
+        evr_path = DATA_DIR / "transect_RT_RT.evr"
         r2d = er.read_evr(evr_path)
-        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
+        _ = r2d.transect_mask(
+            da_Sv=da_Sv_fixture,
+            transect_sequence_type_dict=transect_sequence_type_dict,
+            must_pass_check=True,
+        )
 
-    # Should raise value error as BT is followed by ET
-    with pytest.raises(ValueError):
-        evr_path = DATA_DIR / "x1_BT_ET.evr"
+    # Should raise value Exception if BT is followed by ET
+    with pytest.raises(Exception):
+        evr_path = DATA_DIR / "transect_BT_ET.evr"
         r2d = er.read_evr(evr_path)
-        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
+        _ = r2d.transect_mask(
+            da_Sv=da_Sv_fixture,
+            transect_sequence_type_dict=transect_sequence_type_dict,
+            must_pass_check=True,
+        )
 
-    # Should raise value error as ET is followed by RT
-    with pytest.raises(ValueError):
-        evr_path = DATA_DIR / "x1_ET_RT.evr"
+    # Should raises Exception if ET is followed by RT
+    with pytest.raises(Exception):
+        evr_path = DATA_DIR / "transect_ET_RT.evr"
         r2d = er.read_evr(evr_path)
-        _ = r2d.transect_mask(da_Sv=da_Sv_fixture, transect_dict=transect_dict)
+        _ = r2d.transect_mask(
+            da_Sv=da_Sv_fixture,
+            transect_sequence_type_dict=transect_sequence_type_dict,
+            must_pass_check=True,
+        )
+
+
+@pytest.mark.regions2d
+def test_within_transect_small_bbox_distance_threshold(da_Sv_fixture: DataArray) -> None:
+    """
+    Tests functionality for transect_mask with small bbox distance threshold.
+
+    Parameters
+    ----------
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
+    """
+
+    # Get Regions2D Object
+    evr_path = DATA_DIR / "transect.evr"
+    r2d = er.read_evr(evr_path)
+
+    with pytest.raises(Exception):
+        _ = r2d.transect_mask(
+            da_Sv=da_Sv_fixture, bbox_distance_threshold=0.001, must_pass_check=True
+        )
