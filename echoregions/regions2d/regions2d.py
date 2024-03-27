@@ -16,6 +16,72 @@ from ..utils.io import validate_path
 from .regions2d_parser import parse_evr, parse_regions_df
 
 
+def _check_transect_sequences(
+    transect_df: pd.DataFrame,
+    transect_sequence_type_next_allowable_dict: dict,
+    bbox_distance_threshold: float,
+    must_pass_check: bool,
+) -> None:
+    """
+    Checking of transect sequences in the Regions2d transect dataframe.
+
+    Parameters
+    ----------
+    transect_df : pd.DataFrame
+        Inner Regions2d transect dataframe.
+    transect_sequence_type_next_allowable_dict : dict
+        Dictionary for the allowable transect sequence type value(s) that can follow a
+        transect sequence type value.
+    bbox_distance_threshold: float
+        Maximum allowable value between the left and right bounding box timestamps
+        for each transect value region. Default is set to 1 minute.
+    must_pass_check : bool
+        True: Will check transect strings to enforce sequence rules. If this check
+        encounters any incorrect transect type sequence orders or wider than bbox distance
+        threshold regions, it will raise an exception.
+        False: Will still check transect strings but will instead just print out warnings
+        for violations of the above mentioned sequence rules.
+    """
+    # Create an empty list to collect error messages.
+    warning_messages = []
+
+    # Ensure correct sequence of transect types occur.
+    # If they do not, append to warning_messages.
+    for _, row in transect_df.iterrows():
+        transect_type = row["transect_type"]
+        transect_type_next = row["transect_type_next"]
+        # Check for correct transect_type_next values
+        if transect_type_next not in transect_sequence_type_next_allowable_dict[transect_type]:
+            type_next_warning_message = (
+                f"Error in region_id {row['region_id']}:"
+                f"Transect string {transect_type} is followed by "
+                f"invalid value {transect_type_next}. Must be followed by "
+                f"{transect_sequence_type_next_allowable_dict[transect_type]}"
+            )
+            warning_messages.append(type_next_warning_message)
+
+    # Identify rows wider than bbox distance threshold if they exist
+    wider_than_bbox_distance_threshold_rows = transect_df[
+        (transect_df["region_bbox_right"] - transect_df["region_bbox_left"]).dt.total_seconds() / 60
+        > bbox_distance_threshold
+    ]
+    wider_than_bbox_distance_threshold_region_ids = wider_than_bbox_distance_threshold_rows[
+        "region_id"
+    ].tolist()
+    if wider_than_bbox_distance_threshold_region_ids:
+        warning_messages.append(
+            f"Problematic region id values with maximum time width wider than bbox "
+            f"distance threshold: {wider_than_bbox_distance_threshold_region_ids}"
+        )
+
+    # Raise an exception if there are any warning messages and must_pass_check is True.
+    # Else, print warning messages.
+    if len(warning_messages) > 0 and must_pass_check:
+        raise Exception("\n".join(warning_messages))
+    else:
+        print("\n".join(warning_messages))
+
+
 class Regions2D:
     """
     Class that contains and performs operations with Regions2D data from Echoview EVR files.
@@ -596,52 +662,6 @@ class Regions2D:
             and 0s are outside transect.
         """
 
-        def _check_transect_sequences(transect_df, must_pass_check):
-            # Create an empty list to collect error messages.
-            warning_messages = []
-
-            # Ensure correct sequence of transect types occur.
-            # If they do not, append to warning_messages.
-            for _, row in transect_df.iterrows():
-                transect_type = row["transect_type"]
-                transect_type_next = row["transect_type_next"]
-                # Check for correct transect_type_next values
-                if (
-                    transect_type_next
-                    not in transect_sequence_type_next_allowable_dict[transect_type]
-                ):
-                    type_next_warning_message = (
-                        f"Error in region_id {row['region_id']}:"
-                        f"Transect string {transect_type} is followed by "
-                        f"invalid value {transect_type_next}. Must be followed by "
-                        f"{transect_sequence_type_next_allowable_dict[transect_type]}"
-                    )
-                    warning_messages.append(type_next_warning_message)
-
-            # Identify rows wider than bbox distance threshold if they exist
-            wider_than_bbox_distance_threshold_rows = transect_df[
-                (
-                    transect_df["region_bbox_right"] - transect_df["region_bbox_left"]
-                ).dt.total_seconds()
-                / 60
-                > bbox_distance_threshold
-            ]
-            wider_than_bbox_distance_threshold_region_ids = wider_than_bbox_distance_threshold_rows[
-                "region_id"
-            ].tolist()
-            if wider_than_bbox_distance_threshold_region_ids:
-                warning_messages.append(
-                    f"Problematic region id values with maximum time width wider than bbox "
-                    f"distance threshold: {wider_than_bbox_distance_threshold_region_ids}"
-                )
-
-            # Raise an exception if there are any warning messages and must_pass_check is True.
-            # Else, print warning messages.
-            if len(warning_messages) > 0 and must_pass_check:
-                raise Exception("\n".join(warning_messages))
-            else:
-                print("\n".join(warning_messages))
-
         # Get transect strings
         start_str = transect_sequence_type_dict["start"]
         break_str = transect_sequence_type_dict["break"]
@@ -698,7 +718,12 @@ class Regions2D:
             )
 
             # Check transect sequences
-            _check_transect_sequences(transect_df, must_pass_check)
+            _check_transect_sequences(
+                transect_df,
+                transect_sequence_type_next_allowable_dict,
+                bbox_distance_threshold,
+                must_pass_check,
+            )
 
             # Create binary variable indicating within transect segments.
             transect_df["within_transect"] = False
