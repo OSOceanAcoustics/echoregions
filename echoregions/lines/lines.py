@@ -244,7 +244,7 @@ class Lines:
 
             # create a mask for the bottom:
             # bottom: True, otherwise: False
-            bottom_mask = depth_da > bottom_da
+            bottom_mask = depth_da >= bottom_da
 
             # Reset bottom_contours index so that time index becomes time column
             bottom_contours = bottom_contours.reset_index()
