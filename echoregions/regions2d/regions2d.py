@@ -34,7 +34,7 @@ def _check_transect_sequences(
         transect sequence type value.
     bbox_distance_threshold: float
         Maximum allowable value between the left and right bounding box timestamps
-        for each transect value region. Default is set to 1 minute.
+        for each region that is marked as a transect log. Default is set to 1 minute.
     must_pass_check : bool
         True: Will check transect strings to enforce sequence rules. If this check
         encounters any incorrect transect type sequence orders or wider than bbox distance
@@ -647,7 +647,7 @@ class Regions2D:
             transect sequence type value.
         bbox_distance_threshold: float
             Maximum allowable value between the left and right bounding box timestamps
-            for each transect value region. Default is set to 1 minute.
+            for each region that is marked as a transect log. Default is set to 1 minute.
         must_pass_check : bool
             True: Will check transect strings to enforce sequence rules. If this check
             encounters any incorrect transect type sequence orders or wider than bbox distance
