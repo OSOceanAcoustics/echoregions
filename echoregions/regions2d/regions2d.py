@@ -430,10 +430,10 @@ class Regions2D:
         """
 
         # Select Region(s)
-        region = self.select_region(region_id, region_class)
-
         if close_regions:
-            region = self.close_region(region)
+            region = self.close_region(region_id, region_class)
+        else:
+            region = self.select_region(region_id, region_class)
         for _, row in region.iterrows():
             plt.plot(row["time"], row["depth"], **kwargs)
 
@@ -485,10 +485,11 @@ class Regions2D:
         """
         if isinstance(region_id, list):
             if len(region_id) == 0:
-                raise ValueError("region_id is empty. Cannot be empty.")
+                raise ValueError("region_id list is empty. Cannot be empty.")
+            mask_label_region_ids = region_id
         elif region_id is None:
             # Extract all region_id values
-            region_id = self.data.region_id.astype(int).to_list()
+            mask_label_region_ids = self.data.region_id.astype(int).to_list()
         else:
             raise TypeError(
                 f"region_id must be of type list. Currently is of type {type(region_id)}"
@@ -496,10 +497,10 @@ class Regions2D:
 
         if mask_labels is None:
             # Create mask_labels with each region_id as a key and values starting from 0
-            mask_labels = {key: idx for idx, key in enumerate(region_id)}
+            mask_labels = {key: idx for idx, key in enumerate(mask_label_region_ids)}
 
         # Check that region_id and mask_labels are of the same size
-        if len(set(region_id) - set(mask_labels.keys())) > 0:
+        if len(set(mask_label_region_ids) - set(mask_labels.keys())) > 0:
             raise ValueError(
                 "Each region_id' must be a key in 'mask_labels'. "
                 "If you would prefer 0 based indexing as values for mask_labels, leave "
