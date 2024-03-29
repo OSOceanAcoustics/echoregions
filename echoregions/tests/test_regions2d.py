@@ -244,8 +244,11 @@ def test_plot(regions2d_fixture: Regions2D) -> None:
     regions2d_fixture : Regions2D
         Object containing data of test EVR file.
     """
-
+    # Plotting without closing
     regions2d_fixture.plot([11], color="k")
+
+    # Plotting with closing
+    regions2d_fixture.plot([11], close_regions=True, color="k")
 
 
 @pytest.mark.regions2d
