@@ -10,8 +10,7 @@ parts:
 - caption: User guide
   chapters:
   - file: Lines_functionality
-#  - file: Regions2D_general_functionality
-#  - file: Regions2D_masking
+  - file: Regions2D_functionality
 - caption: Help & reference
   chapters:
   - file: api
