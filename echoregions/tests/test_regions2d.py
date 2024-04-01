@@ -562,6 +562,26 @@ def test_mask_type_error(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray)
 
 
 @pytest.mark.regions2d
+def test_mask_labels_region_ids_not_matching_error(
+    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
+) -> None:
+    """
+    Tests when mask labels and region ids are not matching:
+    When not all values in subset_region_ids are keys in 'mask_labels' and vice versa.
+
+    Parameters
+    ----------
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
+    """
+    # Check not matching error
+    with pytest.raises(ValueError):
+        _ = regions2d_fixture.mask(da_Sv_fixture, region_id=13, mask_labels={14: "TEST"})
+
+
+@pytest.mark.regions2d
 def test_mask_2d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Testing if 2d mask with collapse_to_do=True works.

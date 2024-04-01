@@ -511,10 +511,10 @@ class Regions2D:
                 # Create mask_labels with each subset_region_ids as a key and values starting from 0
                 mask_labels = {key: idx for idx, key in enumerate(subset_region_ids)}
 
-            # Check that subset_region_ids and mask_labels are of the same size
+            # Check that subset_region_ids and mask_labels are matching
             if len(set(subset_region_ids) - set(mask_labels.keys())) > 0:
                 raise ValueError(
-                    "Each value in subset_region_ids must be a key in 'mask_labels'. "
+                    "Each value in subset_region_ids must be a key in 'mask_labels' and vice versa. "
                     "If you would prefer 0 based indexing as values for mask_labels, leave "
                     "mask_labels as None."
                 )
