@@ -551,6 +551,9 @@ def test_mask_type_error(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray)
         DataArray containing Sv data of test zarr file.
     """
 
+    # Check dataset error
+    with pytest.raises(TypeError):
+        _ = regions2d_fixture.mask(da_Sv_fixture.to_dataset("Sv"))
     # Check empty tuple error
     with pytest.raises(TypeError):
         empty_tuple = ()

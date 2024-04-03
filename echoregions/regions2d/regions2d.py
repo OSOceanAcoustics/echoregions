@@ -485,6 +485,11 @@ class Regions2D:
         region_contours : pd.DataFrame
             DataFrame containing region_id, depth, and time.
         """
+        if not isinstance(da_Sv, DataArray):
+            raise TypeError(
+                f"Input da_Sv must be of type DataArray. da_Sv was instead of type {type(da_Sv)}"
+            )
+
         # Dataframe containing region information.
         region_df = self.select_region(region_id, region_class)
 
