@@ -150,7 +150,7 @@ def parse_evr(input_file: str):
 def parse_regions_df(input_file: Union[str, pd.DataFrame]) -> pd.DataFrame:
     """
     Parses regions dataframe data. This function assumes that the input_file is output
-    from regions2d object's to_csv function or the input_file is region_contour output
+    from regions2d object's to_csv function or the input_file is region_points output
     from regions2d object's mask function.
 
     Parameters

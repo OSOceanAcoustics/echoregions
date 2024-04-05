@@ -482,7 +482,7 @@ class Regions2D:
                 areas.
             Also contains a data variable (`mask_labels`) with mask labels
             corresponding to region_id values.
-        region_contours : pd.DataFrame
+        region_points : pd.DataFrame
             DataFrame containing region_id, depth, and time.
         """
         if not isinstance(da_Sv, DataArray):
@@ -598,12 +598,12 @@ class Regions2D:
                 # Convert 3d mask to 2d mask
                 mask_ds = convert_mask_3d_to_2d(mask_ds)
 
-            # Get region_contours
-            region_contours = region_df[region_df["region_id"].isin(masked_region_id)][
+            # Get region_points
+            region_points = region_df[region_df["region_id"].isin(masked_region_id)][
                 ["region_id", "time", "depth"]
             ]
 
-            return mask_ds, region_contours
+            return mask_ds, region_points
 
     def transect_mask(
         self,
