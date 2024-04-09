@@ -244,8 +244,11 @@ def test_plot(regions2d_fixture: Regions2D) -> None:
     regions2d_fixture : Regions2D
         Object containing data of test EVR file.
     """
-
+    # Plotting without closing
     regions2d_fixture.plot([11], color="k")
+
+    # Plotting with closing
+    regions2d_fixture.plot([11], close_regions=True, color="k")
 
 
 @pytest.mark.regions2d
@@ -515,18 +518,16 @@ def test_mask_empty_no_overlap(regions2d_fixture: Regions2D, da_Sv_fixture: Data
     assert mask_output_1 is None
 
     # Create mask with regions that have no overlap with the Sv Data Array
-    mask_3d_ds, region_contours_1 = regions2d_fixture.mask(
-        da_Sv_fixture.isel(channel=0), [8, 9, 10]
-    )
+    mask_3d_ds, region_points_1 = regions2d_fixture.mask(da_Sv_fixture.isel(channel=0), [8, 9, 10])
 
     # Check that this mask is empty
     assert mask_3d_ds.mask_3d.isnull().all()
 
-    # Check that region_contours_1 is empty
-    assert region_contours_1.empty
+    # Check that region_points_1 is empty
+    assert region_points_1.empty
 
-    # Use region contours to create Regions2D object
-    r2d_2 = Regions2D(region_contours_1, min_depth=0, max_depth=1000, input_type="CSV")
+    # Use region points to create Regions2D object
+    r2d_2 = Regions2D(region_points_1, min_depth=0, max_depth=1000, input_type="CSV")
 
     # Run Regions2d masking to check if masking runs
     mask_output_2 = r2d_2.mask(da_Sv_fixture.isel(channel=0))
@@ -548,6 +549,9 @@ def test_mask_type_error(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray)
         DataArray containing Sv data of test zarr file.
     """
 
+    # Check dataset error
+    with pytest.raises(TypeError):
+        _ = regions2d_fixture.mask(da_Sv_fixture.to_dataset("Sv"))
     # Check empty tuple error
     with pytest.raises(TypeError):
         empty_tuple = ()
@@ -556,6 +560,26 @@ def test_mask_type_error(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray)
     with pytest.raises(ValueError):
         empty_list = []
         _ = regions2d_fixture.mask(da_Sv_fixture, empty_list)
+
+
+@pytest.mark.regions2d
+def test_mask_labels_region_ids_not_matching_error(
+    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
+) -> None:
+    """
+    Tests when mask labels and region ids are not matching:
+    When not all values in subset_region_ids are keys in 'mask_labels' and vice versa.
+
+    Parameters
+    ----------
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
+    """
+    # Check not matching error
+    with pytest.raises(ValueError):
+        _ = regions2d_fixture.mask(da_Sv_fixture, region_id=13, mask_labels={14: "TEST"})
 
 
 @pytest.mark.regions2d
@@ -596,10 +620,10 @@ def test_mask_2d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None
 
 
 @pytest.mark.regions2d
-def test_mask_region_contours(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+def test_mask_region_points(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
-    Testing if masking, saving region contours into new regions2d,
-    and masking again produces the same region contours.
+    Testing if masking, saving region points into new regions2d,
+    and masking again produces the same region points.
 
     Parameters
     ----------
@@ -611,16 +635,16 @@ def test_mask_region_contours(regions2d_fixture: Regions2D, da_Sv_fixture: DataA
     # Get region_id and mask_labels
 
     # Create mask
-    _, region_contours_1 = regions2d_fixture.mask(da_Sv_fixture.isel(channel=0))
+    _, region_points_1 = regions2d_fixture.mask(da_Sv_fixture.isel(channel=0))
 
-    # Use region contours to create Regions2D object
-    r2d_2 = Regions2D(region_contours_1, min_depth=0, max_depth=1000, input_type="CSV")
+    # Use region points to create Regions2D object
+    r2d_2 = Regions2D(region_points_1, min_depth=0, max_depth=1000, input_type="CSV")
 
     # Run Regions2D masking to check if masking runs
-    _, region_contours_2 = r2d_2.mask(da_Sv_fixture.isel(channel=0))
+    _, region_points_2 = r2d_2.mask(da_Sv_fixture.isel(channel=0))
 
-    # Check if the two contours are equal
-    region_contours_1.equals(region_contours_2)
+    # Check if the two points are equal
+    region_points_1.equals(region_points_2)
 
 
 @pytest.mark.regions2d

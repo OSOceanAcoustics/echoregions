@@ -70,7 +70,7 @@ def parse_evl(input_file: str):
 def parse_lines_df(input_file: Union[str, pd.DataFrame]) -> pd.DataFrame:
     """
     Parses lines dataframe data. This function assumes that the input_file is output
-    from lines object's to_csv function or the input_file is bottom_contour output
+    from lines object's to_csv function or the input_file is bottom_points output
     from lines object's mask function.
 
     Parameters

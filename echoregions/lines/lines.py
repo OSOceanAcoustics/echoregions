@@ -67,7 +67,7 @@ class Lines:
         if not inplace:
             return regions
 
-    def to_csv(self, save_path: bool = None, mode="w") -> None:
+    def to_csv(self, save_path: bool = None, mode="w", **kwaargs) -> None:
         """Save a Dataframe to a .csv file
 
         Parameters
@@ -80,7 +80,7 @@ class Lines:
         # Check if the save directory is safe
         save_path = validate_path(save_path=save_path, input_file=self.input_file, ext=".csv")
         # Reorder columns and export to csv
-        self.data.to_csv(save_path, index=False, mode=mode)
+        self.data.to_csv(save_path, mode=mode, **kwaargs)
         self.output_file.append(save_path)
 
     def to_json(self, save_path: str = None, pretty: bool = True, **kwargs) -> None:
@@ -163,7 +163,7 @@ class Lines:
     def mask(self, da_Sv: DataArray, **kwargs):
         """
         Subsets a bottom dataset to the range of an Sv dataset. Create a mask of
-        the same shape as data found in the Sonar object:
+        the same shape as data found in the Echogram object:
         Bottom: True, Otherwise: False.
 
         Parameters
@@ -178,7 +178,7 @@ class Lines:
         bottom_mask : Xarray DataArray
             Matrix of coordinates (ping_time, depth) with values such that bottom: False,
             otherwise: True
-        bottom_contours : pd.DataFrame
+        bottom_points : pd.DataFrame
             DataFrame containing depth and time.
 
         Notes
@@ -207,7 +207,7 @@ class Lines:
         lines_df = self.data
 
         # new index
-        sonar_ping_time = list(da_Sv.ping_time.data)
+        echogram_ping_time = list(da_Sv.ping_time.data)
 
         # filter bottom within start and end time
         start_time = da_Sv.ping_time.data.min()
@@ -218,25 +218,25 @@ class Lines:
         if len(filtered_bottom) > 0:
             # create joint index
             joint_index = list(
-                set(list(pd.DataFrame(sonar_ping_time)[0]) + list(filtered_bottom.index))
+                set(list(pd.DataFrame(echogram_ping_time)[0]) + list(filtered_bottom.index))
             )
 
-            # Interpolate on the sonar coordinates. Note that some interpolation kwaargs
+            # Interpolate on the echogram coordinates. Note that some interpolation kwaargs
             # will result in some interpolation NaN values. The ffill and bfill lines
             # are there to fill in these NaN values.
             # TODO There exists a problem where when we use .loc prior to reindexing
             # we are hit with a key not found error.
-            bottom_contours = (
+            bottom_points = (
                 filtered_bottom[["depth"]]
                 .reindex(joint_index)
                 .interpolate(**kwargs)
-                .loc[sonar_ping_time]
+                .loc[echogram_ping_time]
                 .ffill()
                 .bfill()
             )
 
             # convert to data array for bottom
-            bottom_da = bottom_contours["depth"].to_xarray()
+            bottom_da = bottom_points["depth"].to_xarray()
             bottom_da = bottom_da.rename({"time": "ping_time"})
 
             # create a data array of depths
@@ -246,17 +246,17 @@ class Lines:
             # bottom: True, otherwise: False
             bottom_mask = depth_da >= bottom_da
 
-            # Reset bottom_contours index so that time index becomes time column
-            bottom_contours = bottom_contours.reset_index()
+            # Reset bottom_points index so that time index becomes time column
+            bottom_points = bottom_points.reset_index()
 
         else:
             # Set everything to False
             bottom_mask = xr.full_like(da_Sv, False)
 
-            # Set bottom contours to empty DataFrame with time and depth columns
-            bottom_contours = pd.DataFrame(columns=["depth", "time"])
+            # Set bottom points to empty DataFrame with time and depth columns
+            bottom_points = pd.DataFrame(columns=["depth", "time"])
 
         # Bottom: True becomes 1, False becomes 0
         bottom_mask = bottom_mask.where(True, 1, 0)
 
-        return bottom_mask, bottom_contours
+        return bottom_mask, bottom_points

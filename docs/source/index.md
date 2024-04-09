@@ -1,12 +1,12 @@
 # Echoregions
 
-Echoregions is a tool that interfaces annotations of water column sonar data with Machine Learning (ML) models.
+Echoregions is a Python Package that interfaces with annotations of water column sonar data for training machine learning models or doing other downstream processing such as biomass estimation.
 
 The annotations are typically regions indicating the presence of specific animal species or lines delineating ocean boundaries, such as the seafloor or sea surface, in the "echogram" (sonar images formed by echo returns). The interfacing functionalities operate in two directions:
-- Annotation to ML: Parsing and organizing manual annotations for preparing training and test datasets for ML developments
+- Annotation to ML: Parsing and organizing annotations for preparing training and test datasets for ML developments
 - ML to Annotation: Generating annotations from ML predictions that can be used for further downstream processing
 
-At present, functionalities in the Annotation to ML direction have been built for interfacing manual annotations from the Echoview software, which is widely used in the fisheries acoustics community. We plan to add functionalities in the ML to Annotation direction in the near future.
+At present, functionalities in the Annotation to ML direction have been built for interfacing manual annotations from the [Echoview](https://echoview.com/products-and-services/echoview/) software, which is widely used in the fisheries acoustics community. We plan to add functionalities in the ML to Annotation direction in the near future.
 
 ## Functionalities
 

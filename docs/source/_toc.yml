@@ -9,10 +9,8 @@ parts:
   - file: installation
 - caption: User guide
   chapters:
-  - file: Lines_plotting
-  - file: Regions2D_functions
-  - file: Regions2D_masking
-  - file: Regions2D_plotting
+  - file: Lines_functionality
+  - file: Regions2D_functionality
 - caption: Help & reference
   chapters:
   - file: api

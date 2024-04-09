@@ -223,7 +223,7 @@ def test_lines_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
         DataArray containing Sv data of test zarr file.
     """
 
-    M, bottom_contours = lines_fixture.mask(
+    M, bottom_points = lines_fixture.mask(
         da_Sv_fixture.isel(channel=0),
         method="slinear",
         limit=5,
@@ -243,13 +243,13 @@ def test_lines_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
     assert counts[0] > counts[1]
 
     # Assert that time is datetime64
-    assert pd.api.types.is_datetime64_any_dtype(bottom_contours["time"])
+    assert pd.api.types.is_datetime64_any_dtype(bottom_points["time"])
 
     # Assert that depth is float64
-    assert pd.api.types.is_float_dtype(bottom_contours["depth"])
+    assert pd.api.types.is_float_dtype(bottom_points["depth"])
 
-    # Place bottom contours in Lines object
-    lines_2 = Lines(bottom_contours, None, input_type="CSV")
+    # Place bottom points in Lines object
+    lines_2 = Lines(bottom_points, None, input_type="CSV")
 
     # Run lines masking to check if masking runs
     _, _ = lines_2.mask(da_Sv_fixture.isel(channel=0))
@@ -270,7 +270,7 @@ def test_lines_mask_empty(lines_fixture: Lines, da_Sv_fixture: DataArray) -> Non
     # Create empty lines object
     lines_fixture.data = lines_fixture.data[0:0]
 
-    M, bottom_contours_1 = lines_fixture.mask(da_Sv_fixture.isel(channel=0))
+    M, bottom_points_1 = lines_fixture.mask(da_Sv_fixture.isel(channel=0))
 
     # Compute unique values
     unique_values = np.unique(M.compute().data, return_counts=True)
@@ -283,17 +283,17 @@ def test_lines_mask_empty(lines_fixture: Lines, da_Sv_fixture: DataArray) -> Non
     assert len(values) == 1 and len(counts) == 1
     assert values[0] == 0
 
-    # Assert that bottom_contours is empty
-    assert bottom_contours_1.empty
+    # Assert that bottom_points is empty
+    assert bottom_points_1.empty
 
-    # Use bottom contours to create Lines object
-    lines_2 = Lines(bottom_contours_1, None, input_type="CSV")
+    # Use bottom points to create Lines object
+    lines_2 = Lines(bottom_points_1, None, input_type="CSV")
 
     # Run lines masking to check if masking runs
-    _, bottom_contours_2 = lines_2.mask(da_Sv_fixture.isel(channel=0))
+    _, bottom_points_2 = lines_2.mask(da_Sv_fixture.isel(channel=0))
 
-    # Assert that bottom_contours is empty
-    assert bottom_contours_2.empty
+    # Assert that bottom_points is empty
+    assert bottom_points_2.empty
 
 
 @pytest.mark.lines

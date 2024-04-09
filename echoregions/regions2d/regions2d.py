@@ -112,7 +112,7 @@ class Regions2D:
     def __getitem__(self, val: int) -> Series:
         return self.data.iloc[val]
 
-    def to_csv(self, save_path: bool = None, mode="w") -> None:
+    def to_csv(self, save_path: bool = None, mode="w", **kwaargs) -> None:
         """Save a Dataframe to a .csv file
 
         Parameters
@@ -126,7 +126,7 @@ class Regions2D:
         save_path = validate_path(save_path=save_path, input_file=self.input_file, ext=".csv")
 
         # Save to CSV
-        self.data.to_csv(save_path, index=False, mode=mode)
+        self.data.to_csv(save_path, mode=mode, **kwaargs)
 
         # Append save_path
         self.output_file.append(save_path)
@@ -195,6 +195,8 @@ class Regions2D:
             if isinstance(region_id, (float, int, str)):
                 region_id = [region_id]
             elif isinstance(region_id, list):
+                if len(region_id) == 0:
+                    raise ValueError("region_id list is empty. Cannot be empty.")
                 for value in region_id:
                     if not isinstance(value, (float, int, str)):
                         raise TypeError(
@@ -430,10 +432,10 @@ class Regions2D:
         """
 
         # Select Region(s)
-        region = self.select_region(region_id, region_class)
-
         if close_regions:
-            region = self.close_region(region)
+            region = self.close_region(region_id, region_class)
+        else:
+            region = self.select_region(region_id, region_class)
         for _, row in region.iterrows():
             plt.plot(row["time"], row["depth"], **kwargs)
 
@@ -480,37 +482,16 @@ class Regions2D:
                 areas.
             Also contains a data variable (`mask_labels`) with mask labels
             corresponding to region_id values.
-        region_contours : pd.DataFrame
+        region_points : pd.DataFrame
             DataFrame containing region_id, depth, and time.
         """
-        if isinstance(region_id, list):
-            if len(region_id) == 0:
-                raise ValueError("region_id is empty. Cannot be empty.")
-        elif region_id is None:
-            # Extract all region_id values
-            region_id = self.data.region_id.astype(int).to_list()
-        else:
+        if not isinstance(da_Sv, DataArray):
             raise TypeError(
-                f"region_id must be of type list. Currently is of type {type(region_id)}"
-            )
-
-        if mask_labels is None:
-            # Create mask_labels with each region_id as a key and values starting from 0
-            mask_labels = {key: idx for idx, key in enumerate(region_id)}
-
-        # Check that region_id and mask_labels are of the same size
-        if len(set(region_id) - set(mask_labels.keys())) > 0:
-            raise ValueError(
-                "Each region_id' must be a key in 'mask_labels'. "
-                "If you would prefer 0 based indexing as values for mask_labels, leave "
-                "mask_labels as None."
+                f"Input da_Sv must be of type DataArray. da_Sv was instead of type {type(da_Sv)}"
             )
 
         # Dataframe containing region information.
         region_df = self.select_region(region_id, region_class)
-
-        # Select only important columns
-        region_df = region_df[["region_id", "time", "depth"]]
 
         # Filter for rows with depth values within self min and self max depth and
         # for rows that have positive depth.
@@ -528,6 +509,23 @@ class Regions2D:
                 "between min_depth and max_depth."
             )
         else:
+            # Grab subset region ids
+            subset_region_ids = region_df.region_id.astype(int).to_list()
+
+            if mask_labels is None:
+                # Create mask_labels with each subset_region_ids as a key and values starting from 0
+                mask_labels = {key: idx for idx, key in enumerate(subset_region_ids)}
+
+            # Check that subset_region_ids and mask_labels are matching
+            if len(set(subset_region_ids) - set(mask_labels.keys())) > 0:
+                raise ValueError(
+                    "Each value in subset_region_ids must be a key in 'mask_labels' and vice versa. "
+                    "If you would prefer 0 based indexing as values for mask_labels, leave "
+                    "mask_labels as None."
+                )
+            # Select only important columns
+            region_df = region_df[["region_id", "time", "depth"]]
+
             # Organize the regions in a format for region mask.
             df = region_df.explode(["time", "depth"])
 
@@ -600,12 +598,12 @@ class Regions2D:
                 # Convert 3d mask to 2d mask
                 mask_ds = convert_mask_3d_to_2d(mask_ds)
 
-            # Get region_contours
-            region_contours = region_df[region_df["region_id"].isin(masked_region_id)][
+            # Get region_points
+            region_points = region_df[region_df["region_id"].isin(masked_region_id)][
                 ["region_id", "time", "depth"]
             ]
 
-            return mask_ds, region_contours
+            return mask_ds, region_points
 
     def transect_mask(
         self,
