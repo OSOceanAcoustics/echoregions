@@ -8,4 +8,4 @@ with open("requirements.txt") as f:
 
 if __name__ == "__main__":
     setup(install_requires=requirements,
-          version = "0.2.1")
+          version = "0.2.0")
