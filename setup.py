@@ -7,4 +7,5 @@ with open("requirements.txt") as f:
     requirements = f.readlines()
 
 if __name__ == "__main__":
-    setup(install_requires=requirements)
+    setup(install_requires=requirements,
+          version = "0.2.1")
