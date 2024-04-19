@@ -202,6 +202,7 @@ class Lines:
         If operation == 'regionmask':
             We create 4 additional bottom points that further describe the boundary that we want
             regionmask to mask:
+
             1) Point at the bottom leftmost corner. The depth of this point is based on the
             maximum of the EVL bottom point depth and the Echogram depth, plus an additional
             50.0 float offset.
@@ -213,6 +214,13 @@ class Lines:
             EVL bottom point to this rightmost edge. One can think of this as a right facing
             extension of the rightmost EVL bottom point until the right edge of the Echogram.
             These are there to ensure that regionmask captures the appropriate area during masking.
+
+            In the dataframe passed into regionmask, point 1 is meant to be the first index,
+            point 2 is meant to be the last index, and these points are meant to connect to each
+            other. Being that they are well below all other points, their connecting line does
+            not interfere with any other points. Point 1 is connected to point 3, and point 3
+            connects to the actual EVL points, where as point 2 is connected to point 4, and
+            point 4 connects to the actual EVL points, thus creating a closed region.
 
             For further information on how regionmask deals with edges:
             https://regionmask.readthedocs.io/en/stable/notebooks/method.html
