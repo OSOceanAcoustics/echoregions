@@ -400,3 +400,6 @@ def test_lines_mask_errors(lines_fixture: Lines, da_Sv_fixture: DataArray) -> No
         lines_fixture.mask(
             da_Sv_fixture.isel(channel=0), operation="above_below", limit_area="INVALID"
         )
+    # Test invalid operation argument.
+    with pytest.raises(ValueError):
+        lines_fixture.mask(da_Sv_fixture.isel(channel=0), operation="TEST")
