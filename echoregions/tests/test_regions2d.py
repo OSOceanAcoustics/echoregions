@@ -46,9 +46,9 @@ def da_Sv_fixture() -> DataArray:
 
 
 @pytest.mark.regions2d
-def test_read_regions_df(regions2d_fixture: Regions2D) -> None:
+def test_read_regions_csv(regions2d_fixture: Regions2D) -> None:
     """
-    Ensures that read_region_df provides the same Regions2D object
+    Ensures that read_region_csv provides the same Regions2D object
     as read_evr.
 
     Parameters
@@ -97,7 +97,7 @@ def test_read_regions_df(regions2d_fixture: Regions2D) -> None:
 @pytest.mark.regions2d
 def test_to_evr() -> None:
     """
-    Ensures that when we save a `Regions2D` object to `.evr` and read
+    Tests that when we save a `Regions2D` object to `.evr` and read
     back that `.evr` file, we end up with the same inner dataframe.
     """
     # Get Regions2D object and DataFrame

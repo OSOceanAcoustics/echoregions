@@ -46,15 +46,15 @@ def da_Sv_fixture() -> DataArray:
 
 
 @pytest.mark.lines
-def test_lines_region_df(lines_fixture: Lines) -> None:
+def test_lines_csv(lines_fixture: Lines) -> None:
     """
-    Ensures that read_region_df provides the same Regions2D object
-    as read_evr.
+    Ensures that read_lines_csv provides the same Lines object
+    as read_evl.
 
     Parameters
     ----------
-    regions2d_fixture : Regions2D
-        Object containing data of test EVR file.
+    lines_fixture : Lines
+        Object containing data of test EVL file.
     """
 
     # Get Lines object and DataFrame
@@ -77,6 +77,31 @@ def test_lines_region_df(lines_fixture: Lines) -> None:
 
     # Delete the file
     csv_file_path.unlink()
+
+
+@pytest.mark.lines
+def test_to_evl() -> None:
+    """
+    Tests that when we save a `Lines` object to `.evl` and read
+    back that `.evl` file, we end up with the same inner dataframe.
+    """
+    # Get Lines object and DataFrame
+    lines_1 = er.read_evl(DATA_DIR / "transect.evl")
+    lines_1_df = lines_1.data
+
+    # Send to `.evl` file
+    evl_file_path = DATA_DIR / "lines_to_evl_file.evl"
+    lines_1.to_evl(evl_file_path)
+
+    # Read back `.lines` file and extract DataFrame
+    lines_2 = er.read_evl(evl_file_path)
+    lines_2_df = lines_2.data
+
+    # Check that the dataframes are equal everywhere (not including the file name)
+    assert lines_1_df.drop("file_name", axis=1).equals(lines_2_df.drop("file_name", axis=1))
+
+    # Delete the file
+    evl_file_path.unlink()
 
 
 @pytest.mark.lines
@@ -207,8 +232,8 @@ def test_replace_nan_depth() -> None:
 
     lines_2 = er.read_evl(EVL_PATH, nan_depth_value=20)
     lines_2.data.loc[0, "depth"] = -10000.99  # Replace a value with the one used for nans
-    regions = lines_2.replace_nan_depth(inplace=False)
-    assert regions.loc[0, "depth"] == 20
+    lines2 = lines_2.replace_nan_depth(inplace=False)
+    assert lines2.loc[0, "depth"] == 20
 
 
 @pytest.mark.lines

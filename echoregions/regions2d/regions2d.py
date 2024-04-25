@@ -112,15 +112,15 @@ class Regions2D:
     def __getitem__(self, val: int) -> Series:
         return self.data.iloc[val]
 
-    def to_csv(self, save_path: bool = None, mode="w", **kwaargs) -> None:
+    def to_csv(self, save_path: Union[str, Path], mode: str = "w", **kwaargs) -> None:
         """Save a Dataframe to a .csv file
 
         Parameters
         ----------
-        save_path : str
+        save_path : Union[str, Path]
             Path to save the CSV file to.
         mode : str
-            Write mode arg for to_csv.
+            Write mode arg for to_csv. Defaults to 'w'.
         """
         # Check if the save directory is safe
         save_path = validate_path(save_path=save_path, input_file=self.input_file, ext=".csv")
@@ -201,19 +201,19 @@ class Regions2D:
                 depth = str(depth)
                 point = date + " " + time + " " + depth
                 f.write("%s " % point)
-            f.write(" " + region_type + "\n")
+            f.write(region_type + "\n")
             f.write(region_name + "\n")
         f.close()
 
-    def to_evr(self, save_path: bool = None, mode="w") -> None:
+    def to_evr(self, save_path: Union[str, Path], mode: str = "w") -> None:
         """Save a Dataframe to a .evr file
 
         Parameters
         ----------
-        save_path : str
-            Path to save the CSV file to.
+        save_path : Union[str, Path]
+            Path to save the `evr` file to.
         mode : str
-            Write mode arg for to_csv.
+            Write mode arg for IO open. Defaults to 'w'.
         """
         # Check if the save directory is safe
         save_path = validate_path(save_path=save_path, input_file=self.input_file, ext=".evr")

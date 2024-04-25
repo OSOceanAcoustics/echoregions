@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from typing import Dict, Iterable, List, Union
 
 import matplotlib.pyplot as plt
@@ -67,20 +68,63 @@ class Lines:
         if not inplace:
             return regions
 
-    def to_csv(self, save_path: bool = None, mode="w", **kwaargs) -> None:
+    def to_csv(self, save_path: Union[str, Path], mode: str = "w", **kwaargs) -> None:
         """Save a Dataframe to a .csv file
 
         Parameters
         ----------
-        save_path : str
+        save_path : Union[str, Path]
             Path to save the CSV file to.
         mode : str
-            Write mode arg for to_csv.
+            Write mode arg for to_csv. Defaults to 'w'.
         """
         # Check if the save directory is safe
         save_path = validate_path(save_path=save_path, input_file=self.input_file, ext=".csv")
         # Reorder columns and export to csv
         self.data.to_csv(save_path, mode=mode, **kwaargs)
+        self.output_file.append(save_path)
+
+    def to_evl(self, save_path: Union[str, Path], mode: str = "w") -> None:
+        """Save a Dataframe to a .evl file
+
+        Parameters
+        ----------
+        save_path : Union[str, Path]
+            Path to save the `evl` file to.
+        mode : str
+            Write mode arg for IO open. Defaults to 'w'.
+        """
+        # Check if the save directory is safe
+        save_path = validate_path(save_path=save_path, input_file=self.input_file, ext=".evl")
+
+        # Grab header information
+        echoview_version = (
+            f"EVBD 3 {self.data.iloc[0]['echoview_version']}"
+            if len(self.data) > 0
+            else "EVBD 3 12.0.341.42620"
+        )
+        number_of_regions = str(len(self.data))
+
+        with open(save_path, mode=mode) as f:
+            # Write header to `.evl`
+            f.write(echoview_version + "\n")
+            f.write(number_of_regions + "\n")
+
+            # Write each bottom point to `.evl`
+            for _, row in self.data.iterrows():
+                f.write(
+                    str(row["time"].strftime("%Y%m%d"))
+                    + " "
+                    + str(row["time"].strftime("%H%M%S%f"))[:-2]
+                    + "  "
+                    + str(row["depth"])
+                    + " "
+                    + str(row["status"])
+                    + "\n"
+                )
+        f.close()
+
+        # Append save_path
         self.output_file.append(save_path)
 
     def to_json(self, save_path: str = None, pretty: bool = True, **kwargs) -> None:
