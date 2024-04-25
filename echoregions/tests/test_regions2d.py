@@ -95,6 +95,31 @@ def test_read_regions_df(regions2d_fixture: Regions2D) -> None:
 
 
 @pytest.mark.regions2d
+def test_to_evr() -> None:
+    """
+    Ensures that when we save a `Regions2D` object to `.evr` and read
+    back that `.evr` file, we end up with the same inner dataframe.
+    """
+    # Get Regions2D object and DataFrame
+    r2d_1 = er.read_evr(DATA_DIR / "transect.evr")
+    r2d_1_df = r2d_1.data
+
+    # Send to `.evr` file
+    evr_file_path = DATA_DIR / "r2d_to_evr_file.evr"
+    r2d_1.to_evr(evr_file_path)
+
+    # Read back `.evr` file and extract DataFrame
+    r2d_2 = er.read_evr(evr_file_path)
+    r2d_2_df = r2d_2.data
+
+    # Check that the dataframes are equal everywhere (not including the file name)
+    assert r2d_1_df.drop("file_name", axis=1).equals(r2d_2_df.drop("file_name", axis=1))
+
+    # Delete the file
+    evr_file_path.unlink()
+
+
+@pytest.mark.regions2d
 def test_empty_regions2d_parsing() -> None:
     """
     Tests empty EVR parsing.
