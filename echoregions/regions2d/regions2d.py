@@ -112,21 +112,129 @@ class Regions2D:
     def __getitem__(self, val: int) -> Series:
         return self.data.iloc[val]
 
-    def to_csv(self, save_path: bool = None, mode="w", **kwaargs) -> None:
+    def to_csv(self, save_path: Union[str, Path], mode: str = "w", **kwaargs) -> None:
         """Save a Dataframe to a .csv file
 
         Parameters
         ----------
-        save_path : str
+        save_path : Union[str, Path]
             Path to save the CSV file to.
         mode : str
-            Write mode arg for to_csv.
+            Write mode arg for to_csv. Defaults to 'w'.
         """
         # Check if the save directory is safe
         save_path = validate_path(save_path=save_path, input_file=self.input_file, ext=".csv")
 
         # Save to CSV
         self.data.to_csv(save_path, mode=mode, **kwaargs)
+
+        # Append save_path
+        self.output_file.append(save_path)
+
+    def _write_region(self, row, save_path):
+        """Helper function to write individual regions to `.evr` file."""
+        # Set region variables
+        datetimes = pd.to_datetime(row["time"])
+        depths = row["depth"]
+        region_structure_version = row["region_structure_version"]
+        point_count = str(len(datetimes))
+        selected = "0"
+        region_creation_type = row["region_creation_type"]
+        dummy = "-1"
+        bounding_rectangle_calculated = "1"
+        region_notes = row["region_notes"]
+        number_of_lines_of_notes = len(region_notes)
+        number_of_lines_of_detection_settings = "0"
+        region_class = row["region_class"]
+        region_type = row["region_type"]
+        region_name = row["region_name"]
+        region_id = row["region_id"]
+
+        # Append to existing `.evr` file
+        with open(save_path, "a") as f:
+            # Calculate bounding box
+            left_x = (
+                str(min(datetimes).strftime("%Y%m%d"))
+                + " "
+                + str(min(datetimes).strftime("%H%M%S%f"))
+            )
+            top_y = str(min(depths))
+            right_x = (
+                str(max(datetimes).strftime("%Y%m%d"))
+                + " "
+                + str(max(datetimes).strftime("%H%M%S%f"))
+            )
+            bottom_y = str(max(depths))
+            bbox = left_x + " " + top_y + " " + right_x + " " + bottom_y
+
+            # Write first line
+            f.write(
+                "\n"
+                + region_structure_version
+                + " "
+                + point_count
+                + " "
+                + str(region_id)
+                + " "
+                + selected
+                + " "
+                + region_creation_type
+                + " "
+                + dummy
+                + " "
+                + bounding_rectangle_calculated
+                + " "
+                + bbox
+                + "\n"
+            )
+            f.write(str(number_of_lines_of_notes) + "\n")
+            if number_of_lines_of_notes > 0:
+                for region_note in region_notes:
+                    f.write(region_note + "\n")
+            f.write(number_of_lines_of_detection_settings + "\n")
+            f.write(region_class + "\n")
+
+            # Write points
+            for datetime, depth in zip(datetimes, depths):
+                date = str(datetime.strftime("%Y%m%d"))
+                time = str(datetime.strftime("%H%M%S%f"))[:-2]
+                depth = str(depth)
+                point = date + " " + time + " " + depth
+                f.write("%s " % point)
+            f.write(region_type + "\n")
+            f.write(region_name + "\n")
+        f.close()
+
+    def to_evr(self, save_path: Union[str, Path], mode: str = "w") -> None:
+        """Save a Dataframe to a .evr file
+
+        Parameters
+        ----------
+        save_path : Union[str, Path]
+            Path to save the `evr` file to.
+        mode : str
+            Write mode arg for IO open. Defaults to 'w'.
+        """
+        # Check if the save directory is safe
+        save_path = validate_path(save_path=save_path, input_file=self.input_file, ext=".evr")
+
+        # Grab header information
+        echoview_version = (
+            f"EVRG 7 {self.data.iloc[0]['echoview_version']}"
+            if len(self.data) > 0
+            else "EVRG 7 12.0.341.42620"
+        )
+        number_of_regions = str(len(self.data))
+
+        # Write header to `.evr`
+        with open(save_path, mode=mode) as f:
+            f.write(echoview_version + "\n")
+            f.write(number_of_regions + "\n")
+        f.close()
+
+        # Write each region to `.evr`
+        for _, row in self.data.iterrows():
+            self._write_region(row, save_path=save_path)
 
         # Append save_path
         self.output_file.append(save_path)
@@ -439,7 +547,7 @@ class Regions2D:
         for _, row in region.iterrows():
             plt.plot(row["time"], row["depth"], **kwargs)
 
-    def mask(
+    def region_mask(
         self,
         da_Sv: DataArray,
         region_id: Union[float, int, str, List[Union[float, int, str]]] = None,

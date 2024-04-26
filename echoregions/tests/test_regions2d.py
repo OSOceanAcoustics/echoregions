@@ -46,9 +46,9 @@ def da_Sv_fixture() -> DataArray:
 
 
 @pytest.mark.regions2d
-def test_read_regions_df(regions2d_fixture: Regions2D) -> None:
+def test_read_regions_csv(regions2d_fixture: Regions2D) -> None:
     """
-    Ensures that read_region_df provides the same Regions2D object
+    Ensures that read_region_csv provides the same Regions2D object
     as read_evr.
 
     Parameters
@@ -92,6 +92,31 @@ def test_read_regions_df(regions2d_fixture: Regions2D) -> None:
 
     # Delete the file
     csv_file_path.unlink()
+
+
+@pytest.mark.regions2d
+def test_to_evr() -> None:
+    """
+    Tests that when we save a `Regions2D` object to `.evr` and read
+    back that `.evr` file, we end up with the same inner dataframe.
+    """
+    # Get Regions2D object and DataFrame
+    r2d_1 = er.read_evr(DATA_DIR / "transect.evr")
+    r2d_1_df = r2d_1.data
+
+    # Send to `.evr` file
+    evr_file_path = DATA_DIR / "r2d_to_evr_file.evr"
+    r2d_1.to_evr(evr_file_path)
+
+    # Read back `.evr` file and extract DataFrame
+    r2d_2 = er.read_evr(evr_file_path)
+    r2d_2_df = r2d_2.data
+
+    # Check that the dataframes are equal everywhere (not including the file name)
+    assert r2d_1_df.drop("file_name", axis=1).equals(r2d_2_df.drop("file_name", axis=1))
+
+    # Delete the file
+    evr_file_path.unlink()
 
 
 @pytest.mark.regions2d
@@ -512,13 +537,15 @@ def test_mask_empty_no_overlap(regions2d_fixture: Regions2D, da_Sv_fixture: Data
     """
 
     # Attempt to create mask on region with invalid depth values
-    mask_output_1 = regions2d_fixture.mask(da_Sv_fixture.isel(channel=0), [8])
+    mask_output_1 = regions2d_fixture.region_mask(da_Sv_fixture.isel(channel=0), [8])
 
     # Check that output is None
     assert mask_output_1 is None
 
     # Create mask with regions that have no overlap with the Sv Data Array
-    mask_3d_ds, region_points_1 = regions2d_fixture.mask(da_Sv_fixture.isel(channel=0), [8, 9, 10])
+    mask_3d_ds, region_points_1 = regions2d_fixture.region_mask(
+        da_Sv_fixture.isel(channel=0), [8, 9, 10]
+    )
 
     # Check that this mask is empty
     assert mask_3d_ds.mask_3d.isnull().all()
@@ -530,7 +557,7 @@ def test_mask_empty_no_overlap(regions2d_fixture: Regions2D, da_Sv_fixture: Data
     r2d_2 = Regions2D(region_points_1, min_depth=0, max_depth=1000, input_type="CSV")
 
     # Run Regions2d masking to check if masking runs
-    mask_output_2 = r2d_2.mask(da_Sv_fixture.isel(channel=0))
+    mask_output_2 = r2d_2.region_mask(da_Sv_fixture.isel(channel=0))
 
     # Check that output is None
     assert mask_output_2 is None
@@ -551,15 +578,15 @@ def test_mask_type_error(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray)
 
     # Check dataset error
     with pytest.raises(TypeError):
-        _ = regions2d_fixture.mask(da_Sv_fixture.to_dataset("Sv"))
+        _ = regions2d_fixture.region_mask(da_Sv_fixture.to_dataset("Sv"))
     # Check empty tuple error
     with pytest.raises(TypeError):
         empty_tuple = ()
-        _ = regions2d_fixture.mask(da_Sv_fixture, empty_tuple)
+        _ = regions2d_fixture.region_mask(da_Sv_fixture, empty_tuple)
     # Check empty list error
     with pytest.raises(ValueError):
         empty_list = []
-        _ = regions2d_fixture.mask(da_Sv_fixture, empty_list)
+        _ = regions2d_fixture.region_mask(da_Sv_fixture, empty_list)
 
 
 @pytest.mark.regions2d
@@ -579,7 +606,7 @@ def test_mask_labels_region_ids_not_matching_error(
     """
     # Check not matching error
     with pytest.raises(ValueError):
-        _ = regions2d_fixture.mask(da_Sv_fixture, region_id=13, mask_labels={14: "TEST"})
+        _ = regions2d_fixture.region_mask(da_Sv_fixture, region_id=13, mask_labels={14: "TEST"})
 
 
 @pytest.mark.regions2d
@@ -600,7 +627,7 @@ def test_mask_2d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None
     mask_labels[13] = "Mask1"
 
     # Create mask
-    mask_2d_ds, _ = regions2d_fixture.mask(
+    mask_2d_ds, _ = regions2d_fixture.region_mask(
         da_Sv_fixture, mask_labels=mask_labels, collapse_to_2d=True
     )
 
@@ -635,13 +662,13 @@ def test_mask_region_points(regions2d_fixture: Regions2D, da_Sv_fixture: DataArr
     # Get region_id and mask_labels
 
     # Create mask
-    _, region_points_1 = regions2d_fixture.mask(da_Sv_fixture.isel(channel=0))
+    _, region_points_1 = regions2d_fixture.region_mask(da_Sv_fixture.isel(channel=0))
 
     # Use region points to create Regions2D object
     r2d_2 = Regions2D(region_points_1, min_depth=0, max_depth=1000, input_type="CSV")
 
     # Run Regions2D masking to check if masking runs
-    _, region_points_2 = r2d_2.mask(da_Sv_fixture.isel(channel=0))
+    _, region_points_2 = r2d_2.region_mask(da_Sv_fixture.isel(channel=0))
 
     # Check if the two points are equal
     region_points_1.equals(region_points_2)
@@ -665,7 +692,7 @@ def test_mask_3d_2d_3d_2d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
     mask_labels[13] = "Mask1"
 
     # Create mask
-    mask_3d_ds, _ = regions2d_fixture.mask(da_Sv_fixture, mask_labels=mask_labels)
+    mask_3d_ds, _ = regions2d_fixture.region_mask(da_Sv_fixture, mask_labels=mask_labels)
 
     # Check mask values
     assert (mask_3d_ds.mask_3d.region_id.values == [13, 18]).all()
@@ -714,7 +741,9 @@ def test_one_label_mask_3d_2d_3d_2d(regions2d_fixture: Regions2D, da_Sv_fixture:
     """
 
     # Create 3d mask
-    mask_3d_ds, _ = regions2d_fixture.mask(da_Sv_fixture, region_id=[18], mask_labels={18: "Mask1"})
+    mask_3d_ds, _ = regions2d_fixture.region_mask(
+        da_Sv_fixture, region_id=[18], mask_labels={18: "Mask1"}
+    )
 
     # Check mask values
     assert (mask_3d_ds.mask_3d.region_id.values == [18]).all()
@@ -761,7 +790,7 @@ def test_nan_mask_3d_2d_and_2d_3d(regions2d_fixture: Regions2D, da_Sv_fixture: D
     """
 
     # Create 3d mask
-    mask_3d_ds, _ = regions2d_fixture.mask(da_Sv_fixture, [8, 9, 10])
+    mask_3d_ds, _ = regions2d_fixture.region_mask(da_Sv_fixture, [8, 9, 10])
 
     # Check if mask is null/empty
     assert mask_3d_ds.mask_3d.isnull().all()
@@ -803,7 +832,7 @@ def test_overlapping_mask_3d_2d(regions2d_fixture: Regions2D, da_Sv_fixture: Dat
     region_id = regions2d_fixture.data.region_id.astype(int).to_list()
 
     # Create 3d mask
-    mask_3d_ds, _ = regions2d_fixture.mask(da_Sv_fixture, region_id)
+    mask_3d_ds, _ = regions2d_fixture.region_mask(da_Sv_fixture, region_id)
 
     # Turn first (0th index) array corresponding to region id 13 into all 1s
     # to guarantee overlap with array corresponding to region id 18
