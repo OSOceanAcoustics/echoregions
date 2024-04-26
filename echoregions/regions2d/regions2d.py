@@ -547,7 +547,7 @@ class Regions2D:
         for _, row in region.iterrows():
             plt.plot(row["time"], row["depth"], **kwargs)
 
-    def mask(
+    def region_mask(
         self,
         da_Sv: DataArray,
         region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
