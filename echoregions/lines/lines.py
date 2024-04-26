@@ -1,9 +1,11 @@
 import json
 from typing import Dict, Iterable, List, Union
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import regionmask
 import xarray as xr
 from pandas import DataFrame, Timestamp
 from xarray import DataArray
@@ -160,33 +162,75 @@ class Lines:
         else:
             plt.plot(df.time, df.depth, fmt, **kwargs)
 
-    def mask(self, da_Sv: DataArray, **kwargs):
+    def _filter_bottom(self, bottom, start_date, end_date, operation):
+        """
+        Selects the values of the bottom between two dates (non-inclusive).
+        """
+        after_start_date = bottom["time"] > start_date
+        before_end_date = bottom["time"] < end_date
+        between_two_dates = after_start_date & before_end_date
+        filtered_bottom = bottom.loc[between_two_dates]
+        if operation == "above_below":
+            filtered_bottom = filtered_bottom.set_index("time")
+        return filtered_bottom
+
+    def mask(self, da_Sv: DataArray, operation: str = "regionmask", **kwargs):
         """
         Subsets a bottom dataset to the range of an Sv dataset. Create a mask of
         the same shape as data found in the Echogram object:
-        Bottom: True, Otherwise: False.
+        Bottom: 1, Otherwise: 0.
 
         Parameters
         ----------
         da_Sv : Xarray DataArray
             Matrix of coordinates (ping_time, depth) that contains Sv values.
+        operation : str
+            Whether to use regionmask or below/above logic to produce the bottom mask.
         **kwargs : dict
             Keyword arguments to be passed to pandas.DataFrame.interpolate.
 
         Returns
         -------
         bottom_mask : Xarray DataArray
-            Matrix of coordinates (ping_time, depth) with values such that bottom: False,
-            otherwise: True
+            Matrix of coordinates (ping_time, depth) with values such that bottom: 1,
+            otherwise: 0.
         bottom_points : pd.DataFrame
             DataFrame containing depth and time.
 
         Notes
         -----
-        Prior to creating the mask, this method performs interpolation on the bottom data
-        points found in the lines.data dataframe.
-        The nearest interpolation method from Pandas has a problem when points are far
-        from each other.
+        If operation == 'regionmask':
+            We create 4 additional bottom points that further describe the boundary that we want
+            regionmask to mask:
+
+            1) Point at the bottom leftmost corner. The depth of this point is based on the
+            maximum of the EVL bottom point depth and the Echogram depth, plus an additional
+            1.0 float offset.
+            2) Point at the leftmost edge of the Echogram where depth is based on the closest
+            EVL bottom point to this leftmost edge. One can think of this as a left facing
+            extension of the leftmost EVL bottom point until the left edge of the Echogram.
+            3) Point at the rightmost edge of the Echogram where depth is based on the closest
+            EVL bottom point to this rightmost edge. One can think of this as a right facing
+            extension of the rightmost EVL bottom point until the right edge of the Echogram.
+            4) Point at the bottom rightmost corner. The depth of this point is the same as 1.
+
+            The points are there to ensure that regionmask captures the appropriate area during masking.
+            The offset in Point 1 and Point 4 is here to make sure that the line connecting the bottom-most
+            points are clear of any other points. This would be a problem in the case where there is a point
+            in the middle that matches the maximum of the Sv and EVL point depth. This would lead to
+            regionmask creating possibly 2+ regions, which is behavior that could lead to different outputs.
+            The offset ensures that regionmask always creates just 1 region.
+
+            In the dataframe passed into regionmask, the following points are connected in the
+            following order: [1, 2, bottom points, 3, 4, 1].
+
+            For further information on how regionmask deals with edges:
+            https://regionmask.readthedocs.io/en/stable/notebooks/method.html
+        If operation == 'above_below':
+            Prior to creating the mask, this method performs interpolation on the bottom data
+            points found in the lines.data dataframe.
+            The nearest interpolation method from Pandas has a problem when points are far
+            from each other.
         """
 
         if not isinstance(da_Sv, DataArray):
@@ -194,15 +238,11 @@ class Lines:
                 f"Input da_Sv must be of type DataArray. da_Sv was instead of type {type(da_Sv)}"
             )
 
-        def filter_bottom(bottom, start_date, end_date):
-            """
-            Selects the values of the bottom between two dates.
-            """
-            after_start_date = bottom["time"] > start_date
-            before_end_date = bottom["time"] < end_date
-            between_two_dates = after_start_date & before_end_date
-            filtered_bottom = bottom.loc[between_two_dates].set_index("time")
-            return filtered_bottom
+        if operation not in ["regionmask", "above_below"]:
+            raise ValueError(
+                "Argument ```option``` must be either 'regionmask' or 'above_below'. "
+                f"Cannot be {operation}."
+            )
 
         lines_df = self.data
 
@@ -212,42 +252,119 @@ class Lines:
         # filter bottom within start and end time
         start_time = da_Sv.ping_time.data.min()
         end_time = da_Sv.ping_time.data.max()
-        filtered_bottom = filter_bottom(lines_df, start_time, end_time)
+        filtered_bottom = self._filter_bottom(lines_df, start_time, end_time, operation)
         filtered_bottom = filtered_bottom[~filtered_bottom.index.duplicated()]
 
         if len(filtered_bottom) > 0:
-            # create joint index
-            joint_index = list(
-                set(list(pd.DataFrame(echogram_ping_time)[0]) + list(filtered_bottom.index))
-            )
+            if operation == "regionmask":
+                # Filter columns and sort rows
+                bottom_points = filtered_bottom.copy()[["time", "depth"]].sort_values(by="time")
 
-            # Interpolate on the echogram coordinates. Note that some interpolation kwaargs
-            # will result in some interpolation NaN values. The ffill and bfill lines
-            # are there to fill in these NaN values.
-            # TODO There exists a problem where when we use .loc prior to reindexing
-            # we are hit with a key not found error.
-            bottom_points = (
-                filtered_bottom[["depth"]]
-                .reindex(joint_index)
-                .interpolate(**kwargs)
-                .loc[echogram_ping_time]
-                .ffill()
-                .bfill()
-            )
+                # Calculate left and right most bottom point depth values
+                bottom_points_min_time_depth = bottom_points.loc[
+                    bottom_points["time"].idxmin(), "depth"
+                ]
+                bottom_points_max_time_depth = bottom_points.loc[
+                    bottom_points["time"].idxmax(), "depth"
+                ]
 
-            # convert to data array for bottom
-            bottom_da = bottom_points["depth"].to_xarray()
-            bottom_da = bottom_da.rename({"time": "ping_time"})
+                # Calculate maximum depth between bottom points and Sv and add additional offset
+                maximum_depth_plus_offset = (
+                    max([da_Sv["depth"].max().data, bottom_points["depth"].max()]) + 50.0
+                )
 
-            # create a data array of depths
-            depth_da = da_Sv["depth"] + xr.zeros_like(da_Sv)
+                # Calculate new corner rows:
+                left_side_new_rows = pd.DataFrame(
+                    {
+                        "time": [
+                            pd.to_datetime(da_Sv["ping_time"].min().data),
+                            pd.to_datetime(da_Sv["ping_time"].min().data),
+                        ],
+                        "depth": [maximum_depth_plus_offset, bottom_points_min_time_depth],
+                    }
+                )
+                right_side_new_rows = pd.DataFrame(
+                    {
+                        "time": [
+                            pd.to_datetime(da_Sv["ping_time"].max().data),
+                            pd.to_datetime(da_Sv["ping_time"].max().data),
+                        ],
+                        "depth": [bottom_points_max_time_depth, maximum_depth_plus_offset],
+                    }
+                )
 
-            # create a mask for the bottom:
-            # bottom: True, otherwise: False
-            bottom_mask = depth_da >= bottom_da
+                # Concat new corner rows to bottom points
+                bottom_points = pd.concat(
+                    [left_side_new_rows, bottom_points, right_side_new_rows]
+                ).reset_index(drop=True)
 
-            # Reset bottom_points index so that time index becomes time column
-            bottom_points = bottom_points.reset_index()
+                # Convert region time to integer timestamp.
+                bottom_points_with_int_timestamp = bottom_points.copy()
+                bottom_points_with_int_timestamp["time"] = matplotlib.dates.date2num(
+                    bottom_points_with_int_timestamp["time"]
+                )
+
+                # Convert ping_time to unix_time since the masking does not work on datetime objects.
+                da_Sv = da_Sv.assign_coords(
+                    unix_time=(
+                        "ping_time",
+                        matplotlib.dates.date2num(da_Sv.coords["ping_time"].values),
+                    )
+                )
+
+                # Create bottom mask
+                # bottom: True, otherwise: False
+                r = regionmask.Regions(
+                    outlines=[np.array(bottom_points_with_int_timestamp)],
+                    overlap=False,
+                )
+                bottom_mask = xr.where(
+                    np.isnan(
+                        r.mask(
+                            da_Sv["unix_time"],
+                            da_Sv["depth"],
+                            wrap_lon=False,
+                        )
+                    ),
+                    False,
+                    True,
+                )
+            else:
+                # create joint index
+                joint_index = list(
+                    set(list(pd.DataFrame(echogram_ping_time)[0]) + list(filtered_bottom.index))
+                )
+
+                # Interpolate on the echogram coordinates. Note that some interpolation kwaargs
+                # will result in some interpolation NaN values. The ffill and bfill lines
+                # are there to fill in these NaN values.
+                # TODO There exists a problem where when we use .loc prior to reindexing
+                # we are hit with a key not found error.
+                bottom_points = (
+                    filtered_bottom[["depth"]]
+                    .reindex(joint_index)
+                    .interpolate(**kwargs)
+                    .loc[echogram_ping_time]
+                    .ffill()
+                    .bfill()
+                )
+
+                # convert to data array for bottom
+                bottom_da = bottom_points["depth"].to_xarray()
+                bottom_da = bottom_da.rename({"time": "ping_time"})
+
+                # create a data array of depths
+                depth_da = da_Sv["depth"] + xr.zeros_like(da_Sv)
+
+                # create a mask for the bottom:
+                # bottom: True, otherwise: False
+                bottom_mask = depth_da >= bottom_da
+
+                # Reset bottom_points index so that time index becomes time column
+                bottom_points = bottom_points.reset_index()
+
+            # Set bottom points to be pandas datetime
+            bottom_points["time"] = pd.to_datetime(bottom_points["time"])
 
         else:
             # Set everything to False
