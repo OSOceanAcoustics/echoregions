@@ -138,7 +138,7 @@ def test_evl_to_file(lines_fixture: Lines) -> None:
 @pytest.mark.lines
 def test_plot(lines_fixture: Lines) -> None:
     """
-    Test plotting Lines with operations.
+    Test plotting Lines to check for no raised errors.
 
     Parameters
     ----------

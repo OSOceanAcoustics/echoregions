@@ -205,22 +205,24 @@ class Lines:
 
             1) Point at the bottom leftmost corner. The depth of this point is based on the
             maximum of the EVL bottom point depth and the Echogram depth, plus an additional
-            50.0 float offset.
-            2) Point at the bottom rightmost corner. The depth of this point is the same as 1.
-            3) Point at the leftmost edge of the Echogram where depth is based on the closest
+            1.0 float offset.
+            2) Point at the leftmost edge of the Echogram where depth is based on the closest
             EVL bottom point to this leftmost edge. One can think of this as a left facing
             extension of the leftmost EVL bottom point until the left edge of the Echogram.
-            4) Point at the rightmost edge of the Echogram where depth is based on the closest
+            3) Point at the rightmost edge of the Echogram where depth is based on the closest
             EVL bottom point to this rightmost edge. One can think of this as a right facing
             extension of the rightmost EVL bottom point until the right edge of the Echogram.
-            These are there to ensure that regionmask captures the appropriate area during masking.
+            4) Point at the bottom rightmost corner. The depth of this point is the same as 1.
 
-            In the dataframe passed into regionmask, point 1 is meant to be the first index,
-            point 2 is meant to be the last index, and these points are meant to connect to each
-            other. Being that they are well below all other points, their connecting line does
-            not interfere with any other points. Point 1 is connected to point 3, and point 3
-            connects to the actual EVL points, where as point 2 is connected to point 4, and
-            point 4 connects to the actual EVL points, thus creating a closed region.
+            The points are there to ensure that regionmask captures the appropriate area during masking.
+            The offset in Point 1 and Point 4 is here to make sure that the line connecting the bottom-most
+            points are clear of any other points. This would be a problem in the case where there is a point
+            in the middle that matches the maximum of the Sv and EVL point depth. This would lead to
+            regionmask creating possibly 2+ regions, which is behavior that could lead to different outputs.
+            The offset ensures that regionmask always creates just 1 region.
+
+            In the dataframe passed into regionmask, the following points are connected in the
+            following order: [1, 2, bottom points, 3, 4, 1].
 
             For further information on how regionmask deals with edges:
             https://regionmask.readthedocs.io/en/stable/notebooks/method.html
