@@ -317,7 +317,7 @@ class Lines:
                     max([da_Sv["depth"].max().data, bottom_points["depth"].max()]) + 1.0
                 )
 
-                # Calculate new corner rows:
+                # Set new left corner rows:
                 # We add a short time offset here to ensure appropriate left side of mask
                 # inclusion behavior; otherwise, regionmask will not mask the leftmost edge
                 # of the Echogram even if the bottom annotation indicates that it should be
@@ -335,6 +335,8 @@ class Lines:
                         "depth": [maximum_depth_plus_offset, bottom_points_min_time_depth],
                     }
                 )
+
+                # Set new right corner rows
                 right_side_new_rows = pd.DataFrame(
                     {
                         "time": [
