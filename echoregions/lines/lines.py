@@ -314,15 +314,23 @@ class Lines:
 
                 # Calculate maximum depth between bottom points and Sv and add additional offset
                 maximum_depth_plus_offset = (
-                    max([da_Sv["depth"].max().data, bottom_points["depth"].max()]) + 50.0
+                    max([da_Sv["depth"].max().data, bottom_points["depth"].max()]) + 1.0
                 )
 
                 # Calculate new corner rows:
+                # We add a short time offset here to ensure appropriate left side of mask
+                # inclusion behavior; otherwise, regionmask will not mask the leftmost edge
+                # of the Echogram even if the bottom annotation indicates that it should be
+                # masked.
+                # For more edge information: https://regionmask.readthedocs.io/en/stable/notebooks/method.html#edge-behavior #noqa
+                # TODO: Figure out a cleaner and less arbitrary way of ensuring correct left edge
+                # behavior.
+                time_offset = pd.Timedelta(seconds=1)
                 left_side_new_rows = pd.DataFrame(
                     {
                         "time": [
-                            pd.to_datetime(da_Sv["ping_time"].min().data),
-                            pd.to_datetime(da_Sv["ping_time"].min().data),
+                            pd.to_datetime(da_Sv["ping_time"].min().data) - time_offset,
+                            pd.to_datetime(da_Sv["ping_time"].min().data) - time_offset,
                         ],
                         "depth": [maximum_depth_plus_offset, bottom_points_min_time_depth],
                     }
