@@ -164,7 +164,7 @@ class Lines:
 
     def _filter_bottom(self, bottom, start_date, end_date, operation):
         """
-        Selects the values of the bottom between two dates.
+        Selects the values of the bottom between two dates (non-inclusive).
         """
         after_start_date = bottom["time"] > start_date
         before_end_date = bottom["time"] < end_date
