@@ -206,9 +206,21 @@ class Lines:
         else:
             plt.plot(df.time, df.depth, fmt, **kwargs)
 
-    def bottom_mask(self, da_Sv: DataArray, **kwargs):
+    def _filter_bottom(self, bottom, start_date, end_date, operation):
         """
-        Subsets a bottom dataset to the range of an Sv dataset. Create a bottom mask of
+        Selects the values of the bottom between two dates (non-inclusive).
+        """
+        after_start_date = bottom["time"] > start_date
+        before_end_date = bottom["time"] < end_date
+        between_two_dates = after_start_date & before_end_date
+        filtered_bottom = bottom.loc[between_two_dates]
+        if operation == "above_below":
+            filtered_bottom = filtered_bottom.set_index("time")
+        return filtered_bottom
+
+    def bottom_mask(self, da_Sv: DataArray, operation: str = "regionmask", **kwargs):
+        """
+        Subsets a bottom dataset to the range of an Sv dataset. Create a mask of
         the same shape as data found in the Echogram object:
         Bottom: 1, Otherwise: 0.
 
@@ -288,38 +300,112 @@ class Lines:
         filtered_bottom = filtered_bottom[~filtered_bottom.index.duplicated()]
 
         if len(filtered_bottom) > 0:
-            # create joint index
-            joint_index = list(
-                set(list(pd.DataFrame(echogram_ping_time)[0]) + list(filtered_bottom.index))
-            )
+            if operation == "regionmask":
+                # Filter columns and sort rows
+                bottom_points = filtered_bottom.copy()[["time", "depth"]].sort_values(by="time")
 
-            # Interpolate on the echogram coordinates. Note that some interpolation kwaargs
-            # will result in some interpolation NaN values. The ffill and bfill lines
-            # are there to fill in these NaN values.
-            # TODO There exists a problem where when we use .loc prior to reindexing
-            # we are hit with a key not found error.
-            bottom_points = (
-                filtered_bottom[["depth"]]
-                .reindex(joint_index)
-                .interpolate(**kwargs)
-                .loc[echogram_ping_time]
-                .ffill()
-                .bfill()
-            )
+                # Calculate left and right most bottom point depth values
+                bottom_points_min_time_depth = bottom_points.loc[
+                    bottom_points["time"].idxmin(), "depth"
+                ]
+                bottom_points_max_time_depth = bottom_points.loc[
+                    bottom_points["time"].idxmax(), "depth"
+                ]
 
-            # convert to data array for bottom
-            bottom_da = bottom_points["depth"].to_xarray()
-            bottom_da = bottom_da.rename({"time": "ping_time"})
+                # Calculate maximum depth between bottom points and Sv and add additional offset
+                maximum_depth_plus_offset = (
+                    max([da_Sv["depth"].max().data, bottom_points["depth"].max()]) + 50.0
+                )
 
-            # create a data array of depths
-            depth_da = da_Sv["depth"] + xr.zeros_like(da_Sv)
+                # Calculate new corner rows:
+                left_side_new_rows = pd.DataFrame(
+                    {
+                        "time": [
+                            pd.to_datetime(da_Sv["ping_time"].min().data),
+                            pd.to_datetime(da_Sv["ping_time"].min().data),
+                        ],
+                        "depth": [maximum_depth_plus_offset, bottom_points_min_time_depth],
+                    }
+                )
+                right_side_new_rows = pd.DataFrame(
+                    {
+                        "time": [
+                            pd.to_datetime(da_Sv["ping_time"].max().data),
+                            pd.to_datetime(da_Sv["ping_time"].max().data),
+                        ],
+                        "depth": [bottom_points_max_time_depth, maximum_depth_plus_offset],
+                    }
+                )
 
-            # create a mask for the bottom:
-            # bottom: True, otherwise: False
-            bottom_mask = depth_da >= bottom_da
+                # Concat new corner rows to bottom points
+                bottom_points = pd.concat(
+                    [left_side_new_rows, bottom_points, right_side_new_rows]
+                ).reset_index(drop=True)
 
-            # Reset bottom_points index so that time index becomes time column
-            bottom_points = bottom_points.reset_index()
+                # Convert region time to integer timestamp.
+                bottom_points_with_int_timestamp = bottom_points.copy()
+                bottom_points_with_int_timestamp["time"] = matplotlib.dates.date2num(
+                    bottom_points_with_int_timestamp["time"]
+                )
+
+                # Convert ping_time to unix_time since the masking does not work on datetime objects.
+                da_Sv = da_Sv.assign_coords(
+                    unix_time=(
+                        "ping_time",
+                        matplotlib.dates.date2num(da_Sv.coords["ping_time"].values),
+                    )
+                )
+
+                # Create bottom mask
+                # bottom: True, otherwise: False
+                r = regionmask.Regions(
+                    outlines=[np.array(bottom_points_with_int_timestamp)],
+                    overlap=False,
+                )
+                bottom_mask = xr.where(
+                    np.isnan(
+                        r.mask(
+                            da_Sv["unix_time"],
+                            da_Sv["depth"],
+                            wrap_lon=False,
+                        )
+                    ),
+                    False,
+                    True,
+                )
+            else:
+                # create joint index
+                joint_index = list(
+                    set(list(pd.DataFrame(echogram_ping_time)[0]) + list(filtered_bottom.index))
+                )
+
+                # Interpolate on the echogram coordinates. Note that some interpolation kwaargs
+                # will result in some interpolation NaN values. The ffill and bfill lines
+                # are there to fill in these NaN values.
+                # TODO There exists a problem where when we use .loc prior to reindexing
+                # we are hit with a key not found error.
+                bottom_points = (
+                    filtered_bottom[["depth"]]
+                    .reindex(joint_index)
+                    .interpolate(**kwargs)
+                    .loc[echogram_ping_time]
+                    .ffill()
+                    .bfill()
+                )
+
+                # convert to data array for bottom
+                bottom_da = bottom_points["depth"].to_xarray()
+                bottom_da = bottom_da.rename({"time": "ping_time"})
+
+                # create a data array of depths
+                depth_da = da_Sv["depth"] + xr.zeros_like(da_Sv)
+
+                # create a mask for the bottom:
+                # bottom: True, otherwise: False
+                bottom_mask = depth_da >= bottom_da
+
+                # Reset bottom_points index so that time index becomes time column
+                bottom_points = bottom_points.reset_index()
 
             # Set bottom points to be pandas datetime
             bottom_points["time"] = pd.to_datetime(bottom_points["time"])
