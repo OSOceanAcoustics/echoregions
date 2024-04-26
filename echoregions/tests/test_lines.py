@@ -163,7 +163,7 @@ def test_evl_to_file(lines_fixture: Lines) -> None:
 @pytest.mark.lines
 def test_plot(lines_fixture: Lines) -> None:
     """
-    Test plotting Lines with options.
+    Test plotting Lines to check for no raised errors.
 
     Parameters
     ----------
@@ -237,9 +237,10 @@ def test_replace_nan_depth() -> None:
 
 
 @pytest.mark.lines
-def test_lines_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
+def test_lines_mask_operation_regionmask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
     """
-    Tests lines_mask on an overlapping (over time) evl file.
+    Tests lines_mask with operation 'regionmask' on an overlapping (over time) evl file.
+
     Parameters
     ----------
     lines_fixture : Lines
@@ -247,17 +248,13 @@ def test_lines_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
     da_Sv_fixture : DataArray
         DataArray containing Sv data of test zarr file.
     """
-
-    M, bottom_points = lines_fixture.mask(
-        da_Sv_fixture.isel(channel=0),
-        method="slinear",
-        limit=5,
-        limit_area=None,
-        limit_direction="both",
+    # Compute mask and bottom points
+    bottom_mask, bottom_points = lines_fixture.mask(
+        da_Sv_fixture.isel(channel=0), operation="regionmask"
     )
 
     # Compute unique values
-    unique_values = np.unique(M.compute().data, return_counts=True)
+    unique_values = np.unique(bottom_mask.compute().data, return_counts=True)
 
     # Extract counts and values
     values = unique_values[0]
@@ -266,6 +263,71 @@ def test_lines_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
     # Assert that there are more masked points then there are unmasked points
     assert values[0] == 0 and values[1] == 1
     assert counts[0] > counts[1]
+
+    # Check time dimension equality/inequality
+    # Bottom points shouldn't align time wise with bottom_mask / da_Sv since we don't do
+    # time alignment for the regionmask operation. We do time alignment in the above_below
+    # operation (demonstrated in the test below this one).
+    assert len(bottom_points) != len(bottom_mask["ping_time"]) == len(da_Sv_fixture["ping_time"])
+
+    # Assert that time is datetime64
+    assert pd.api.types.is_datetime64_any_dtype(bottom_points["time"])
+
+    # Assert that depth is float64
+    assert pd.api.types.is_float_dtype(bottom_points["depth"])
+
+    # Assuming bottom_points is your pandas DataFrame
+    # Drop first and last two rows
+    bottom_points_dropped = bottom_points.iloc[2:-2]
+
+    # Create Lines object
+    lines_2 = Lines(bottom_points_dropped, None, input_type="CSV")
+
+    # Run lines masking to check if masking runs
+    bottom_mask_2, bottom_points_2 = lines_2.mask(da_Sv_fixture.isel(channel=0))
+
+    # Assert that these two masks are equal
+    assert bottom_mask.equals(bottom_mask_2)
+
+    # Assert that these two dataframes are equal
+    assert bottom_points.equals(bottom_points_2)
+
+
+@pytest.mark.lines
+def test_lines_mask_operation_above_below(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
+    """
+    Tests lines_mask with operation 'above_below' on an overlapping (over time) evl file.
+
+    Parameters
+    ----------
+    lines_fixture : Lines
+        Object containing data of test EVL file.
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
+    """
+    # Compute mask and bottom points
+    bottom_mask, bottom_points = lines_fixture.mask(
+        da_Sv_fixture.isel(channel=0),
+        operation="above_below",
+        method="slinear",
+        limit=5,
+        limit_area=None,
+        limit_direction="both",
+    )
+
+    # Compute unique values
+    unique_values = np.unique(bottom_mask.compute().data, return_counts=True)
+
+    # Extract counts and values
+    values = unique_values[0]
+    counts = unique_values[1]
+
+    # Assert that there are more masked points then there are unmasked points
+    assert values[0] == 0 and values[1] == 1
+    assert counts[0] > counts[1]
+
+    # Check time dimension equality
+    assert len(bottom_points) == len(bottom_mask["ping_time"]) == len(da_Sv_fixture["ping_time"])
 
     # Assert that time is datetime64
     assert pd.api.types.is_datetime64_any_dtype(bottom_points["time"])
@@ -277,25 +339,42 @@ def test_lines_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
     lines_2 = Lines(bottom_points, None, input_type="CSV")
 
     # Run lines masking to check if masking runs
-    _, _ = lines_2.mask(da_Sv_fixture.isel(channel=0))
+    bottom_mask_2, bottom_points_2 = lines_2.mask(
+        da_Sv_fixture.isel(channel=0),
+        operation="above_below",
+        method="slinear",
+        limit=5,
+        limit_area=None,
+        limit_direction="both",
+    )
+
+    # Assert that these two masks are equal
+    assert bottom_mask.equals(bottom_mask_2)
+
+    # Assert that these two dataframes are equal
+    assert bottom_points.equals(bottom_points_2)
 
 
 @pytest.mark.lines
-def test_lines_mask_empty(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
+@pytest.mark.parametrize("operation", ["regionmask", "above_below"])
+def test_lines_mask_empty(lines_fixture: Lines, da_Sv_fixture: DataArray, operation: str) -> None:
     """
     Tests lines_mask on an empty evl file.
+
     Parameters
     ----------
     lines_fixture : Lines
         Object containing data of test EVL file.
     da_Sv_fixture : DataArray
         DataArray containing Sv data of test zarr file.
+    operation : str
+        Operation to perform ('regionmask' or 'above_below').
     """
 
     # Create empty lines object
     lines_fixture.data = lines_fixture.data[0:0]
 
-    M, bottom_points_1 = lines_fixture.mask(da_Sv_fixture.isel(channel=0))
+    M, bottom_points_1 = lines_fixture.mask(da_Sv_fixture.isel(channel=0), operation=operation)
 
     # Compute unique values
     unique_values = np.unique(M.compute().data, return_counts=True)
@@ -315,7 +394,7 @@ def test_lines_mask_empty(lines_fixture: Lines, da_Sv_fixture: DataArray) -> Non
     lines_2 = Lines(bottom_points_1, None, input_type="CSV")
 
     # Run lines masking to check if masking runs
-    _, bottom_points_2 = lines_2.mask(da_Sv_fixture.isel(channel=0))
+    _, bottom_points_2 = lines_2.mask(da_Sv_fixture.isel(channel=0), operation=operation)
 
     # Assert that bottom_points is empty
     assert bottom_points_2.empty
@@ -340,7 +419,12 @@ def test_lines_mask_errors(lines_fixture: Lines, da_Sv_fixture: DataArray) -> No
         lines_fixture.mask(da_Sv_fixture.isel(channel=0).data)
     # Test invalid method argument.
     with pytest.raises(ValueError):
-        lines_fixture.mask(da_Sv_fixture.isel(channel=0), method="INVALID")
+        lines_fixture.mask(da_Sv_fixture.isel(channel=0), operation="above_below", method="INVALID")
     # Test invalid limit area argument.
     with pytest.raises(ValueError):
-        lines_fixture.mask(da_Sv_fixture.isel(channel=0), limit_area="INVALID")
+        lines_fixture.mask(
+            da_Sv_fixture.isel(channel=0), operation="above_below", limit_area="INVALID"
+        )
+    # Test invalid operation argument.
+    with pytest.raises(ValueError):
+        lines_fixture.mask(da_Sv_fixture.isel(channel=0), operation="TEST")
