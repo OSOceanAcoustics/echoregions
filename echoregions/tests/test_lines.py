@@ -237,9 +237,11 @@ def test_replace_nan_depth() -> None:
 
 
 @pytest.mark.lines
-def test_lines_mask_operation_regionmask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
+def test_lines_bottom_mask_operation_regionmask(
+    lines_fixture: Lines, da_Sv_fixture: DataArray
+) -> None:
     """
-    Tests lines_mask with operation 'regionmask' on an overlapping (over time) evl file.
+    Tests lines.bottom_mask with operation 'regionmask' on an overlapping (over time) evl file.
 
     Parameters
     ----------
@@ -249,7 +251,7 @@ def test_lines_mask_operation_regionmask(lines_fixture: Lines, da_Sv_fixture: Da
         DataArray containing Sv data of test zarr file.
     """
     # Compute mask and bottom points
-    bottom_mask, bottom_points = lines_fixture.mask(
+    bottom_mask, bottom_points = lines_fixture.bottom_mask(
         da_Sv_fixture.isel(channel=0), operation="regionmask"
     )
 
@@ -284,7 +286,7 @@ def test_lines_mask_operation_regionmask(lines_fixture: Lines, da_Sv_fixture: Da
     lines_2 = Lines(bottom_points_dropped, None, input_type="CSV")
 
     # Run lines masking to check if masking runs
-    bottom_mask_2, bottom_points_2 = lines_2.mask(da_Sv_fixture.isel(channel=0))
+    bottom_mask_2, bottom_points_2 = lines_2.bottom_mask(da_Sv_fixture.isel(channel=0))
 
     # Assert that these two masks are equal
     assert bottom_mask.equals(bottom_mask_2)
@@ -294,9 +296,11 @@ def test_lines_mask_operation_regionmask(lines_fixture: Lines, da_Sv_fixture: Da
 
 
 @pytest.mark.lines
-def test_lines_mask_operation_above_below(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
+def test_lines_bottom_mask_operation_above_below(
+    lines_fixture: Lines, da_Sv_fixture: DataArray
+) -> None:
     """
-    Tests lines_mask with operation 'above_below' on an overlapping (over time) evl file.
+    Tests lines.bottom_mask with operation 'above_below' on an overlapping (over time) evl file.
 
     Parameters
     ----------
@@ -306,7 +310,7 @@ def test_lines_mask_operation_above_below(lines_fixture: Lines, da_Sv_fixture: D
         DataArray containing Sv data of test zarr file.
     """
     # Compute mask and bottom points
-    bottom_mask, bottom_points = lines_fixture.mask(
+    bottom_mask, bottom_points = lines_fixture.bottom_mask(
         da_Sv_fixture.isel(channel=0),
         operation="above_below",
         method="slinear",
@@ -339,7 +343,7 @@ def test_lines_mask_operation_above_below(lines_fixture: Lines, da_Sv_fixture: D
     lines_2 = Lines(bottom_points, None, input_type="CSV")
 
     # Run lines masking to check if masking runs
-    bottom_mask_2, bottom_points_2 = lines_2.mask(
+    bottom_mask_2, bottom_points_2 = lines_2.bottom_mask(
         da_Sv_fixture.isel(channel=0),
         operation="above_below",
         method="slinear",
@@ -357,9 +361,11 @@ def test_lines_mask_operation_above_below(lines_fixture: Lines, da_Sv_fixture: D
 
 @pytest.mark.lines
 @pytest.mark.parametrize("operation", ["regionmask", "above_below"])
-def test_lines_mask_empty(lines_fixture: Lines, da_Sv_fixture: DataArray, operation: str) -> None:
+def test_lines_bottom_mask_empty(
+    lines_fixture: Lines, da_Sv_fixture: DataArray, operation: str
+) -> None:
     """
-    Tests lines_mask on an empty evl file.
+    Tests lines.bottom_mask on an empty evl file.
 
     Parameters
     ----------
@@ -374,7 +380,9 @@ def test_lines_mask_empty(lines_fixture: Lines, da_Sv_fixture: DataArray, operat
     # Create empty lines object
     lines_fixture.data = lines_fixture.data[0:0]
 
-    M, bottom_points_1 = lines_fixture.mask(da_Sv_fixture.isel(channel=0), operation=operation)
+    M, bottom_points_1 = lines_fixture.bottom_mask(
+        da_Sv_fixture.isel(channel=0), operation=operation
+    )
 
     # Compute unique values
     unique_values = np.unique(M.compute().data, return_counts=True)
@@ -394,16 +402,16 @@ def test_lines_mask_empty(lines_fixture: Lines, da_Sv_fixture: DataArray, operat
     lines_2 = Lines(bottom_points_1, None, input_type="CSV")
 
     # Run lines masking to check if masking runs
-    _, bottom_points_2 = lines_2.mask(da_Sv_fixture.isel(channel=0), operation=operation)
+    _, bottom_points_2 = lines_2.bottom_mask(da_Sv_fixture.isel(channel=0), operation=operation)
 
     # Assert that bottom_points is empty
     assert bottom_points_2.empty
 
 
 @pytest.mark.lines
-def test_lines_mask_errors(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
+def test_lines_bottom_mask_errors(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
     """
-    Tests lines_mask on an overlapping (over time) evl file with improper
+    Tests lines.bottom_mask on an overlapping (over time) evl file with improper
     input arguments.
 
     Parameters
@@ -416,15 +424,17 @@ def test_lines_mask_errors(lines_fixture: Lines, da_Sv_fixture: DataArray) -> No
 
     # Test invalid da_Sv argument.
     with pytest.raises(TypeError):
-        lines_fixture.mask(da_Sv_fixture.isel(channel=0).data)
+        lines_fixture.bottom_mask(da_Sv_fixture.isel(channel=0).data)
     # Test invalid method argument.
     with pytest.raises(ValueError):
-        lines_fixture.mask(da_Sv_fixture.isel(channel=0), operation="above_below", method="INVALID")
+        lines_fixture.bottom_mask(
+            da_Sv_fixture.isel(channel=0), operation="above_below", method="INVALID"
+        )
     # Test invalid limit area argument.
     with pytest.raises(ValueError):
-        lines_fixture.mask(
+        lines_fixture.bottom_mask(
             da_Sv_fixture.isel(channel=0), operation="above_below", limit_area="INVALID"
         )
     # Test invalid operation argument.
     with pytest.raises(ValueError):
-        lines_fixture.mask(da_Sv_fixture.isel(channel=0), operation="TEST")
+        lines_fixture.bottom_mask(da_Sv_fixture.isel(channel=0), operation="TEST")

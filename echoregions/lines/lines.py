@@ -218,9 +218,9 @@ class Lines:
             filtered_bottom = filtered_bottom.set_index("time")
         return filtered_bottom
 
-    def mask(self, da_Sv: DataArray, operation: str = "regionmask", **kwargs):
+    def bottom_mask(self, da_Sv: DataArray, operation: str = "regionmask", **kwargs):
         """
-        Subsets a bottom dataset to the range of an Sv dataset. Create a mask of
+        Subsets a bottom dataset to the range of an Sv dataset. Create a bottom mask of
         the same shape as data found in the Echogram object:
         Bottom: 1, Otherwise: 0.
 
@@ -314,7 +314,7 @@ class Lines:
 
                 # Calculate maximum depth between bottom points and Sv and add additional offset
                 maximum_depth_plus_offset = (
-                    max([da_Sv["depth"].max().data, bottom_points["depth"].max()]) + 50.0
+                    max([da_Sv["depth"].max().data, bottom_points["depth"].max()]) + 1.0
                 )
 
                 # Calculate new corner rows:
