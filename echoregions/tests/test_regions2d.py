@@ -543,7 +543,9 @@ def test_mask_empty_no_overlap(regions2d_fixture: Regions2D, da_Sv_fixture: Data
     assert mask_output_1 is None
 
     # Create mask with regions that have no overlap with the Sv Data Array
-    mask_3d_ds, region_points_1 = regions2d_fixture.region_mask(da_Sv_fixture.isel(channel=0), [8, 9, 10])
+    mask_3d_ds, region_points_1 = regions2d_fixture.region_mask(
+        da_Sv_fixture.isel(channel=0), [8, 9, 10]
+    )
 
     # Check that this mask is empty
     assert mask_3d_ds.mask_3d.isnull().all()
@@ -739,7 +741,9 @@ def test_one_label_mask_3d_2d_3d_2d(regions2d_fixture: Regions2D, da_Sv_fixture:
     """
 
     # Create 3d mask
-    mask_3d_ds, _ = regions2d_fixture.region_mask(da_Sv_fixture, region_id=[18], mask_labels={18: "Mask1"})
+    mask_3d_ds, _ = regions2d_fixture.region_mask(
+        da_Sv_fixture, region_id=[18], mask_labels={18: "Mask1"}
+    )
 
     # Check mask values
     assert (mask_3d_ds.mask_3d.region_id.values == [18]).all()
