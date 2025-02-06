@@ -1,7 +1,7 @@
 
 [build-system]
 requires = [
-    "setuptools >= 48",
+    "setuptools >= 53",
     "setuptools_scm[toml] >= 4, <6",
     "setuptools_scm_git_archive",
     "wheel >= 0.29.0",
@@ -12,7 +12,7 @@ build-backend = 'setuptools.build_meta'
 fallback_version = "unknown"
 local_scheme = "no-local-version"
 write_to = "_echoregions_version.py"
-write_to_template = 'version = "{version}"'
+write_to_template = 'version = "{version}"  # noqa'
 
 [tool.black]
 line-length = 100

@@ -10,13 +10,28 @@ from xarray import DataArray, Dataset
 import echoregions as er
 from echoregions.regions2d.regions2d import Regions2D
 
-DATA_DIR = Path("./echoregions/test_data/")
-EVR_PATH = DATA_DIR / "transect_multi_mask.evr"
-ZARR_PATH = DATA_DIR / "transect.zarr"
+# DATA_DIR = Path("./echoregions/test_data/")
+# EVR_PATH = DATA_DIR / "transect_multi_mask.evr"
+# ZARR_PATH = DATA_DIR / "transect.zarr"
+
+
+@pytest.fixture(scope="module")
+def data_path(test_path):
+    return test_path["ROOT"]
+
+
+@pytest.fixture(scope="module")
+def evr_path(test_path):
+    return test_path["ROOT"] / "transect_multi_mask.evr"
+
+
+@pytest.fixture(scope="module")
+def zarr_path(test_path):
+    return test_path["ROOT"] / "transect.zarr"
 
 
 @pytest.fixture(scope="function")
-def regions2d_fixture() -> Regions2D:
+def regions2d_fixture(evr_path) -> Regions2D:
     """
     Regions2D object fixture.
 
@@ -26,12 +41,12 @@ def regions2d_fixture() -> Regions2D:
         Object containing data of test EVR file.
     """
 
-    r2d = er.read_evr(EVR_PATH)
+    r2d = er.read_evr(evr_path)
     return r2d
 
 
 @pytest.fixture(scope="function")
-def da_Sv_fixture() -> DataArray:
+def da_Sv_fixture(zarr_path) -> DataArray:
     """
     Sonar ZARR data fixture.
 
@@ -41,12 +56,12 @@ def da_Sv_fixture() -> DataArray:
         DataArray containing Sv data of test zarr file.
     """
 
-    da_Sv = xr.open_zarr(ZARR_PATH).Sv
+    da_Sv = xr.open_zarr(zarr_path).Sv
     return da_Sv
 
 
 @pytest.mark.regions2d
-def test_read_regions_csv(regions2d_fixture: Regions2D) -> None:
+def test_read_regions_csv(regions2d_fixture: Regions2D, data_path) -> None:
     """
     Ensures that read_region_csv provides the same Regions2D object
     as read_evr.
@@ -62,7 +77,7 @@ def test_read_regions_csv(regions2d_fixture: Regions2D) -> None:
     r2d_1_df = r2d_1.data
 
     # Send to CSV
-    csv_file_path = DATA_DIR / "r2d_to_csv_file.csv"
+    csv_file_path = data_path / "r2d_to_csv_file.csv"
     r2d_1.to_csv(csv_file_path)
 
     # Read Regions CSV and extract DataFrame
@@ -95,17 +110,17 @@ def test_read_regions_csv(regions2d_fixture: Regions2D) -> None:
 
 
 @pytest.mark.regions2d
-def test_to_evr() -> None:
+def test_to_evr(data_path) -> None:
     """
     Tests that when we save a `Regions2D` object to `.evr` and read
     back that `.evr` file, we end up with the same inner dataframe.
     """
     # Get Regions2D object and DataFrame
-    r2d_1 = er.read_evr(DATA_DIR / "transect.evr")
+    r2d_1 = er.read_evr(data_path / "transect.evr")
     r2d_1_df = r2d_1.data
 
     # Send to `.evr` file
-    evr_file_path = DATA_DIR / "r2d_to_evr_file.evr"
+    evr_file_path = data_path / "r2d_to_evr_file.evr"
     r2d_1.to_evr(evr_file_path)
 
     # Read back `.evr` file and extract DataFrame
@@ -120,13 +135,13 @@ def test_to_evr() -> None:
 
 
 @pytest.mark.regions2d
-def test_empty_regions2d_parsing() -> None:
+def test_empty_regions2d_parsing(data_path) -> None:
     """
     Tests empty EVR parsing.
     """
 
     # Read evr into regions2d
-    r2d = er.read_evr(DATA_DIR / "transect_empty.evr")
+    r2d = er.read_evr(data_path / "transect_empty.evr")
 
     # Check shapes
     assert r2d.data.shape == (0, 22)
@@ -134,13 +149,13 @@ def test_empty_regions2d_parsing() -> None:
 
 
 @pytest.mark.regions2d
-def test_missing_bbox_regions2d_parsing() -> None:
+def test_missing_bbox_regions2d_parsing(data_path) -> None:
     """
     Tests missing bbox EVR parsing.
     """
 
     # Read evr into regions2d
-    r2d = er.read_evr(DATA_DIR / "transect_missing_bbox.evr")
+    r2d = er.read_evr(data_path / "transect_missing_bbox.evr")
 
     # Test shape
     assert r2d.data.shape == (2, 22)
@@ -235,7 +250,7 @@ def test_regions2d_parsing(regions2d_fixture: Regions2D) -> None:
 
 
 @pytest.mark.regions2d
-def test_evr_to_file(regions2d_fixture: Regions2D) -> None:
+def test_evr_to_file(regions2d_fixture: Regions2D, data_path) -> None:
     """
     Test converting an Echoview 2D Regions files (.EVR).
 
@@ -246,7 +261,7 @@ def test_evr_to_file(regions2d_fixture: Regions2D) -> None:
     """
 
     # Get output path
-    output_csv = DATA_DIR / "output_CSV/"
+    output_csv = data_path / "output_CSV/"
 
     # Create CSV
     regions2d_fixture.to_csv(output_csv)
@@ -936,7 +951,7 @@ def test_within_transect_no_regions(regions2d_fixture: Regions2D, da_Sv_fixture:
 
 
 @pytest.mark.regions2d
-def test_within_transect_bad_dict(da_Sv_fixture: DataArray) -> None:
+def test_within_transect_bad_dict(da_Sv_fixture: DataArray, data_path) -> None:
     """
     Tests functionality for transect_mask with invalid dictionary values.
 
@@ -947,7 +962,7 @@ def test_within_transect_bad_dict(da_Sv_fixture: DataArray) -> None:
     """
 
     # Get Regions2D Object
-    evr_path = DATA_DIR / "transect.evr"
+    evr_path = data_path / "transect.evr"
     r2d = er.read_evr(evr_path)
 
     # Create dictionary with duplicates
@@ -971,7 +986,7 @@ def test_within_transect_bad_dict(da_Sv_fixture: DataArray) -> None:
 
 
 @pytest.mark.regions2d
-def test_within_transect_invalid_next(da_Sv_fixture: DataArray) -> None:
+def test_within_transect_invalid_next(da_Sv_fixture: DataArray, data_path) -> None:
     """
     Tests functionality for evr file with invalid next transect type values.
 
@@ -986,7 +1001,7 @@ def test_within_transect_invalid_next(da_Sv_fixture: DataArray) -> None:
 
     # Should raise Exception if ST is followed by ST
     with pytest.raises(Exception):
-        evr_path = DATA_DIR / "x1_ST_ST.evr"
+        evr_path = data_path / "x1_ST_ST.evr"
         r2d = er.read_evr(evr_path)
         _ = r2d.transect_mask(
             da_Sv=da_Sv_fixture,
@@ -996,7 +1011,7 @@ def test_within_transect_invalid_next(da_Sv_fixture: DataArray) -> None:
 
     # Should raise Exception if RT is followed by RT
     with pytest.raises(Exception):
-        evr_path = DATA_DIR / "transect_RT_RT.evr"
+        evr_path = data_path / "transect_RT_RT.evr"
         r2d = er.read_evr(evr_path)
         _ = r2d.transect_mask(
             da_Sv=da_Sv_fixture,
@@ -1006,7 +1021,7 @@ def test_within_transect_invalid_next(da_Sv_fixture: DataArray) -> None:
 
     # Should raise value Exception if BT is followed by ET
     with pytest.raises(Exception):
-        evr_path = DATA_DIR / "transect_BT_ET.evr"
+        evr_path = data_path / "transect_BT_ET.evr"
         r2d = er.read_evr(evr_path)
         _ = r2d.transect_mask(
             da_Sv=da_Sv_fixture,
@@ -1016,7 +1031,7 @@ def test_within_transect_invalid_next(da_Sv_fixture: DataArray) -> None:
 
     # Should raises Exception if ET is followed by RT
     with pytest.raises(Exception):
-        evr_path = DATA_DIR / "transect_ET_RT.evr"
+        evr_path = data_path / "transect_ET_RT.evr"
         r2d = er.read_evr(evr_path)
         _ = r2d.transect_mask(
             da_Sv=da_Sv_fixture,
@@ -1026,7 +1041,7 @@ def test_within_transect_invalid_next(da_Sv_fixture: DataArray) -> None:
 
 
 @pytest.mark.regions2d
-def test_within_transect_small_bbox_distance_threshold(da_Sv_fixture: DataArray) -> None:
+def test_within_transect_small_bbox_distance_threshold(da_Sv_fixture: DataArray, data_path) -> None:
     """
     Tests functionality for transect_mask with small bbox distance threshold.
 
@@ -1037,7 +1052,7 @@ def test_within_transect_small_bbox_distance_threshold(da_Sv_fixture: DataArray)
     """
 
     # Get Regions2D Object
-    evr_path = DATA_DIR / "transect.evr"
+    evr_path = data_path / "transect.evr"
     r2d = er.read_evr(evr_path)
 
     with pytest.raises(Exception):
