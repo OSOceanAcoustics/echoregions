@@ -9,7 +9,7 @@ import xarray as xr
 from xarray import DataArray, Dataset
 
 import echoregions as er
-from echoregions.regions2d.evr_writer import write_evr
+from echoregions import write_evr
 from echoregions.regions2d.regions2d import Regions2D
 
 DATA_DIR = Path("./echoregions/test_data/")
@@ -1111,7 +1111,6 @@ def test_evr_write(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> No
 
 
 @pytest.mark.regions2d
-@pytest.mark.test
 def test_evr_write_exceptions(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Tests evr_write exceptions for incorrect mask input.
