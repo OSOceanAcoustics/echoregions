@@ -4,6 +4,7 @@ isort
 pre-commit
 pytest
 xarray>=2023.2.0
+opencv-python
 pytest-cov
 setuptools_scm
 wheel

@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 
 import numpy as np
@@ -8,6 +9,7 @@ import xarray as xr
 from xarray import DataArray, Dataset
 
 import echoregions as er
+from echoregions import write_evr
 from echoregions.regions2d.regions2d import Regions2D
 
 DATA_DIR = Path("./echoregions/test_data/")
@@ -1043,4 +1045,121 @@ def test_within_transect_small_bbox_distance_threshold(da_Sv_fixture: DataArray)
     with pytest.raises(Exception):
         _ = r2d.transect_mask(
             da_Sv=da_Sv_fixture, bbox_distance_threshold=0.001, must_pass_check=True
+        )
+
+
+@pytest.mark.regions2d
+def test_evr_write(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+    """
+    Tests evr_write functionality.
+
+    Parameters
+    ----------
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
+    """
+    # Create mask
+    region_id = regions2d_fixture.data.region_id.astype(int).to_list()
+    mask_labels = {key: idx for idx, key in enumerate(region_id)}
+    mask_labels[13] = "Mask1"
+    mask_2d_ds, _ = regions2d_fixture.region_mask(
+        da_Sv_fixture, mask_labels=mask_labels, collapse_to_2d=True
+    )
+    mask = xr.where(mask_2d_ds["mask_2d"].fillna(0) != 0, 1, 0)
+
+    # Output file path
+    evr_path = "test.evr"
+
+    # Write to EVR file
+    write_evr(
+        evr_path=str(evr_path),
+        mask=mask,
+        region_classification="test_region_classification",
+    )
+
+    # Read the EVR file
+    evr_data = er.read_evr(str(evr_path)).data
+
+    # Check the number of regions
+    assert len(evr_data) == 2
+
+    # Check first region attributes
+    region_1 = evr_data.iloc[0]
+    assert region_1["region_id"] == 1
+    assert region_1["region_structure_version"] == "13"
+    assert region_1["region_point_count"] == "94"
+    assert region_1["region_selected"] == "0"
+    assert region_1["echoview_version"] == "12.0.341.42620"
+
+    # Check second region attributes
+    region_2 = evr_data.iloc[1]
+    assert region_2["region_id"] == 2
+    assert region_2["region_structure_version"] == "13"
+    assert region_2["region_point_count"] == "4"
+    assert region_2["region_selected"] == "0"
+    assert region_2["echoview_version"] == "12.0.341.42620"
+
+    # Check common metadata
+    for _, region in evr_data.iterrows():
+        assert region["file_name"] == "test.evr"
+        assert region["file_type"] == "EVRG"
+        assert region["evr_file_format_number"] == "7"
+
+    os.remove(evr_path)
+
+
+@pytest.mark.regions2d
+def test_evr_write_exceptions(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+    """
+    Tests evr_write exceptions for incorrect mask input.
+
+    Parameters
+    ----------
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
+    """
+    # Create mask
+    region_id = regions2d_fixture.data.region_id.astype(int).to_list()
+    mask_labels = {key: idx for idx, key in enumerate(region_id)}
+    mask_labels[13] = "Mask1"
+    mask_2d_ds, _ = regions2d_fixture.region_mask(
+        da_Sv_fixture, mask_labels=mask_labels, collapse_to_2d=True
+    )
+
+    # Output file path
+    evr_path = "test.evr"
+
+    # Test bad input cases
+    with pytest.raises(TypeError, match="The 'mask' parameter must be an xarray.DataArray."):
+        mask = mask_2d_ds["mask_2d"].data  # numpy array
+        write_evr(
+            evr_path=str(evr_path),
+            mask=mask,
+            region_classification="test_region_classification",
+        )
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "The 'mask' must have only 'ping_time' and 'depth' as coordinates, but found ['depth', 'ping_time', 'region_id']."
+        ),
+    ):
+        mask = xr.where(mask_2d_ds["mask_2d"].fillna(0) != 0, 1, 0).expand_dims({"region_id": [1]})
+        write_evr(
+            evr_path=str(evr_path),
+            mask=mask,
+            region_classification="test_region_classification",
+        )
+    with pytest.raises(
+        ValueError,
+        match="The 'mask' contains NaN values. Please remove or fill them before proceeding.",
+    ):
+        mask = mask_2d_ds["mask_2d"]
+        write_evr(
+            evr_path=str(evr_path),
+            mask=mask,
+            region_classification="test_region_classification",
         )
