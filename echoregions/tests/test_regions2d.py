@@ -541,8 +541,10 @@ def test_mask_empty_no_overlap(regions2d_fixture: Regions2D, da_Sv_fixture: Data
     # Attempt to create mask on region with invalid depth values
     mask_output_1 = regions2d_fixture.region_mask(da_Sv_fixture.isel(channel=0), [8])
 
-    # Check that output is None
-    assert mask_output_1 is None
+    # Check that output is zeros like array
+    assert mask_output_1.equals(
+        xr.zeros_like(da_Sv_fixture.isel(channel=0)).expand_dims({"region_id": ["dummy_region_id"]})
+    )
 
     # Create mask with regions that have no overlap with the Sv Data Array
     mask_3d_ds, region_points_1 = regions2d_fixture.region_mask(
@@ -561,8 +563,10 @@ def test_mask_empty_no_overlap(regions2d_fixture: Regions2D, da_Sv_fixture: Data
     # Run Regions2d masking to check if masking runs
     mask_output_2 = r2d_2.region_mask(da_Sv_fixture.isel(channel=0))
 
-    # Check that output is None
-    assert mask_output_2 is None
+    # Check that output is zeros like array
+    assert mask_output_2.equals(
+        xr.zeros_like(da_Sv_fixture.isel(channel=0)).expand_dims({"region_id": ["dummy_region_id"]})
+    )
 
 
 @pytest.mark.regions2d
@@ -779,6 +783,7 @@ def test_one_label_mask_3d_2d_3d_2d(regions2d_fixture: Regions2D, da_Sv_fixture:
 @pytest.mark.filterwarnings("ignore:No gridpoint belongs to any region")
 @pytest.mark.filterwarnings("ignore:Returning No Mask")
 @pytest.mark.regions2d
+@pytest.mark.test
 def test_nan_mask_3d_2d_and_2d_3d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Testing if both converting functions returns none for empty mask inputs.
