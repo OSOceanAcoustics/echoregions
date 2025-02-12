@@ -541,8 +541,16 @@ def test_mask_empty_no_overlap(regions2d_fixture: Regions2D, da_Sv_fixture: Data
     # Attempt to create mask on region with invalid depth values
     mask_output_1 = regions2d_fixture.region_mask(da_Sv_fixture.isel(channel=0), [8])
 
-    # Check that output is None
-    assert mask_output_1 is None
+    # Check that output is zeros like array
+    assert mask_output_1.equals(
+        xr.zeros_like(da_Sv_fixture.isel(channel=0)).expand_dims({"region_id": ["dummy_region_id"]})
+    )
+
+    # Also attempt to create mask on region with invalid depth values and collapsing to 2D and check that
+    # it is a fully NaN array
+    regions2d_fixture.region_mask(da_Sv_fixture.isel(channel=0), [8], collapse_to_2d=True).equals(
+        xr.full_like(da_Sv_fixture, np.nan)
+    )
 
     # Create mask with regions that have no overlap with the Sv Data Array
     mask_3d_ds, region_points_1 = regions2d_fixture.region_mask(
@@ -561,8 +569,10 @@ def test_mask_empty_no_overlap(regions2d_fixture: Regions2D, da_Sv_fixture: Data
     # Run Regions2d masking to check if masking runs
     mask_output_2 = r2d_2.region_mask(da_Sv_fixture.isel(channel=0))
 
-    # Check that output is None
-    assert mask_output_2 is None
+    # Check that output is zeros like array
+    assert mask_output_2.equals(
+        xr.zeros_like(da_Sv_fixture.isel(channel=0)).expand_dims({"region_id": ["dummy_region_id"]})
+    )
 
 
 @pytest.mark.regions2d
