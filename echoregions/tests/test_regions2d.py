@@ -546,6 +546,12 @@ def test_mask_empty_no_overlap(regions2d_fixture: Regions2D, da_Sv_fixture: Data
         xr.zeros_like(da_Sv_fixture.isel(channel=0)).expand_dims({"region_id": ["dummy_region_id"]})
     )
 
+    # Also attempt to create mask on region with invalid depth values and collapsing to 2D and check that
+    # it is a fully NaN array
+    regions2d_fixture.region_mask(da_Sv_fixture.isel(channel=0), [8], collapse_to_2d=True).equals(
+        xr.full_like(da_Sv_fixture, np.nan)
+    )
+
     # Create mask with regions that have no overlap with the Sv Data Array
     mask_3d_ds, region_points_1 = regions2d_fixture.region_mask(
         da_Sv_fixture.isel(channel=0), [8, 9, 10]
@@ -783,7 +789,6 @@ def test_one_label_mask_3d_2d_3d_2d(regions2d_fixture: Regions2D, da_Sv_fixture:
 @pytest.mark.filterwarnings("ignore:No gridpoint belongs to any region")
 @pytest.mark.filterwarnings("ignore:Returning No Mask")
 @pytest.mark.regions2d
-@pytest.mark.test
 def test_nan_mask_3d_2d_and_2d_3d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Testing if both converting functions returns none for empty mask inputs.
