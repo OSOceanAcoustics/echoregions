@@ -146,3 +146,6 @@ __main__.py
 
 # Setup
 _echoregions_version.py
+
+.idea/
+.DS_Store
