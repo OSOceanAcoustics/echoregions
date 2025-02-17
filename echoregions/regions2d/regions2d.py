@@ -616,10 +616,15 @@ class Regions2D:
                 "All rows in Regions DataFrame have NaN Depth values after filtering depth "
                 "between min_depth and max_depth."
             )
+            mask_ds = xr.Dataset()
             if collapse_to_2d:
-                return xr.full_like(da_Sv, np.nan)
+                mask_ds["mask_2d"] = xr.full_like(da_Sv, np.nan)
+
             else:
-                return xr.zeros_like(da_Sv).expand_dims({"region_id": ["dummy_region_id"]})
+                mask_ds["mask_3d"] = xr.zeros_like(da_Sv).expand_dims(
+                    {"region_id": ["dummy_region_id"]}
+                )
+            return mask_ds, region_df.copy()
         else:
             # Grab subset region ids
             subset_region_ids = region_df.region_id.astype(int).to_list()

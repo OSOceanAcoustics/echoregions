@@ -539,40 +539,46 @@ def test_mask_empty_no_overlap(regions2d_fixture: Regions2D, da_Sv_fixture: Data
     """
 
     # Attempt to create mask on region with invalid depth values
-    mask_output_1 = regions2d_fixture.region_mask(da_Sv_fixture.isel(channel=0), [8])
+    mask_output_0, region_points_0 = regions2d_fixture.region_mask(
+        da_Sv_fixture.isel(channel=0), [8]
+    )
 
-    # Check that output is zeros like array
-    assert mask_output_1.equals(
+    # Check that output is zeros like array and region points is empty
+    assert mask_output_0["mask_3d"].equals(
         xr.zeros_like(da_Sv_fixture.isel(channel=0)).expand_dims({"region_id": ["dummy_region_id"]})
     )
+    assert region_points_0.empty
 
     # Also attempt to create mask on region with invalid depth values and collapsing to 2D and check that
-    # it is a fully NaN array
-    regions2d_fixture.region_mask(da_Sv_fixture.isel(channel=0), [8], collapse_to_2d=True).equals(
-        xr.full_like(da_Sv_fixture, np.nan)
+    # it is a fully NaN array and the region points are empty
+    mask_output_1, region_points_1 = regions2d_fixture.region_mask(
+        da_Sv_fixture.isel(channel=0), [8], collapse_to_2d=True
     )
+    assert mask_output_1.isnull().all()
+    assert region_points_1.empty
 
     # Create mask with regions that have no overlap with the Sv Data Array
-    mask_3d_ds, region_points_1 = regions2d_fixture.region_mask(
+    mask_output_2, region_points_2 = regions2d_fixture.region_mask(
         da_Sv_fixture.isel(channel=0), [8, 9, 10]
     )
 
     # Check that this mask is empty
-    assert mask_3d_ds.mask_3d.isnull().all()
+    assert mask_output_2["mask_3d"].isnull().all()
 
-    # Check that region_points_1 is empty
-    assert region_points_1.empty
+    # Check that region_points_2 is empty
+    assert region_points_2.empty
 
     # Use region points to create Regions2D object
-    r2d_2 = Regions2D(region_points_1, min_depth=0, max_depth=1000, input_type="CSV")
+    r2d_2 = Regions2D(region_points_2, min_depth=0, max_depth=1000, input_type="CSV")
 
     # Run Regions2d masking to check if masking runs
-    mask_output_2 = r2d_2.region_mask(da_Sv_fixture.isel(channel=0))
+    mask_output_3, region_points_3 = r2d_2.region_mask(da_Sv_fixture.isel(channel=0))
 
     # Check that output is zeros like array
-    assert mask_output_2.equals(
+    assert mask_output_3["mask_3d"].equals(
         xr.zeros_like(da_Sv_fixture.isel(channel=0)).expand_dims({"region_id": ["dummy_region_id"]})
     )
+    assert region_points_3.empty
 
 
 @pytest.mark.regions2d
@@ -802,10 +808,11 @@ def test_nan_mask_3d_2d_and_2d_3d(regions2d_fixture: Regions2D, da_Sv_fixture: D
     """
 
     # Create 3d mask
-    mask_3d_ds, _ = regions2d_fixture.region_mask(da_Sv_fixture, [8, 9, 10])
+    mask_3d_ds, region_points = regions2d_fixture.region_mask(da_Sv_fixture, [8, 9, 10])
 
-    # Check if mask is null/empty
+    # Check if mask is null/empty and check that region points is empty
     assert mask_3d_ds.mask_3d.isnull().all()
+    assert region_points.empty
 
     # Attempt to convert empty 3d mask to 2d mask
     assert er.convert_mask_3d_to_2d(mask_3d_ds) is None
