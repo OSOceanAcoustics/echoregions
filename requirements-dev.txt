@@ -7,4 +7,5 @@ xarray>=2023.2.0
 opencv-python
 pytest-cov
 setuptools_scm
+setuptools_scm_git_archive
 wheel

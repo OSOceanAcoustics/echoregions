@@ -10,13 +10,24 @@ from xarray import DataArray
 import echoregions as er
 from echoregions.lines.lines import Lines
 
-DATA_DIR = Path("./echoregions/test_data/")
-EVL_PATH = DATA_DIR / "transect.evl"
-ZARR_PATH = DATA_DIR / "transect.zarr"
+
+@pytest.fixture(scope="module")
+def data_path(test_path):
+    return test_path["ROOT"]
+
+
+@pytest.fixture(scope="module")
+def evl_path(test_path):
+    return test_path["ROOT"] / "transect.evl"
+
+
+@pytest.fixture(scope="module")
+def zarr_path(test_path):
+    return test_path["ROOT"] / "transect.zarr"
 
 
 @pytest.fixture(scope="function")
-def lines_fixture() -> Lines:
+def lines_fixture(evl_path) -> Lines:
     """
     Lines object fixture.
 
@@ -26,12 +37,12 @@ def lines_fixture() -> Lines:
         Object containing data of test EVL file.
     """
 
-    lines = er.read_evl(EVL_PATH)
+    lines = er.read_evl(evl_path)
     return lines
 
 
 @pytest.fixture(scope="function")
-def da_Sv_fixture() -> DataArray:
+def da_Sv_fixture(zarr_path) -> DataArray:
     """
     Sonar ZARR data fixture.
 
@@ -41,12 +52,12 @@ def da_Sv_fixture() -> DataArray:
         DataArray containing Sv data of test zarr file.
     """
 
-    da_Sv = xr.open_zarr(ZARR_PATH).Sv
+    da_Sv = xr.open_zarr(zarr_path).Sv
     return da_Sv
 
 
 @pytest.mark.lines
-def test_lines_csv(lines_fixture: Lines) -> None:
+def test_lines_csv(lines_fixture: Lines, data_path) -> None:
     """
     Ensures that read_lines_csv provides the same Lines object
     as read_evl.
@@ -62,7 +73,7 @@ def test_lines_csv(lines_fixture: Lines) -> None:
     lines_1_df = lines_1.data
 
     # Send to CSV
-    csv_file_path = DATA_DIR / "lines_to_csv_file.csv"
+    csv_file_path = data_path / "lines_to_csv_file.csv"
     lines_1.to_csv(csv_file_path)
 
     # Read Lines CSV and extract DataFrame
@@ -80,17 +91,17 @@ def test_lines_csv(lines_fixture: Lines) -> None:
 
 
 @pytest.mark.lines
-def test_to_evl() -> None:
+def test_to_evl(data_path) -> None:
     """
     Tests that when we save a `Lines` object to `.evl` and read
     back that `.evl` file, we end up with the same inner dataframe.
     """
     # Get Lines object and DataFrame
-    lines_1 = er.read_evl(DATA_DIR / "transect.evl")
+    lines_1 = er.read_evl(data_path / "transect.evl")
     lines_1_df = lines_1.data
 
     # Send to `.evl` file
-    evl_file_path = DATA_DIR / "lines_to_evl_file.evl"
+    evl_file_path = data_path / "lines_to_evl_file.evl"
     lines_1.to_evl(evl_file_path)
 
     # Read back `.lines` file and extract DataFrame
@@ -132,7 +143,7 @@ def test_lines_parsing(lines_fixture: Lines) -> None:
 
 
 @pytest.mark.lines
-def test_evl_to_file(lines_fixture: Lines) -> None:
+def test_evl_to_file(lines_fixture: Lines, data_path) -> None:
     """
     Test EVL to csv and to json; Creates and removes EVL .csv and .json objects.
 
@@ -143,8 +154,8 @@ def test_evl_to_file(lines_fixture: Lines) -> None:
     """
 
     # Get output paths
-    output_csv = DATA_DIR / "output_CSV/"
-    output_json = DATA_DIR / "output_JSON/"
+    output_csv = data_path / "output_CSV/"
+    output_json = data_path / "output_JSON/"
 
     # Create CSV and JSON files
     lines_fixture.to_csv(output_csv)
@@ -220,17 +231,17 @@ def test_plot_type_error(lines_fixture: Lines) -> None:
 
 
 @pytest.mark.lines
-def test_replace_nan_depth() -> None:
+def test_replace_nan_depth(evl_path) -> None:
     """
     Test replacing NaN values in line for both inplace=True and inplace=False.
     """
 
-    lines_1 = er.read_evl(EVL_PATH, nan_depth_value=20)
+    lines_1 = er.read_evl(evl_path, nan_depth_value=20)
     lines_1.data.loc[0, "depth"] = -10000.99  # Replace a value with the one used for nans
     lines_1.replace_nan_depth(inplace=True)
     assert lines_1.data.loc[0, "depth"] == 20
 
-    lines_2 = er.read_evl(EVL_PATH, nan_depth_value=20)
+    lines_2 = er.read_evl(evl_path, nan_depth_value=20)
     lines_2.data.loc[0, "depth"] = -10000.99  # Replace a value with the one used for nans
     lines2 = lines_2.replace_nan_depth(inplace=False)
     assert lines2.loc[0, "depth"] == 20
