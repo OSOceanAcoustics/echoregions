@@ -43,7 +43,7 @@ def da_Sv_fixture() -> DataArray:
         DataArray containing Sv data of test zarr file.
     """
 
-    da_Sv = xr.open_zarr(ZARR_PATH).Sv
+    da_Sv = xr.open_zarr(ZARR_PATH)["Sv"]
     return da_Sv
 
 
@@ -563,7 +563,7 @@ def test_mask_empty_no_overlap(regions2d_fixture: Regions2D, da_Sv_fixture: Data
     )
 
     # Check that this mask is empty
-    assert mask_output_2["mask_3d"].isnull().all()
+    assert (mask_output_2["mask_3d"] == 0).all()
 
     # Check that region_points_2 is empty
     assert region_points_2.empty
@@ -811,11 +811,11 @@ def test_nan_mask_3d_2d_and_2d_3d(regions2d_fixture: Regions2D, da_Sv_fixture: D
     mask_3d_ds, region_points = regions2d_fixture.region_mask(da_Sv_fixture, [8, 9, 10])
 
     # Check if mask is null/empty and check that region points is empty
-    assert mask_3d_ds.mask_3d.isnull().all()
+    assert (mask_3d_ds.mask_3d == 0).all()
     assert region_points.empty
 
     # Attempt to convert empty 3d mask to 2d mask
-    assert er.convert_mask_3d_to_2d(mask_3d_ds) is None
+    assert er.convert_mask_3d_to_2d(mask_3d_ds).isnull().all()
 
     # Create emtpy 2d mask with None values
     depth_values = [9.15, 9.34, 9.529, 9.719, 758.5]
@@ -1180,3 +1180,44 @@ def test_evr_write_exceptions(regions2d_fixture: Regions2D, da_Sv_fixture: DataA
             mask=mask,
             region_classification="test_region_classification",
         )
+
+
+@pytest.mark.regions2d
+def test_mask(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+    """
+    Testing if 2d mask with collapse_to_do=True works.
+
+    Parameters
+    ----------
+    regions2d_fixture : Regions2D
+        Object containing data of test EVR file.
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
+    """
+    # Set chunks
+    chunk_dict = {"ping_time": 400, "depth": 500}
+
+    # Create 3D masks, check chunks, and check that outputs are equal
+    mask_3d_ds_chunked, mask_3d_contours_chunked = regions2d_fixture.region_mask(
+        da_Sv_fixture.chunk(chunk_dict), collapse_to_2d=False
+    )
+    mask_3d_ds_computed, mask_3d_contours_computed = regions2d_fixture.region_mask(
+        da_Sv_fixture.compute(), collapse_to_2d=False
+    )
+    assert mask_3d_ds_chunked.chunksizes["region_id"][0] == 1
+    assert mask_3d_ds_chunked.chunksizes["ping_time"][0] == 400
+    assert mask_3d_ds_chunked.chunksizes["depth"][0] == 500
+    assert mask_3d_ds_chunked.equals(mask_3d_ds_computed)
+    assert mask_3d_contours_chunked.equals(mask_3d_contours_computed)
+
+    # Create 2D computed masks, check chunks, and check that outputs are equal
+    mask_2d_ds_chunked, mask_2d_contours_chunked = regions2d_fixture.region_mask(
+        da_Sv_fixture.chunk(chunk_dict), collapse_to_2d=True
+    )
+    mask_2d_ds_computed, mask_2d_contours_computed = regions2d_fixture.region_mask(
+        da_Sv_fixture.compute(), collapse_to_2d=True
+    )
+    assert mask_2d_ds_chunked.chunksizes["ping_time"][0] == 400
+    assert mask_2d_ds_chunked.chunksizes["depth"][0] == 500
+    assert mask_2d_ds_chunked.equals(mask_2d_ds_computed)
+    assert mask_2d_contours_chunked.equals(mask_2d_contours_computed)
