@@ -3,7 +3,7 @@ pandas>=2.0.0
 matplotlib
 regionmask>=0.8.0
 shapely>=2.0.0
-zarr
+zarr>=2,<3
 netcdf4
 scipy
 dask
