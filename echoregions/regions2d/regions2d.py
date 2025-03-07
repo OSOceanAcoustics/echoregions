@@ -2,7 +2,6 @@ import warnings
 from pathlib import Path
 from typing import Iterable, List, Optional, Union
 
-import dask.array as da
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
