@@ -601,20 +601,37 @@ class Regions2D:
         # Dataframe containing region information.
         region_df = self.select_region(region_id, region_class)
 
-        # Filter for rows with depth values within self min and self max depth and
-        # for rows that have positive depth.
+        # Drop channel if it exists
+        if "channel" in da_Sv.dims:
+            da_Sv = da_Sv.isel(channel=0).drop_vars("channel")
+
+        # Compute valid boundaries
+        min_depth_valid = float(da_Sv["depth"].min())
+        max_depth_valid = float(da_Sv["depth"].max())
+        min_time_valid = da_Sv["ping_time"].min()
+        max_time_valid = da_Sv["ping_time"].max()
+        region_depth_lower = max(0, int(self.min_depth))
+        region_depth_upper = int(self.max_depth)
+
+        # Apply filters using inline lambdas
         region_df = region_df[
             region_df["depth"].apply(
-                lambda x: all(
-                    (i >= np.max(0, int(self.min_depth)) and i <= int(self.max_depth)) for i in x
-                )
+                lambda depths: any(min_depth_valid <= d <= max_depth_valid for d in depths)
+            )
+            & region_df["time"].apply(
+                lambda times: any(min_time_valid <= t <= max_time_valid for t in times)
+            )
+            & region_df["depth"].apply(
+                lambda depths: all(region_depth_lower <= d <= region_depth_upper for d in depths)
             )
         ]
 
         if region_df.empty:
-            print(
+            warnings.warn(
                 "All rows in Regions DataFrame have NaN Depth values after filtering depth "
-                "between min_depth and max_depth."
+                "between min_depth and max_depth.",
+                UserWarning,
+                stacklevel=2,
             )
             mask_ds = xr.Dataset()
             if collapse_to_2d:
@@ -656,7 +673,7 @@ class Regions2D:
             regions_np = [np.array(region[["time", "depth"]]) for _, region in grouped]
 
             # Convert corresponding region_id to int.
-            filtered_region_id = [int(id) for id, _ in grouped]
+            filtered_region_ids = [int(id) for id, _ in grouped]
 
             # Convert ping_time to unix_time since the masking does not work on datetime objects.
             da_Sv = da_Sv.assign_coords(
@@ -666,31 +683,76 @@ class Regions2D:
                 )
             )
 
-            # Create mask
-            r = regionmask.Regions(
-                outlines=regions_np, numbers=filtered_region_id, name=mask_name, overlap=True
+            # Create regionmask object
+            regionmask_regions = regionmask.Regions(
+                outlines=regions_np, numbers=filtered_region_ids, name=mask_name, overlap=True
             )
-            mask_da = r.mask_3D(
-                da_Sv["unix_time"],
-                da_Sv["depth"],
-                wrap_lon=False,
-            ).astype(
-                int
-            )  # This maps False to 0 and True to 1
+
+            if da_Sv.chunksizes:
+                # Define a helper function to operate on individual blocks
+                def _region_mask_block(
+                    da_Sv_block, wrap_lon, regionmask_regions, filtered_region_ids
+                ):
+                    # Grab time and depth blocks
+                    unix_time_block = da_Sv_block["unix_time"]
+                    depth_block = da_Sv_block["depth"]
+
+                    # Set the filter to ignore the specific warnings
+                    # No grid point warning will show up a lot with smaller chunks and
+                    warnings.filterwarnings("ignore", message="No gridpoint belongs to any region")
+                    # TODO Write issue in regionmask repo to convince them not to remove method as an argument
+                    warnings.filterwarnings(
+                        "ignore",
+                        message="The ``method`` argument is internal and  will be removed in the future",
+                        category=FutureWarning,
+                    )
+                    mask_block_da = (
+                        regionmask_regions.mask_3D(
+                            unix_time_block, depth_block, wrap_lon=wrap_lon, method="shapely"
+                        )
+                        .astype(int)
+                        .drop_vars(["abbrevs", "names"])
+                    )
+
+                    # Reindex to fill in missing filtered region IDs
+                    mask_block_da = mask_block_da.reindex(region=filtered_region_ids, fill_value=0)
+
+                    return mask_block_da
+
+                # Apply _mask_block over the blocks of the input array
+                mask_da = xr.map_blocks(
+                    _region_mask_block,
+                    da_Sv,
+                    kwargs={
+                        "wrap_lon": False,
+                        "regionmask_regions": regionmask_regions,
+                        "filtered_region_ids": filtered_region_ids,
+                    },
+                ).chunk({"region": 1})
+
+            else:
+                # Create mask
+                mask_da = regionmask_regions.mask_3D(
+                    da_Sv["unix_time"],
+                    da_Sv["depth"],
+                    wrap_lon=False,
+                ).astype(
+                    int
+                )  # This maps False to 0 and True to 1
+
+            # Drop unused attributes
+            mask_da.attrs.pop("standard_name")
 
             # Rename region coords with region_id coords
             mask_da = mask_da.rename({"region": "region_id"})
 
-            # Remove all coords other than depth, ping_time, region_id
+            # Remove all coords other than region_id, depth, ping_time
             mask_da = mask_da.drop_vars(
-                mask_da.coords._names.difference({"depth", "ping_time", "region_id"})
+                mask_da.coords._names.difference({"region_id", "depth", "ping_time"})
             )
 
             # Transpose mask_da
             mask_da = mask_da.transpose("region_id", "depth", "ping_time")
-
-            # Remove attribute standard_name
-            mask_da.attrs.pop("standard_name")
 
             # Rename Data Array to mask_name
             mask_da = mask_da.rename(mask_name)
@@ -717,7 +779,7 @@ class Regions2D:
 
             # Get region_points
             region_points = region_df[region_df["region_id"].isin(masked_region_id)][
-                ["region_id", "time", "depth"]
+                ["region_id", "depth", "time"]
             ]
 
             return mask_ds, region_points
