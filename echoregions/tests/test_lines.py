@@ -41,7 +41,7 @@ def da_Sv_fixture() -> DataArray:
         DataArray containing Sv data of test zarr file.
     """
 
-    da_Sv = xr.open_zarr(ZARR_PATH).Sv
+    da_Sv = xr.open_zarr(ZARR_PATH)["Sv"].compute()
     return da_Sv
 
 
@@ -251,9 +251,7 @@ def test_lines_bottom_mask_operation_regionmask(
         DataArray containing Sv data of test zarr file.
     """
     # Compute mask and bottom points
-    bottom_mask, bottom_points = lines_fixture.bottom_mask(
-        da_Sv_fixture.isel(channel=0), operation="regionmask"
-    )
+    bottom_mask, bottom_points = lines_fixture.bottom_mask(da_Sv_fixture, operation="regionmask")
 
     # Compute unique values
     unique_values = np.unique(bottom_mask.compute().data, return_counts=True)
@@ -286,7 +284,7 @@ def test_lines_bottom_mask_operation_regionmask(
     lines_2 = Lines(bottom_points_dropped, None, input_type="CSV")
 
     # Run lines masking to check if masking runs
-    bottom_mask_2, bottom_points_2 = lines_2.bottom_mask(da_Sv_fixture.isel(channel=0))
+    bottom_mask_2, bottom_points_2 = lines_2.bottom_mask(da_Sv_fixture)
 
     # Assert that these two masks are equal
     assert bottom_mask.equals(bottom_mask_2)
@@ -311,7 +309,7 @@ def test_lines_bottom_mask_operation_above_below(
     """
     # Compute mask and bottom points
     bottom_mask, bottom_points = lines_fixture.bottom_mask(
-        da_Sv_fixture.isel(channel=0),
+        da_Sv_fixture,
         operation="above_below",
         method="slinear",
         limit=5,
@@ -344,7 +342,7 @@ def test_lines_bottom_mask_operation_above_below(
 
     # Run lines masking to check if masking runs
     bottom_mask_2, bottom_points_2 = lines_2.bottom_mask(
-        da_Sv_fixture.isel(channel=0),
+        da_Sv_fixture,
         operation="above_below",
         method="slinear",
         limit=5,
@@ -380,9 +378,7 @@ def test_lines_bottom_mask_empty(
     # Create empty lines object
     lines_fixture.data = lines_fixture.data[0:0]
 
-    M, bottom_points_1 = lines_fixture.bottom_mask(
-        da_Sv_fixture.isel(channel=0), operation=operation
-    )
+    M, bottom_points_1 = lines_fixture.bottom_mask(da_Sv_fixture, operation=operation)
 
     # Compute unique values
     unique_values = np.unique(M.compute().data, return_counts=True)
@@ -402,7 +398,7 @@ def test_lines_bottom_mask_empty(
     lines_2 = Lines(bottom_points_1, None, input_type="CSV")
 
     # Run lines masking to check if masking runs
-    _, bottom_points_2 = lines_2.bottom_mask(da_Sv_fixture.isel(channel=0), operation=operation)
+    _, bottom_points_2 = lines_2.bottom_mask(da_Sv_fixture, operation=operation)
 
     # Assert that bottom_points is empty
     assert bottom_points_2.empty
@@ -424,17 +420,44 @@ def test_lines_bottom_mask_errors(lines_fixture: Lines, da_Sv_fixture: DataArray
 
     # Test invalid da_Sv argument.
     with pytest.raises(TypeError):
-        lines_fixture.bottom_mask(da_Sv_fixture.isel(channel=0).data)
+        lines_fixture.bottom_mask(da_Sv_fixture.data)
     # Test invalid method argument.
     with pytest.raises(ValueError):
-        lines_fixture.bottom_mask(
-            da_Sv_fixture.isel(channel=0), operation="above_below", method="INVALID"
-        )
+        lines_fixture.bottom_mask(da_Sv_fixture, operation="above_below", method="INVALID")
     # Test invalid limit area argument.
     with pytest.raises(ValueError):
-        lines_fixture.bottom_mask(
-            da_Sv_fixture.isel(channel=0), operation="above_below", limit_area="INVALID"
-        )
+        lines_fixture.bottom_mask(da_Sv_fixture, operation="above_below", limit_area="INVALID")
     # Test invalid operation argument.
     with pytest.raises(ValueError):
-        lines_fixture.bottom_mask(da_Sv_fixture.isel(channel=0), operation="TEST")
+        lines_fixture.bottom_mask(da_Sv_fixture, operation="TEST")
+
+
+@pytest.mark.lines
+def test_chunked_bottom_mask_operation_regionmask(
+    lines_fixture: Lines, da_Sv_fixture: DataArray
+) -> None:
+    """
+    Testing if chunked bottom masking vs computed bottom masking (using `region_mask`) result
+    in the same array and points and checks the array chunks for both 3D and 2D operation subtypes.
+
+    Parameters
+    ----------
+    lines_fixture : Lines
+        Object containing data of test EVL file.
+    da_Sv_fixture : DataArray
+        DataArray containing Sv data of test zarr file.
+    """
+    # Set chunks
+    chunk_dict = {"ping_time": 400, "depth": 500}
+
+    # Create bottom masks, check chunks, and check that outputs are equal
+    bottom_mask_chunked, bottom_points_chunked = lines_fixture.bottom_mask(
+        da_Sv_fixture.chunk(chunk_dict), operation="regionmask"
+    )
+    bottom_mask_computed, bottom_points_computed = lines_fixture.bottom_mask(
+        da_Sv_fixture.compute(), operation="regionmask"
+    )
+    assert bottom_mask_chunked.chunksizes["ping_time"][0] == 400
+    assert bottom_mask_chunked.chunksizes["depth"][0] == 500
+    assert bottom_mask_chunked.equals(bottom_mask_computed)
+    assert bottom_points_chunked.equals(bottom_points_computed)

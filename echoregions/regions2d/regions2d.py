@@ -602,6 +602,10 @@ class Regions2D:
         # Dataframe containing region information.
         region_df = self.select_region(region_id, region_class)
 
+        # Drop channel if it exists
+        if "channel" in da_Sv.dims:
+            da_Sv = da_Sv.isel(channel=0).drop_vars("channel")
+
         # Compute valid boundaries
         min_depth_valid = float(da_Sv["depth"].min())
         max_depth_valid = float(da_Sv["depth"].max())
@@ -680,10 +684,6 @@ class Regions2D:
                 )
             )
 
-            # Drop channel if it exists
-            if "channel" in da_Sv.dims:
-                da_Sv = da_Sv.isel(channel=0).drop_vars("channel")
-
             # Create regionmask object
             regionmask_regions = regionmask.Regions(
                 outlines=regions_np, numbers=filtered_region_ids, name=mask_name, overlap=True
@@ -691,7 +691,9 @@ class Regions2D:
 
             if da_Sv.chunksizes:
                 # Define a helper function to operate on individual blocks
-                def _mask_block(da_Sv_block, wrap_lon, regionmask_regions, filtered_region_ids):
+                def _region_mask_block(
+                    da_Sv_block, wrap_lon, regionmask_regions, filtered_region_ids
+                ):
                     # Grab time and depth blocks
                     unix_time_block = da_Sv_block["unix_time"]
                     depth_block = da_Sv_block["depth"]
@@ -705,7 +707,7 @@ class Regions2D:
                         message="The ``method`` argument is internal and  will be removed in the future",
                         category=FutureWarning,
                     )
-                    da_mask = (
+                    mask_block_da = (
                         regionmask_regions.mask_3D(
                             unix_time_block, depth_block, wrap_lon=wrap_lon, method="shapely"
                         )
@@ -714,13 +716,13 @@ class Regions2D:
                     )
 
                     # Reindex to fill in missing filtered region IDs
-                    da_mask = da_mask.reindex(region=filtered_region_ids, fill_value=0)
+                    mask_block_da = mask_block_da.reindex(region=filtered_region_ids, fill_value=0)
 
-                    return da_mask
+                    return mask_block_da
 
                 # Apply _mask_block over the blocks of the input array
                 mask_da = xr.map_blocks(
-                    _mask_block,
+                    _region_mask_block,
                     da_Sv,
                     kwargs={
                         "wrap_lon": False,

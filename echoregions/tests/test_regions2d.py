@@ -1183,9 +1183,10 @@ def test_evr_write_exceptions(regions2d_fixture: Regions2D, da_Sv_fixture: DataA
 
 
 @pytest.mark.regions2d
-def test_mask(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+def test_mask_chunked_region_mask(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
-    Testing if 2d mask with collapse_to_do=True works.
+    Testing if chunked region masking vs computed region masking operations result in the same array and
+    points and checks the array chunks for both 3D and 2D operation subtypes.
 
     Parameters
     ----------
@@ -1198,26 +1199,26 @@ def test_mask(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     chunk_dict = {"ping_time": 400, "depth": 500}
 
     # Create 3D masks, check chunks, and check that outputs are equal
-    mask_3d_ds_chunked, mask_3d_contours_chunked = regions2d_fixture.region_mask(
+    mask_3d_ds_chunked, mask_3d_points_chunked = regions2d_fixture.region_mask(
         da_Sv_fixture.chunk(chunk_dict), collapse_to_2d=False
     )
-    mask_3d_ds_computed, mask_3d_contours_computed = regions2d_fixture.region_mask(
+    mask_3d_ds_computed, mask_3d_points_computed = regions2d_fixture.region_mask(
         da_Sv_fixture.compute(), collapse_to_2d=False
     )
     assert mask_3d_ds_chunked.chunksizes["region_id"][0] == 1
     assert mask_3d_ds_chunked.chunksizes["ping_time"][0] == 400
     assert mask_3d_ds_chunked.chunksizes["depth"][0] == 500
     assert mask_3d_ds_chunked.equals(mask_3d_ds_computed)
-    assert mask_3d_contours_chunked.equals(mask_3d_contours_computed)
+    assert mask_3d_points_chunked.equals(mask_3d_points_computed)
 
     # Create 2D computed masks, check chunks, and check that outputs are equal
-    mask_2d_ds_chunked, mask_2d_contours_chunked = regions2d_fixture.region_mask(
+    mask_2d_ds_chunked, mask_2d_points_chunked = regions2d_fixture.region_mask(
         da_Sv_fixture.chunk(chunk_dict), collapse_to_2d=True
     )
-    mask_2d_ds_computed, mask_2d_contours_computed = regions2d_fixture.region_mask(
+    mask_2d_ds_computed, mask_2d_points_computed = regions2d_fixture.region_mask(
         da_Sv_fixture.compute(), collapse_to_2d=True
     )
     assert mask_2d_ds_chunked.chunksizes["ping_time"][0] == 400
     assert mask_2d_ds_chunked.chunksizes["depth"][0] == 500
     assert mask_2d_ds_chunked.equals(mask_2d_ds_computed)
-    assert mask_2d_contours_chunked.equals(mask_2d_contours_computed)
+    assert mask_2d_points_chunked.equals(mask_2d_points_computed)

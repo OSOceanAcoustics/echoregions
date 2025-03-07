@@ -1,4 +1,5 @@
 import json
+import warnings
 from pathlib import Path
 from typing import Dict, Iterable, List, Union
 
@@ -288,6 +289,10 @@ class Lines:
                 f"Cannot be {operation}."
             )
 
+        # Drop channel if it exists
+        if "channel" in da_Sv.dims:
+            da_Sv = da_Sv.isel(channel=0).drop_vars("channel")
+
         lines_df = self.data
 
         # new index
@@ -366,22 +371,69 @@ class Lines:
                     )
                 )
 
-                # Create bottom mask
-                # bottom: True, otherwise: False
-                r = regionmask.Regions(
+                regionmask_region = regionmask.Regions(
                     outlines=[np.array(bottom_points_with_int_timestamp)],
                     overlap=False,
                 )
-                bottom_mask = xr.where(
-                    np.isnan(
-                        r.mask(
-                            da_Sv["unix_time"],
-                            da_Sv["depth"],
-                            wrap_lon=False,
+
+                if da_Sv.chunksizes:
+                    # Define a helper function to operate on individual blocks
+                    def _bottom_mask_block(da_Sv_block, wrap_lon, regionmask_regions):
+                        # Grab time and depth blocks
+                        unix_time_block = da_Sv_block["unix_time"]
+                        depth_block = da_Sv_block["depth"]
+
+                        # Set the filter to ignore the specific warnings
+                        # No grid point warning will show up a lot with smaller chunks and
+                        warnings.filterwarnings(
+                            "ignore", message="No gridpoint belongs to any region"
                         )
-                    ),
-                    False,
-                    True,
+                        # TODO Write issue in regionmask repo to convince them not to remove method as an argument
+                        warnings.filterwarnings(
+                            "ignore",
+                            message="The ``method`` argument is internal and  will be removed in the future",
+                            category=FutureWarning,
+                        )
+                        mask_block_da = xr.where(
+                            np.isnan(
+                                regionmask_regions.mask(
+                                    unix_time_block,
+                                    depth_block,
+                                    wrap_lon=wrap_lon,
+                                    method="shapely",
+                                ),
+                            ),
+                            0,
+                            1,
+                        )
+                        return mask_block_da
+
+                    # Apply _mask_block over the blocks of the input array to create 0/1 bottom mask
+                    bottom_mask_da = xr.map_blocks(
+                        _bottom_mask_block,
+                        da_Sv,
+                        kwargs={
+                            "wrap_lon": False,
+                            "regionmask_regions": regionmask_region,
+                        },
+                    )
+                else:
+                    # Create 0/1 bottom mask
+                    bottom_mask_da = xr.where(
+                        np.isnan(
+                            regionmask_region.mask(
+                                da_Sv["unix_time"],
+                                da_Sv["depth"],
+                                wrap_lon=False,
+                            )
+                        ),
+                        0,
+                        1,
+                    )
+
+                # Remove all coords other than region_id, depth, ping_time
+                bottom_mask_da = bottom_mask_da.drop_vars(
+                    bottom_mask_da.coords._names.difference({"depth", "ping_time"})
                 )
             else:
                 # create joint index
@@ -412,7 +464,10 @@ class Lines:
 
                 # create a mask for the bottom:
                 # bottom: True, otherwise: False
-                bottom_mask = depth_da >= bottom_da
+                bottom_mask_da = depth_da >= bottom_da
+
+                # Bottom: True becomes 1, False becomes 0
+                bottom_mask_da = bottom_mask_da.where(True, 1, 0)
 
                 # Reset bottom_points index so that time index becomes time column
                 bottom_points = bottom_points.reset_index()
@@ -421,13 +476,10 @@ class Lines:
             bottom_points["time"] = pd.to_datetime(bottom_points["time"])
 
         else:
-            # Set everything to False
-            bottom_mask = xr.full_like(da_Sv, False)
+            # Set everything to 0
+            bottom_mask_da = xr.zeros_like(da_Sv)
 
             # Set bottom points to empty DataFrame with time and depth columns
             bottom_points = pd.DataFrame(columns=["depth", "time"])
 
-        # Bottom: True becomes 1, False becomes 0
-        bottom_mask = bottom_mask.where(True, 1, 0)
-
-        return bottom_mask, bottom_points
+        return bottom_mask_da, bottom_points
