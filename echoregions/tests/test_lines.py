@@ -433,12 +433,10 @@ def test_lines_bottom_mask_errors(lines_fixture: Lines, da_Sv_fixture: DataArray
 
 
 @pytest.mark.lines
-def test_chunked_bottom_mask_operation_regionmask(
-    lines_fixture: Lines, da_Sv_fixture: DataArray
-) -> None:
+def test_chunked_bottom_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> None:
     """
-    Testing if chunked bottom masking vs computed bottom masking (using `region_mask`) result
-    in the same array and points and checks the array chunks for both 3D and 2D operation subtypes.
+    Testing if chunked bottom masking and computed bottom masking (using `region_mask`) result
+    in the same array and points, and checks the array chunks.
 
     Parameters
     ----------

@@ -1183,9 +1183,9 @@ def test_evr_write_exceptions(regions2d_fixture: Regions2D, da_Sv_fixture: DataA
 
 
 @pytest.mark.regions2d
-def test_mask_chunked_region_mask(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+def test_chunked_region_mask(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
-    Testing if chunked region masking vs computed region masking operations result in the same array and
+    Testing if chunked region masking and computed region masking operations result in the same array and
     points and checks the array chunks for both 3D and 2D operation subtypes.
 
     Parameters
