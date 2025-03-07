@@ -7,3 +7,4 @@ zarr>=2,<3
 netcdf4
 scipy<1.15.2
 xarray>=2024.11.0
+dask
