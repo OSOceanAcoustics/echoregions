@@ -2,6 +2,7 @@ import warnings
 from pathlib import Path
 from typing import Iterable, List, Optional, Union
 
+import dask.array as da
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -603,18 +604,18 @@ class Regions2D:
 
         # Filter for rows with depth values within self min and self max depth and
         # for rows that have positive depth.
+        min_depth = float(da_Sv["depth"].min())
+        max_depth = float(da_Sv["depth"].max())
         region_df = region_df[
-            region_df["depth"].apply(
-                lambda x: all(
-                    (i >= np.max(0, int(self.min_depth)) and i <= int(self.max_depth)) for i in x
-                )
-            )
+            region_df["depth"].apply(lambda x: any(min_depth <= i <= max_depth for i in x))
         ]
 
         if region_df.empty:
-            print(
+            warnings.warn(
                 "All rows in Regions DataFrame have NaN Depth values after filtering depth "
-                "between min_depth and max_depth."
+                "between min_depth and max_depth.",
+                UserWarning,
+                stacklevel=2,
             )
             mask_ds = xr.Dataset()
             if collapse_to_2d:
@@ -656,7 +657,7 @@ class Regions2D:
             regions_np = [np.array(region[["time", "depth"]]) for _, region in grouped]
 
             # Convert corresponding region_id to int.
-            filtered_region_id = [int(id) for id, _ in grouped]
+            filtered_region_ids = [int(id) for id, _ in grouped]
 
             # Convert ping_time to unix_time since the masking does not work on datetime objects.
             da_Sv = da_Sv.assign_coords(
@@ -666,31 +667,103 @@ class Regions2D:
                 )
             )
 
-            # Create mask
-            r = regionmask.Regions(
-                outlines=regions_np, numbers=filtered_region_id, name=mask_name, overlap=True
-            )
-            mask_da = r.mask_3D(
-                da_Sv["unix_time"],
-                da_Sv["depth"],
-                wrap_lon=False,
-            ).astype(
-                int
-            )  # This maps False to 0 and True to 1
+            # Drop channel if it exists
+            if "channel" in da_Sv.dims:
+                da_Sv = da_Sv.isel(channel=0).drop_vars("channel")
+
+            if da_Sv.chunks:
+                # Create a list to hold the mask DataArrays for each individual region
+                mask_da_list = []
+
+                # Loop over each filtered region id
+                for region_id, outline in zip(filtered_region_ids, regions_np):
+                    da_Sv_copy = da_Sv.copy(deep=True)
+                    # Create a regionmask for this single region.
+                    regionmask_single = regionmask.Regions(
+                        outlines=[outline], numbers=[region_id], overlap=True
+                    )
+
+                    # Define a helper function to operate on individual blocks
+                    def _mask_block(da_Sv_block, wrap_lon, regionmask_regions, region_id):
+                        # Grab time and depth blocks
+                        unix_time_block = da_Sv_block["unix_time"]
+                        depth_block = da_Sv_block["depth"]
+
+                        # Set the filter to ignore the specific warnings
+                        # No grid point warning will show up a lot with smaller chunks and
+                        warnings.filterwarnings(
+                            "ignore", message="No gridpoint belongs to any region"
+                        )
+                        # TODO Write issue in regionmask repo to convince them not to remove method as an argument
+                        warnings.filterwarnings(
+                            "ignore",
+                            message="The ``method`` argument is internal and  will be removed in the future",
+                            category=FutureWarning,
+                        )
+                        da_mask = (
+                            regionmask_regions.mask_3D(
+                                unix_time_block, depth_block, wrap_lon=wrap_lon, method="shapely"
+                            )
+                            .astype(int)
+                            .drop_vars(["abbrevs", "names"])
+                        )
+
+                        # If the region mask is empty, create a zero-filled mask for the specified region_id.
+                        # This step ensures that all blocks have a consistent region size (e.g., not mixing
+                        # blocks with region sizes 0 and 1).
+                        if da_mask.sizes.get("region") == 0:
+                            new_shape = (1,) + da_Sv_block.shape
+                            return xr.DataArray(
+                                da.zeros(new_shape, dtype=int),
+                                dims=("region",) + da_Sv_block.dims,
+                                coords={"region": [region_id], **da_Sv_block.coords},
+                            ).reset_index("region")
+
+                        return da_mask
+
+                    # Apply _mask_block over the blocks of the input array
+                    mask_da_single = xr.map_blocks(
+                        _mask_block,
+                        da_Sv_copy,
+                        kwargs={
+                            "wrap_lon": False,
+                            "regionmask_regions": regionmask_single,
+                            "region_id": region_id,
+                        },
+                    )
+
+                    # Only append to list if there exist a masked object
+                    if (mask_da_single == 1).any():
+                        mask_da_list.append(mask_da_single)
+
+                # Combine the individual masks
+                mask_da = xr.concat(mask_da_list, dim="region")
+            else:
+                # Create mask
+                regionmask_regions = regionmask.Regions(
+                    outlines=regions_np, numbers=filtered_region_ids, name=mask_name, overlap=True
+                )
+                mask_da = regionmask_regions.mask_3D(
+                    da_Sv["unix_time"],
+                    da_Sv["depth"],
+                    wrap_lon=False,
+                ).astype(
+                    int
+                )  # This maps False to 0 and True to 1
+
+                # Drop unused attributes
+                mask_da.attrs.pop("standard_name")
 
             # Rename region coords with region_id coords
             mask_da = mask_da.rename({"region": "region_id"})
 
-            # Remove all coords other than depth, ping_time, region_id
+            # Remove all coords other than region_id, depth, ping_time
             mask_da = mask_da.drop_vars(
-                mask_da.coords._names.difference({"depth", "ping_time", "region_id"})
+                mask_da.coords._names.difference({"region_id", "depth", "ping_time"})
             )
 
             # Transpose mask_da
             mask_da = mask_da.transpose("region_id", "depth", "ping_time")
-
-            # Remove attribute standard_name
-            mask_da.attrs.pop("standard_name")
 
             # Rename Data Array to mask_name
             mask_da = mask_da.rename(mask_name)
@@ -717,7 +790,7 @@ class Regions2D:
 
             # Get region_points
             region_points = region_df[region_df["region_id"].isin(masked_region_id)][
-                ["region_id", "time", "depth"]
+                ["region_id", "depth", "time"]
             ]
 
             return mask_ds, region_points
