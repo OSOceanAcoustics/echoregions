@@ -43,4 +43,4 @@ Echoregions is licensed under the open source [Apache 2.0 license](https://opens
 
 ---------------
 
-Copyright (c) 2021-2024, Echoregions Developers.
+Copyright (c) 2021-2025, Echoregions Developers.
