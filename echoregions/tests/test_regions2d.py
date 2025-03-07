@@ -43,7 +43,7 @@ def da_Sv_fixture() -> DataArray:
         DataArray containing Sv data of test zarr file.
     """
 
-    da_Sv = xr.open_zarr(ZARR_PATH)["Sv"]
+    da_Sv = xr.open_zarr(ZARR_PATH)["Sv"].compute()
     return da_Sv
 
 
