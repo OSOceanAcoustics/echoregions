@@ -5,5 +5,5 @@ regionmask>=0.8.0
 shapely>=2.0.0
 zarr>=2,<3
 netcdf4
-scipy
+scipy<1.15.2
 xarray>=2024.11.0
