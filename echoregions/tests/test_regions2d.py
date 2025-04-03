@@ -888,13 +888,13 @@ def test_within_transect(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray)
     ).compute()
 
     # Check M dimensions
-    assert M.shape == (3955, 1681)
+    assert M.shape == (841, 152)
 
     # Check values
     assert len(list(np.unique(M.data))) == 2
 
     # Test number of 1 values
-    assert np.unique(M.data, return_counts=True)[1][0] == 5687290
+    assert np.unique(M.data, return_counts=True)[1][0] == 109440
 
 
 @pytest.mark.regions2d
@@ -917,7 +917,7 @@ def test_within_transect_all(regions2d_fixture: Regions2D, da_Sv_fixture: DataAr
     ).compute()
 
     # Check M dimensions
-    assert M.shape == (3955, 1681)
+    assert M.shape == (841, 152)
 
     # This entire .zarr file should be covered by the single start and end transect period
     # found in the EVR file, so the only values listed should be 1, implying everything is
@@ -926,7 +926,7 @@ def test_within_transect_all(regions2d_fixture: Regions2D, da_Sv_fixture: DataAr
     assert list(np.unique(M.data))[0] == 1
 
     # Test number of 1 values
-    assert np.unique(M.data, return_counts=True)[1][0] == 6648355
+    assert np.unique(M.data, return_counts=True)[1][0] == 127832
 
 
 @pytest.mark.regions2d
@@ -947,7 +947,7 @@ def test_within_transect_no_regions(regions2d_fixture: Regions2D, da_Sv_fixture:
     M = r2d_empty.transect_mask(da_Sv=da_Sv_fixture).compute()
 
     # Check M dimensions
-    assert M.shape == (3955, 1681)
+    assert M.shape == (841, 152)
 
     # This entire output should be empty.
     assert len(list(np.unique(M.data))) == 1
@@ -1196,8 +1196,7 @@ def test_chunked_region_mask(regions2d_fixture: Regions2D, da_Sv_fixture: DataAr
         DataArray containing Sv data of test zarr file.
     """
     # Set chunks
-    chunk_dict = {"ping_time": 400, "depth": 500}
-
+    chunk_dict = {"ping_time": 400, "depth": 100}
     # Create 3D masks, check chunks, and check that outputs are equal
     mask_3d_ds_chunked, mask_3d_points_chunked = regions2d_fixture.region_mask(
         da_Sv_fixture.chunk(chunk_dict), collapse_to_2d=False
@@ -1207,7 +1206,7 @@ def test_chunked_region_mask(regions2d_fixture: Regions2D, da_Sv_fixture: DataAr
     )
     assert mask_3d_ds_chunked.chunksizes["region_id"][0] == 1
     assert mask_3d_ds_chunked.chunksizes["ping_time"][0] == 400
-    assert mask_3d_ds_chunked.chunksizes["depth"][0] == 500
+    assert mask_3d_ds_chunked.chunksizes["depth"][0] == 100
     assert mask_3d_ds_chunked.equals(mask_3d_ds_computed)
     assert mask_3d_points_chunked.equals(mask_3d_points_computed)
 
@@ -1219,6 +1218,6 @@ def test_chunked_region_mask(regions2d_fixture: Regions2D, da_Sv_fixture: DataAr
         da_Sv_fixture.compute(), collapse_to_2d=True
     )
     assert mask_2d_ds_chunked.chunksizes["ping_time"][0] == 400
-    assert mask_2d_ds_chunked.chunksizes["depth"][0] == 500
+    assert mask_2d_ds_chunked.chunksizes["depth"][0] == 100
     assert mask_2d_ds_chunked.equals(mask_2d_ds_computed)
     assert mask_2d_points_chunked.equals(mask_2d_points_computed)
