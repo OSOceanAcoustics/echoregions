@@ -446,7 +446,7 @@ def test_chunked_bottom_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> 
         DataArray containing Sv data of test zarr file.
     """
     # Set chunks
-    chunk_dict = {"ping_time": 400, "depth": 500}
+    chunk_dict = {"ping_time": 400, "depth": 100}
 
     # Create bottom masks, check chunks, and check that outputs are equal
     bottom_mask_chunked, bottom_points_chunked = lines_fixture.bottom_mask(
@@ -456,6 +456,6 @@ def test_chunked_bottom_mask(lines_fixture: Lines, da_Sv_fixture: DataArray) -> 
         da_Sv_fixture.compute(), operation="regionmask"
     )
     assert bottom_mask_chunked.chunksizes["ping_time"][0] == 400
-    assert bottom_mask_chunked.chunksizes["depth"][0] == 500
+    assert bottom_mask_chunked.chunksizes["depth"][0] == 100
     assert bottom_mask_chunked.equals(bottom_mask_computed)
     assert bottom_points_chunked.equals(bottom_points_computed)

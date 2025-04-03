@@ -298,7 +298,7 @@ def test_select_sonar_file(regions2d_fixture: Regions2D, da_Sv_fixture: DataArra
     assert selected_Sv[0].equals(da_Sv_fixture)
 
     # Test with subseted and partitioned fixture
-    ping_time_index_partitions = [slice(0, 100), slice(200, 500), slice(800, 1600)]
+    ping_time_index_partitions = [slice(0, 100), slice(200, 500), slice(600, 800)]
     partitioned_fixture_list = [
         da_Sv_fixture.isel(ping_time=ping_time_index_partition)
         for ping_time_index_partition in ping_time_index_partitions
@@ -315,7 +315,7 @@ def test_select_sonar_file(regions2d_fixture: Regions2D, da_Sv_fixture: DataArra
     outside_ping_time = np.datetime64(
         np.hstack(regions2d_fixture.data["time"].values).max()
     ) + np.timedelta64(1, "ns")
-    two_ping_times_isel_da_Sv = da_Sv_fixture.isel(ping_time=slice(1678, 1680)).compute()
+    two_ping_times_isel_da_Sv = da_Sv_fixture.isel(ping_time=slice(839, 841)).compute()
     two_ping_times_isel_da_Sv = two_ping_times_isel_da_Sv.assign_coords(
         {"ping_time": [inside_ping_time, outside_ping_time]}
     )
@@ -331,7 +331,7 @@ def test_select_sonar_file(regions2d_fixture: Regions2D, da_Sv_fixture: DataArra
     second_outside_ping_time = np.datetime64(
         np.hstack(regions2d_fixture.data["time"].values).max()
     ) + np.timedelta64(2, "ns")
-    two_ping_times_isel_da_Sv = da_Sv_fixture.isel(ping_time=slice(1678, 1680)).compute()
+    two_ping_times_isel_da_Sv = da_Sv_fixture.isel(ping_time=slice(839, 841)).compute()
     two_ping_times_isel_da_Sv = two_ping_times_isel_da_Sv.assign_coords(
         {"ping_time": [first_outside_ping_time, second_outside_ping_time]}
     )
@@ -655,9 +655,9 @@ def test_mask_2d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None
     assert mask_2d_values[0] == 13
     assert mask_2d_values[1] == 18
     assert np.isnan(mask_2d_values[2])
-    assert mask_2d_counts[0] == 6328
-    assert mask_2d_counts[1] == 3127410
-    assert mask_2d_counts[2] == 3514617
+    assert mask_2d_counts[0] == 120
+    assert mask_2d_counts[1] == 59631
+    assert mask_2d_counts[2] == 68081
 
     # Check mask_labels values
     assert (np.unique(mask_2d_ds.mask_labels.data) == ["17", "Mask1"]).all()
@@ -714,10 +714,10 @@ def test_mask_3d_2d_3d_2d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
 
     # Check mask values
     assert (mask_3d_ds.mask_3d.region_id.values == [13, 18]).all()
-    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=0).data, return_counts=True)[1][0] == 6642027
-    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=0).data, return_counts=True)[1][1] == 6328
-    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=1).data, return_counts=True)[1][0] == 3520945
-    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=1).data, return_counts=True)[1][1] == 3127410
+    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=0).data, return_counts=True)[1][0] == 127712
+    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=0).data, return_counts=True)[1][1] == 120
+    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=1).data, return_counts=True)[1][0] == 68201
+    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=1).data, return_counts=True)[1][1] == 59631
 
     # Check mask_labels values
     assert (np.unique(mask_3d_ds.mask_labels.data) == ["17", "Mask1"]).all()
@@ -732,9 +732,9 @@ def test_mask_3d_2d_3d_2d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
     assert mask_2d_values[0] == 13
     assert mask_2d_values[1] == 18
     assert np.isnan(mask_2d_values[2])
-    assert mask_2d_counts[0] == 6328
-    assert mask_2d_counts[1] == 3127410
-    assert mask_2d_counts[2] == 3514617
+    assert mask_2d_counts[0] == 120
+    assert mask_2d_counts[1] == 59631
+    assert mask_2d_counts[2] == 68081
 
     # Convert 2d mask to 3d mask and test for equality with previous 3d mask
     mask_3d_ds_2nd = er.convert_mask_2d_to_3d(mask_2d_ds)
@@ -765,8 +765,8 @@ def test_one_label_mask_3d_2d_3d_2d(regions2d_fixture: Regions2D, da_Sv_fixture:
 
     # Check mask values
     assert (mask_3d_ds.mask_3d.region_id.values == [18]).all()
-    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=0).data, return_counts=True)[1][0] == 3520945
-    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=0).data, return_counts=True)[1][1] == 3127410
+    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=0).data, return_counts=True)[1][0] == 68201
+    assert np.unique(mask_3d_ds.mask_3d.isel(region_id=0).data, return_counts=True)[1][1] == 59631
 
     # Check mask_labels values
     assert (np.unique(mask_3d_ds.mask_labels.data) == ["Mask1"]).all()
@@ -780,8 +780,8 @@ def test_one_label_mask_3d_2d_3d_2d(regions2d_fixture: Regions2D, da_Sv_fixture:
     mask_2d_counts = np.unique(mask_2d_ds.mask_2d.data, return_counts=True)[1]
     assert mask_2d_values[0] == 18
     assert np.isnan(mask_2d_values[1])
-    assert mask_2d_counts[0] == 3127410
-    assert mask_2d_counts[1] == 3520945
+    assert mask_2d_counts[0] == 59631
+    assert mask_2d_counts[1] == 68201
 
     # Convert 2d mask to 3d mask and test for equality with previous 3d mask
     mask_3d_ds_2nd = er.convert_mask_2d_to_3d(mask_2d_ds)
@@ -888,13 +888,13 @@ def test_within_transect(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray)
     ).compute()
 
     # Check M dimensions
-    assert M.shape == (3955, 1681)
+    assert M.shape == (841, 152)
 
     # Check values
     assert len(list(np.unique(M.data))) == 2
 
     # Test number of 1 values
-    assert np.unique(M.data, return_counts=True)[1][0] == 5687290
+    assert np.unique(M.data, return_counts=True)[1][0] == 109440
 
 
 @pytest.mark.regions2d
@@ -917,7 +917,7 @@ def test_within_transect_all(regions2d_fixture: Regions2D, da_Sv_fixture: DataAr
     ).compute()
 
     # Check M dimensions
-    assert M.shape == (3955, 1681)
+    assert M.shape == (841, 152)
 
     # This entire .zarr file should be covered by the single start and end transect period
     # found in the EVR file, so the only values listed should be 1, implying everything is
@@ -926,7 +926,7 @@ def test_within_transect_all(regions2d_fixture: Regions2D, da_Sv_fixture: DataAr
     assert list(np.unique(M.data))[0] == 1
 
     # Test number of 1 values
-    assert np.unique(M.data, return_counts=True)[1][0] == 6648355
+    assert np.unique(M.data, return_counts=True)[1][0] == 127832
 
 
 @pytest.mark.regions2d
@@ -947,7 +947,7 @@ def test_within_transect_no_regions(regions2d_fixture: Regions2D, da_Sv_fixture:
     M = r2d_empty.transect_mask(da_Sv=da_Sv_fixture).compute()
 
     # Check M dimensions
-    assert M.shape == (3955, 1681)
+    assert M.shape == (841, 152)
 
     # This entire output should be empty.
     assert len(list(np.unique(M.data))) == 1
@@ -1106,7 +1106,7 @@ def test_evr_write(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> No
     region_1 = evr_data.iloc[0]
     assert region_1["region_id"] == 1
     assert region_1["region_structure_version"] == "13"
-    assert region_1["region_point_count"] == "94"
+    assert region_1["region_point_count"] == "28"
     assert region_1["region_selected"] == "0"
     assert region_1["echoview_version"] == "12.0.341.42620"
 
@@ -1196,8 +1196,7 @@ def test_chunked_region_mask(regions2d_fixture: Regions2D, da_Sv_fixture: DataAr
         DataArray containing Sv data of test zarr file.
     """
     # Set chunks
-    chunk_dict = {"ping_time": 400, "depth": 500}
-
+    chunk_dict = {"ping_time": 400, "depth": 100}
     # Create 3D masks, check chunks, and check that outputs are equal
     mask_3d_ds_chunked, mask_3d_points_chunked = regions2d_fixture.region_mask(
         da_Sv_fixture.chunk(chunk_dict), collapse_to_2d=False
@@ -1207,7 +1206,7 @@ def test_chunked_region_mask(regions2d_fixture: Regions2D, da_Sv_fixture: DataAr
     )
     assert mask_3d_ds_chunked.chunksizes["region_id"][0] == 1
     assert mask_3d_ds_chunked.chunksizes["ping_time"][0] == 400
-    assert mask_3d_ds_chunked.chunksizes["depth"][0] == 500
+    assert mask_3d_ds_chunked.chunksizes["depth"][0] == 100
     assert mask_3d_ds_chunked.equals(mask_3d_ds_computed)
     assert mask_3d_points_chunked.equals(mask_3d_points_computed)
 
@@ -1219,6 +1218,6 @@ def test_chunked_region_mask(regions2d_fixture: Regions2D, da_Sv_fixture: DataAr
         da_Sv_fixture.compute(), collapse_to_2d=True
     )
     assert mask_2d_ds_chunked.chunksizes["ping_time"][0] == 400
-    assert mask_2d_ds_chunked.chunksizes["depth"][0] == 500
+    assert mask_2d_ds_chunked.chunksizes["depth"][0] == 100
     assert mask_2d_ds_chunked.equals(mask_2d_ds_computed)
     assert mask_2d_points_chunked.equals(mask_2d_points_computed)

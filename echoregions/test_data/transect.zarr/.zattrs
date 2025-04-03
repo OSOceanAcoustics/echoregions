@@ -1,1 +1,6 @@
-{}
+{
+    "processing_function": "commongrid.compute_MVBS",
+    "processing_software_name": "echopype",
+    "processing_software_version": "0.10.0",
+    "processing_time": "2025-04-03T19:29:30Z"
+}
