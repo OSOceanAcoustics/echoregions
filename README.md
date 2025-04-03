@@ -29,7 +29,7 @@ See the [API documentation](https://echoregions.readthedocs.io/en/latest/api.htm
 
 ## Contributors
 
-Echoregions development is currently led by Caesar Tuguinay (@ctuguinay), with inputs from Wu-Jung Lee (@leewujung) and Valentina Staneva (@valentina-s). Kavin Nguyen (@ngkavin) contributed significantly to the initial version.
+Echoregions development is currently led by Caesar Tuguinay([@ctuguinay](https://github.com/ctuguinay)), with inputs from Wu-Jung Lee ([@leewujung](https://github.com/leewujung)) and Valentina Staneva ([@valentina-s](https://github.com/valentina-s)). Kavin Nguyen ([@ngkavin](https://github.com/ngkavin)) contributed significantly to the initial version.
 
 ## Acknowledgement
 
