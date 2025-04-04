@@ -18,7 +18,7 @@ Note that in Echoregions, the underlying annotation data is stored as a Pandas d
 
 ## Contributors
 
-Echoregions development is currently led by Caesar Tuguinay (@ctuguinay), with inputs from Wu-Jung Lee (@leewujung) and Valentina Staneva (@valentina-s). Kavin Nguyen (@ngkavin) contributed significantly to the initial version.
+Echoregions development is currently led by Caesar Tuguinay([@ctuguinay](https://github.com/ctuguinay)), with inputs from Wu-Jung Lee ([@leewujung](https://github.com/leewujung)) and Valentina Staneva ([@valentina-s](https://github.com/valentina-s)). Kavin Nguyen ([@ngkavin](https://github.com/ngkavin)) contributed significantly to the initial version.
 
 ## Acknowledgement
 
@@ -36,4 +36,4 @@ Echoregions is licensed under the open source [Apache 2.0 license](https://opens
 
 ---------------
 
-Copyright (c) 2021-2024, Echoregions Developers.
+Copyright (c) 2021-2025, Echoregions Developers.
