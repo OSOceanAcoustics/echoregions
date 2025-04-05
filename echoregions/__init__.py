@@ -7,6 +7,7 @@ that contain the majority of the functionality within echoregions.
 # TODO fix this since it doesn't work with a normal pip install but
 # pip installation with editable mode seems to generate it just fine.
 # from _echoregions_version import version as __version__
+__version__ == 0.2.3
 
 from .core import read_evl, read_evr, read_lines_csv, read_regions_csv
 from .regions2d.evr_writer import write_evr
