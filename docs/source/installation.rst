@@ -9,9 +9,10 @@ Echoregions is available and tested for Python>=3.10. The latest branch can be p
    $ pip install echoregions
 
 To run in development mode, fork and clone the repository at `Echoregions <https://github.com/OSOceanAcoustics/echoregions>`_
-and create a conda environment using the conda-forge channel:
+and create a conda environment using the conda-forge channel via the following steps:
 
 .. code-block:: console
+
    $ # Clone your fork
    $ git clone https://github.com/YOUR_GITHUB_USERNAME/echoregions.git
 
