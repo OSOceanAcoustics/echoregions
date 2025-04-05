@@ -1,32 +1,29 @@
 # Echoregions
 
 <div>
-  <a href="https://raw.githubusercontent.com/OSOceanAcoustics/echoregions/master/LICENSE">
-    <img alt="GitHub License" src="https://img.shields.io/github/license/OSOceanAcoustics/echoregions">
-  </a>
+    <a href="https://raw.githubusercontent.com/OSOceanAcoustics/echoregions/master/LICENSE">
+        <img alt="GitHub License" src="https://img.shields.io/github/license/OSOceanAcoustics/echoregions">
+    </a>
 </div>
 
 <div>
-    <a href="https://echoregions.readthedocs.io/en/latest/?badge=latest">
-    <img src="https://readthedocs.org/projects/echoregions/badge/?version=latest"/>
+    <a href="https://github.com/OSOceanAcoustics/echoregions/actions/workflows/pytest.yml">
+        <img src="https://github.com/OSOceanAcoustics/echoregions/actions/workflows/pytest.yml/badge.svg" alt="build"/>
     </a>
-
-    <a href="https://github.com/OSOceanAcoustics/echoregions/actions/workflows/pytest.yml>
-    <img src="https://github.com/OSOceanAcoustics/echoregions/actions/workflows/pytest.yml/badge.svg"/>
+    <a href="https://echoregions.readthedocs.io/en/latest/?badge=latest">
+        <img src="https://readthedocs.org/projects/echoregions/badge/?version=latest"  alt="Readthedocs"/>
     </a>
 </div>
 
 <div>
     <a href="https://pypi.org/project/echoregions/">
-    <img src="https://img.shields.io/pypi/v/echoregions.svg"/>
+        <img src="https://img.shields.io/pypi/v/echoregions.svg" alt="PyPI version"/>
     </a>
-
     <a href="https://anaconda.org/conda-forge/echoregions">
-    <img src="https://img.shields.io/conda/vn/conda-forge/echoregions.svg"/>
+        <img src="https://img.shields.io/conda/vn/conda-forge/echoregions.svg" alt="Conda version"/>
     </a>
 </div>
 
-![example workflow](https://github.com/OSOceanAcoustics/echoregions/actions/workflows/pytest.yml/badge.svg)
 
 Echoregions is a Python Package that interfaces with annotations of water column sonar data for training machine learning models or doing other downstream processing such as biomass estimation.
 
