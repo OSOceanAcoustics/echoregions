@@ -9,27 +9,46 @@ Echoregions is available and tested for Python>=3.10. The latest branch can be p
    $ pip install echoregions
 
 To run in development mode, fork and clone the repository at `Echoregions <https://github.com/OSOceanAcoustics/echoregions>`_
-and create a conda environment using the conda-forge channel:
+and create a conda environment using the conda-forge channel via the following steps:
+
+Clone your fork:
 
 .. code-block:: console
-   $ # Clone your fork
+
    $ git clone https://github.com/YOUR_GITHUB_USERNAME/echoregions.git
 
-   $ # Go into the cloned repo folder
+Navigate into the cloned repo:
+
+.. code-block:: console
+
    $ cd echoregions
 
-   $ # Add the OSOceanAcoustics repository as upstream
+Add the upstream repository:
+
+.. code-block:: console
+
    $ git remote add upstream https://github.com/OSOceanAcoustics/echoregions.git
 
-   $ # Create a conda environment using the supplied requirements files
+Create a conda environment:
+
+.. code-block:: console
+
    $ conda create -c conda-forge -n echoregions --yes python=3.12 --file requirements.txt --file requirements-dev.txt
 
-   $ # Switch to the newly built environment
+Activate the environment:
+
+.. code-block:: console
+
    $ conda activate echoregions
 
-   $ # We recomment to install ipykernel in order to use with JupyterLab and IPython for development
+Install IPython kernel for JupyterLab:
+
+.. code-block:: console
+
    $ conda install -c conda-forge ipykernel
 
-   $ # Install echoregions in editable mode (setuptools "develop mode")
-   $ # the command will install all the dependencies
+Install in editable mode:
+
+.. code-block:: console
+
    $ pip install -e .
