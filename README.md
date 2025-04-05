@@ -1,4 +1,12 @@
 # Echoregions
+<a href="https://pypi.org/project/echopype/">
+<img src="https://img.shields.io/pypi/v/echopype.svg"/>
+</a>
+
+<a href="https://anaconda.org/conda-forge/echopype">
+<img src="https://img.shields.io/conda/vn/conda-forge/echopype.svg"/>
+</a>
+
 <a href="https://echoregions.readthedocs.io/en/latest/?badge=latest">
 <img src="https://readthedocs.org/projects/echoregions/badge/?version=latest"/>
 </a>
