@@ -1,15 +1,30 @@
 # Echoregions
-<a href="https://pypi.org/project/echopype/">
-<img src="https://img.shields.io/pypi/v/echopype.svg"/>
-</a>
 
-<a href="https://anaconda.org/conda-forge/echopype">
-<img src="https://img.shields.io/conda/vn/conda-forge/echopype.svg"/>
-</a>
+<div>
+  <a href="https://raw.githubusercontent.com/OSOceanAcoustics/echoregions/master/LICENSE">
+    <img alt="GitHub License" src="https://img.shields.io/github/license/OSOceanAcoustics/echoregions">
+  </a>
+</div>
 
-<a href="https://echoregions.readthedocs.io/en/latest/?badge=latest">
-<img src="https://readthedocs.org/projects/echoregions/badge/?version=latest"/>
-</a>
+<div>
+    <a href="https://echoregions.readthedocs.io/en/latest/?badge=latest">
+    <img src="https://readthedocs.org/projects/echoregions/badge/?version=latest"/>
+    </a>
+
+    <a href="https://github.com/OSOceanAcoustics/echoregions/actions/workflows/pytest.yml>
+    <img src="https://github.com/OSOceanAcoustics/echoregions/actions/workflows/pytest.yml/badge.svg"/>
+    </a>
+</div>
+
+<div>
+    <a href="https://pypi.org/project/echoregions/">
+    <img src="https://img.shields.io/pypi/v/echoregions.svg"/>
+    </a>
+
+    <a href="https://anaconda.org/conda-forge/echoregions">
+    <img src="https://img.shields.io/conda/vn/conda-forge/echoregions.svg"/>
+    </a>
+</div>
 
 ![example workflow](https://github.com/OSOceanAcoustics/echoregions/actions/workflows/pytest.yml/badge.svg)
 
