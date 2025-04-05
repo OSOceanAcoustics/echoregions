@@ -2,7 +2,7 @@ Installation
 ============
 
 
-Echoregions is available and tested for Python>=3.10. The latest branch can be installed via the following:
+Echoregions is available and tested for Python>=3.10. The latest branch can be pip installed via the following:
 
 .. code-block:: console
 
