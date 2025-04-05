@@ -2,27 +2,34 @@ Installation
 ============
 
 
-Echoregions is available and tested for Python>=3.10. The latest branch can be installed via the following:
+Echoregions is available and tested for Python>=3.10. The latest branch can be pip installed via the following:
 
 .. code-block:: console
 
-   $ pip install git+https://github.com/OSOceanAcoustics/echoregions.git
+   $ pip install echoregions
 
-To run in development mode, fork and clone the repository at `Echoregions <https://github.com/OSOceanAcoustics/echoregions>`_.
+To run in development mode, fork and clone the repository at `Echoregions <https://github.com/OSOceanAcoustics/echoregions>`_
+and create a conda environment using the conda-forge channel:
 
 .. code-block:: console
-   # Create a conda environment using the supplied requirements files
-   mamba create -c conda-forge -n echoregions --yes python=3.12 --file requirements.txt --file requirements-dev.txt
+   $ # Clone your fork
+   $ git clone https://github.com/YOUR_GITHUB_USERNAME/echoregions.git
 
-   # Switch to the newly built environment
-   mamba activate echoregions
+   $ # Go into the cloned repo folder
+   $ cd echoregions
 
-   # We recomment to install ipykernel in order to use with JupyterLab and IPython for development
-   conda install -c conda-forge ipykernel
+   $ # Add the OSOceanAcoustics repository as upstream
+   $ git remote add upstream https://github.com/OSOceanAcoustics/echoregions.git
 
-   # Optionally install opencv for generating contours from masks
-   conda install -c conda-forge opencv
+   $ # Create a conda environment using the supplied requirements files
+   $ conda create -c conda-forge -n echoregions --yes python=3.12 --file requirements.txt --file requirements-dev.txt
 
-   # Install echoregions in editable mode (setuptools "develop mode")
-   # the command will install all the dependencies
-   pip install -e .
+   $ # Switch to the newly built environment
+   $ conda activate echoregions
+
+   $ # We recomment to install ipykernel in order to use with JupyterLab and IPython for development
+   $ conda install -c conda-forge ipykernel
+
+   $ # Install echoregions in editable mode (setuptools "develop mode")
+   $ # the command will install all the dependencies
+   $ pip install -e .

@@ -36,6 +36,13 @@ def read_regions_csv(
 ) -> Regions2D:
     """Read a region CSV into a Regions2D object.
 
+    To use `er.read_region_csv`, the input dataframe/CSV must contain (at minimum) columns
+    `region_id`, `depth`, and `time` where each `depth` entry is a 1-D float array and
+    each `time` entry is a 1-D `datetime64[ns]` array.
+    Please see the 'Saving to ".csv" and Reading From ".csv"' section in
+    https://echoregions.readthedocs.io/en/latest/Regions2D_functionality.html
+    for an example of this formatting.
+
     Parameters
     ----------
     input_file : str, Path, pd.DataFrame
@@ -80,6 +87,13 @@ def read_lines_csv(
     input_file: Union[str, Path, pd.DataFrame], nan_depth_value: float = None
 ) -> Lines:
     """Read a lines CSV into a Lines object.
+
+    To use `er.read_lines_csv`, the input dataframe/CSV must contain (at minimum) columns
+    `depth` and `time` where each `depth` entry is a single float value and each `time`
+    entry is a single `datetime64[ns]` value.
+    Please see the 'Saving to ".csv" and Reading From ".csv"' section in
+    https://echoregions.readthedocs.io/en/latest/Lines_functionality.html
+    for an example of this formatting.
 
     Parameters
     ----------
