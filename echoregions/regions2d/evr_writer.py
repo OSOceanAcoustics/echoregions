@@ -44,7 +44,8 @@ def write_evr(
     expected_coords = {"ping_time", "depth"}
     if set(mask.dims) != expected_coords:
         raise ValueError(
-            f"The 'mask' must have only 'ping_time' and 'depth' as coordinates, but found {sorted(set(mask.dims))}."
+            "The 'mask' must have only 'ping_time' and 'depth' as coordinates, "
+            f"but found {sorted(set(mask.dims))}."
         )
     if mask.isnull().any():
         raise ValueError(
