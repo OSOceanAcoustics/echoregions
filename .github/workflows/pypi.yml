@@ -6,17 +6,17 @@ jobs:
   build-artifact:
 
     name: Build echoregions package
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'OSOceanAcoustics/echoregions'
     steps:
     - name: Checkout
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         # fetch all history so that setuptools-scm works
         fetch-depth: 0
 
     - name: Set up Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v6.2.0
       with:
         python-version: 3.12
 
@@ -38,7 +38,7 @@ jobs:
         echo ""
         echo "Generated files:"
         ls -lh dist/
-    - uses: actions/upload-artifact@v5
+    - uses: actions/upload-artifact@v6
       with:
         name: releases
         path: dist
@@ -47,16 +47,16 @@ jobs:
 
     name: Test echoregions package
     needs: build-artifact
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     permissions:
       contents: read
       id-token: write
     steps:
-    - uses: actions/setup-python@v6
+    - uses: actions/setup-python@v6.2.0
       name: Install Python
       with:
         python-version: 3.12
-    - uses: actions/download-artifact@v6
+    - uses: actions/download-artifact@v7
       with:
         name: releases
         path: dist
@@ -96,7 +96,7 @@ jobs:
     needs: test-built-dist
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/download-artifact@v6
+    - uses: actions/download-artifact@v7
       with:
         name: releases
         path: dist
