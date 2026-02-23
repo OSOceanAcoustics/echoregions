@@ -42,9 +42,10 @@ def write_evr(
     if not isinstance(mask, xr.DataArray):
         raise TypeError("The 'mask' parameter must be an xarray.DataArray.")
     expected_coords = {"ping_time", "depth"}
-    if set(mask.coords) != expected_coords:
+    if set(mask.dims) != expected_coords:
         raise ValueError(
-            f"The 'mask' must have only 'ping_time' and 'depth' as coordinates, but found {sorted(set(mask.dims))}."
+            "The 'mask' must have only 'ping_time' and 'depth' as coordinates, "
+            f"but found {sorted(set(mask.dims))}."
         )
     if mask.isnull().any():
         raise ValueError(
@@ -59,7 +60,7 @@ def write_evr(
         raise ValueError("The 'mask' must be binary, containing only 0s and 1s.")
 
     # Compute contours
-    binary_image = mask.transpose("ping_time", "depth").data.astype(np.uint8)
+    binary_image = mask.transpose("depth", "ping_time").data.astype(np.uint8)
     contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Compute number of regions
@@ -72,8 +73,8 @@ def write_evr(
 
     # Write each region
     for idx, contour in enumerate(contours):
-        depths = mask.depth[contour[:, 0, 0]]
-        times = mask.ping_time[contour[:, 0, 1]]
+        depths = mask["depth"][contour.squeeze()[:, 1]]
+        times = mask["ping_time"][contour.squeeze()[:, 0]]
         region_id = idx + 1
 
         _write_region(
