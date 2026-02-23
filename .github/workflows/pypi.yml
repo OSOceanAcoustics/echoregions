@@ -6,7 +6,7 @@ jobs:
   build-artifact:
 
     name: Build echoregions package
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'OSOceanAcoustics/echoregions'
     steps:
     - name: Checkout
@@ -16,7 +16,7 @@ jobs:
         fetch-depth: 0
 
     - name: Set up Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v6.2.0
       with:
         python-version: 3.12
 
@@ -47,12 +47,12 @@ jobs:
 
     name: Test echoregions package
     needs: build-artifact
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     permissions:
       contents: read
       id-token: write
     steps:
-    - uses: actions/setup-python@v6
+    - uses: actions/setup-python@v6.2.0
       name: Install Python
       with:
         python-version: 3.12
