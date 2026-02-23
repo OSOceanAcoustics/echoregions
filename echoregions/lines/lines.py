@@ -186,15 +186,11 @@ class Lines:
             Useful arguments include `color`, `lw`, and `marker`.
         """
         if not (isinstance(start_time, Timestamp)):
-            raise TypeError(
-                f"start time is of type {type(start_time)} \
-                            It must be of of type Pandas Timestamp."
-            )
+            raise TypeError(f"start time is of type {type(start_time)} \
+                            It must be of of type Pandas Timestamp.")
         if not (isinstance(end_time, Timestamp)):
-            raise TypeError(
-                f"end time is of type {type(end_time)} \
-                            It must be of of type Pandas Timestamp."
-            )
+            raise TypeError(f"end time is of type {type(end_time)} \
+                            It must be of of type Pandas Timestamp.")
 
         df = self.data
         if start_time is not None:
