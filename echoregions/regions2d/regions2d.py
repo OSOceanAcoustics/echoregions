@@ -964,4 +964,10 @@ class Regions2D:
         if "channel" in M.dims:
             M = M.isel(channel=0)
 
+        # Set attributes
+        M.attrs = {
+            "long_name": "Transect Mask (1=within-transect;0=outside-transect)",
+            "usage": "Used to subset backscatter or other data within transect boundaries.",
+        }
+
         return M
