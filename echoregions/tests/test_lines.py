@@ -210,14 +210,14 @@ def test_plot_type_error(lines_fixture: Lines) -> None:
             max_depth=800,
             fill_between=True,
         )
-    with pytest.raises(TypeError):
+    with pytest.raises(AttributeError):
         lines_fixture.plot(
             bad_start_time=bad_start_date,
             bad_end_time=end_date,
             max_depth=800,
             fill_between=True,
         )
-    with pytest.raises(TypeError):
+    with pytest.raises(AttributeError):
         lines_fixture.plot(
             bad_start_time=start_date,
             bad_end_time=bad_end_date,
