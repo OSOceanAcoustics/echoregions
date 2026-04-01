@@ -113,7 +113,7 @@ class Lines:
             f.write(echoview_version + "\n")
             f.write(number_of_regions + "\n")
 
-            # Write each bottom point to `.evl`
+            # Write each seafloor point to `.evl`
             for _, row in self.data.iterrows():
                 f.write(
                     str(row["time"].strftime("%Y%m%d"))
@@ -203,72 +203,72 @@ class Lines:
         else:
             plt.plot(df.time, df.depth, fmt, **kwargs)
 
-    def _filter_bottom(self, bottom, start_date, end_date, operation):
+    def _filter_seafloor(self, seafloor, start_date, end_date, operation):
         """
-        Selects the values of the bottom between two dates (non-inclusive).
+        Selects the values of the seafloor between two dates (non-inclusive).
         """
-        after_start_date = bottom["time"] > start_date
-        before_end_date = bottom["time"] < end_date
+        after_start_date = seafloor["time"] > start_date
+        before_end_date = seafloor["time"] < end_date
         between_two_dates = after_start_date & before_end_date
-        filtered_bottom = bottom.loc[between_two_dates]
+        filtered_seafloor = seafloor.loc[between_two_dates]
         if operation == "above_below":
-            filtered_bottom = filtered_bottom.set_index("time")
-        return filtered_bottom
+            filtered_seafloor = filtered_seafloor.set_index("time")
+        return filtered_seafloor
 
-    def bottom_mask(self, da_Sv: DataArray, operation: str = "regionmask", **kwargs):
+    def seafloor_mask(self, da_Sv: DataArray, operation: str = "regionmask", **kwargs):
         """
-        Subsets a bottom dataset to the range of an Sv dataset. Create a mask of
+        Subsets a seafloor dataset to the range of an Sv dataset. Create a mask of
         the same shape as data found in the Echogram object:
-        Bottom: 1, Otherwise: 0.
+        seafloor: 1, Otherwise: 0.
 
         Parameters
         ----------
         da_Sv : Xarray DataArray
             Matrix of coordinates (ping_time, depth) that contains Sv values.
         operation : str
-            Whether to use regionmask or below/above logic to produce the bottom mask.
+            Whether to use regionmask or below/above logic to produce the seafloor mask.
         **kwargs : dict
             Keyword arguments to be passed to pandas.DataFrame.interpolate.
 
         Returns
         -------
-        bottom_mask : Xarray DataArray
-            Matrix of coordinates (ping_time, depth) with values such that bottom: 1,
+        seafloor_mask : Xarray DataArray
+            Matrix of coordinates (ping_time, depth) with values such that seafloor: 1,
             otherwise: 0.
-        bottom_points : pd.DataFrame
+        seafloor_points : pd.DataFrame
             DataFrame containing depth and time.
 
         Notes
         -----
         If operation == 'regionmask':
-            We create 4 additional bottom points that further describe the boundary that we want
+            We create 4 additional seafloor points that further describe the boundary that we want
             regionmask to mask:
 
-            1) Point at the bottom leftmost corner. The depth of this point is based on the
-            maximum of the EVL bottom point depth and the Echogram depth, plus an additional
+            1) Point at the seafloor leftmost corner. The depth of this point is based on the
+            maximum of the EVL seafloor point depth and the Echogram depth, plus an additional
             1.0 float offset.
             2) Point at the leftmost edge of the Echogram where depth is based on the closest
-            EVL bottom point to this leftmost edge. One can think of this as a left facing
-            extension of the leftmost EVL bottom point until the left edge of the Echogram.
+            EVL seafloor point to this leftmost edge. One can think of this as a left facing
+            extension of the leftmost EVL seafloor point until the left edge of the Echogram.
             3) Point at the rightmost edge of the Echogram where depth is based on the closest
-            EVL bottom point to this rightmost edge. One can think of this as a right facing
-            extension of the rightmost EVL bottom point until the right edge of the Echogram.
-            4) Point at the bottom rightmost corner. The depth of this point is the same as 1.
+            EVL seafloor point to this rightmost edge. One can think of this as a right facing
+            extension of the rightmost EVL seafloor point until the right edge of the Echogram.
+            4) Point at the seafloor rightmost corner. The depth of this point is the same as 1.
 
             The points are there to ensure that regionmask captures the appropriate area during masking.
-            The offset in Point 1 and Point 4 is here to make sure that the line connecting the bottom-most
+            The offset in Point 1 and Point 4 is here to make sure that the line connecting the seafloor-most
             points are clear of any other points. This would be a problem in the case where there is a point
             in the middle that matches the maximum of the Sv and EVL point depth. This would lead to
             regionmask creating possibly 2+ regions, which is behavior that could lead to different outputs.
             The offset ensures that regionmask always creates just 1 region.
 
             In the dataframe passed into regionmask, the following points are connected in the
-            following order: [1, 2, bottom points, 3, 4, 1].
+            following order: [1, 2, seafloor points, 3, 4, 1].
 
             For further information on how regionmask deals with edges:
             https://regionmask.readthedocs.io/en/stable/notebooks/method.html
         If operation == 'above_below':
-            Prior to creating the mask, this method performs interpolation on the bottom data
+            Prior to creating the mask, this method performs interpolation on the seafloor data
             points found in the lines.data dataframe.
             The nearest interpolation method from Pandas has a problem when points are far
             from each other.
@@ -294,34 +294,34 @@ class Lines:
         # new index
         echogram_ping_time = list(da_Sv.ping_time.data)
 
-        # filter bottom within start and end time
+        # filter seafloor within start and end time
         start_time = da_Sv.ping_time.data.min()
         end_time = da_Sv.ping_time.data.max()
-        filtered_bottom = self._filter_bottom(lines_df, start_time, end_time, operation)
-        filtered_bottom = filtered_bottom[~filtered_bottom.index.duplicated()]
+        filtered_seafloor = self._filter_seafloor(lines_df, start_time, end_time, operation)
+        filtered_seafloor = filtered_seafloor[~filtered_seafloor.index.duplicated()]
 
-        if len(filtered_bottom) > 0:
+        if len(filtered_seafloor) > 0:
             if operation == "regionmask":
                 # Filter columns and sort rows
-                bottom_points = filtered_bottom.copy()[["time", "depth"]].sort_values(by="time")
+                seafloor_points = filtered_seafloor.copy()[["time", "depth"]].sort_values(by="time")
 
-                # Calculate left and right most bottom point depth values
-                bottom_points_min_time_depth = bottom_points.loc[
-                    bottom_points["time"].idxmin(), "depth"
+                # Calculate left and right most seafloor point depth values
+                seafloor_points_min_time_depth = seafloor_points.loc[
+                    seafloor_points["time"].idxmin(), "depth"
                 ]
-                bottom_points_max_time_depth = bottom_points.loc[
-                    bottom_points["time"].idxmax(), "depth"
+                seafloor_points_max_time_depth = seafloor_points.loc[
+                    seafloor_points["time"].idxmax(), "depth"
                 ]
 
-                # Calculate maximum depth between bottom points and Sv and add additional offset
+                # Calculate maximum depth between seafloor points and Sv and add additional offset
                 maximum_depth_plus_offset = (
-                    max([da_Sv["depth"].max().data, bottom_points["depth"].max()]) + 1.0
+                    max([da_Sv["depth"].max().data, seafloor_points["depth"].max()]) + 1.0
                 )
 
                 # Set new left corner rows:
                 # We add a short time offset here to ensure appropriate left side of mask
                 # inclusion behavior; otherwise, regionmask will not mask the leftmost edge
-                # of the Echogram even if the bottom annotation indicates that it should be
+                # of the Echogram even if the seafloor annotation indicates that it should be
                 # masked.
                 # For more edge information: https://regionmask.readthedocs.io/en/stable/notebooks/method.html#edge-behavior #noqa
                 # TODO: Figure out a cleaner and less arbitrary way of ensuring correct left edge
@@ -333,7 +333,7 @@ class Lines:
                             pd.to_datetime(da_Sv["ping_time"].min().data) - time_offset,
                             pd.to_datetime(da_Sv["ping_time"].min().data) - time_offset,
                         ],
-                        "depth": [maximum_depth_plus_offset, bottom_points_min_time_depth],
+                        "depth": [maximum_depth_plus_offset, seafloor_points_min_time_depth],
                     }
                 )
 
@@ -344,19 +344,19 @@ class Lines:
                             pd.to_datetime(da_Sv["ping_time"].max().data),
                             pd.to_datetime(da_Sv["ping_time"].max().data),
                         ],
-                        "depth": [bottom_points_max_time_depth, maximum_depth_plus_offset],
+                        "depth": [seafloor_points_max_time_depth, maximum_depth_plus_offset],
                     }
                 )
 
-                # Concat new corner rows to bottom points
-                bottom_points = pd.concat(
-                    [left_side_new_rows, bottom_points, right_side_new_rows]
+                # Concat new corner rows to seafloor points
+                seafloor_points = pd.concat(
+                    [left_side_new_rows, seafloor_points, right_side_new_rows]
                 ).reset_index(drop=True)
 
                 # Convert region time to integer timestamp.
-                bottom_points_with_int_timestamp = bottom_points.copy()
-                bottom_points_with_int_timestamp["time"] = matplotlib.dates.date2num(
-                    bottom_points_with_int_timestamp["time"]
+                seafloor_points_with_int_timestamp = seafloor_points.copy()
+                seafloor_points_with_int_timestamp["time"] = matplotlib.dates.date2num(
+                    seafloor_points_with_int_timestamp["time"]
                 )
 
                 # Convert ping_time to unix_time since the masking does not work on datetime objects.
@@ -368,13 +368,13 @@ class Lines:
                 )
 
                 regionmask_region = regionmask.Regions(
-                    outlines=[np.array(bottom_points_with_int_timestamp)],
+                    outlines=[np.array(seafloor_points_with_int_timestamp)],
                     overlap=False,
                 )
 
                 if da_Sv.chunksizes:
                     # Define a helper function to operate on individual blocks
-                    def _bottom_mask_block(da_Sv_block, wrap_lon, regionmask_regions):
+                    def _seafloor_mask_block(da_Sv_block, wrap_lon, regionmask_regions):
                         # Grab time and depth blocks
                         unix_time_block = da_Sv_block["unix_time"]
                         depth_block = da_Sv_block["depth"]
@@ -404,9 +404,9 @@ class Lines:
                         )
                         return mask_block_da
 
-                    # Apply _mask_block over the blocks of the input array to create 0/1 bottom mask
-                    bottom_mask_da = xr.map_blocks(
-                        _bottom_mask_block,
+                    # Apply _mask_block over the blocks of the input array to create 0/1 seafloor mask
+                    seafloor_mask_da = xr.map_blocks(
+                        _seafloor_mask_block,
                         da_Sv,
                         kwargs={
                             "wrap_lon": False,
@@ -414,8 +414,8 @@ class Lines:
                         },
                     )
                 else:
-                    # Create 0/1 bottom mask
-                    bottom_mask_da = xr.where(
+                    # Create 0/1 seafloor mask
+                    seafloor_mask_da = xr.where(
                         np.isnan(
                             regionmask_region.mask(
                                 da_Sv["unix_time"],
@@ -428,13 +428,13 @@ class Lines:
                     )
 
                 # Remove all coords other than region_id, depth, ping_time
-                bottom_mask_da = bottom_mask_da.drop_vars(
-                    bottom_mask_da.coords._names.difference({"depth", "ping_time"})
+                seafloor_mask_da = seafloor_mask_da.drop_vars(
+                    seafloor_mask_da.coords._names.difference({"depth", "ping_time"})
                 )
             else:
                 # create joint index
                 joint_index = list(
-                    set(list(pd.DataFrame(echogram_ping_time)[0]) + list(filtered_bottom.index))
+                    set(list(pd.DataFrame(echogram_ping_time)[0]) + list(filtered_seafloor.index))
                 )
 
                 # Interpolate on the echogram coordinates. Note that some interpolation kwaargs
@@ -442,8 +442,8 @@ class Lines:
                 # are there to fill in these NaN values.
                 # TODO There exists a problem where when we use .loc prior to reindexing
                 # we are hit with a key not found error.
-                bottom_points = (
-                    filtered_bottom[["depth"]]
+                seafloor_points = (
+                    filtered_seafloor[["depth"]]
                     .reindex(joint_index)
                     .interpolate(**kwargs)
                     .loc[echogram_ping_time]
@@ -451,31 +451,31 @@ class Lines:
                     .bfill()
                 )
 
-                # convert to data array for bottom
-                bottom_da = bottom_points["depth"].to_xarray()
-                bottom_da = bottom_da.rename({"time": "ping_time"})
+                # convert to data array for seafloor
+                seafloor_da = seafloor_points["depth"].to_xarray()
+                seafloor_da = seafloor_da.rename({"time": "ping_time"})
 
                 # create a data array of depths
                 depth_da = da_Sv["depth"] + xr.zeros_like(da_Sv)
 
-                # create a mask for the bottom:
-                # bottom: True, otherwise: False
-                bottom_mask_da = depth_da >= bottom_da
+                # create a mask for the seafloor:
+                # seafloor: True, otherwise: False
+                seafloor_mask_da = depth_da >= seafloor_da
 
-                # Bottom: True becomes 1, False becomes 0
-                bottom_mask_da = bottom_mask_da.where(True, 1, 0)
+                # seafloor: True becomes 1, False becomes 0
+                seafloor_mask_da = seafloor_mask_da.where(True, 1, 0)
 
-                # Reset bottom_points index so that time index becomes time column
-                bottom_points = bottom_points.reset_index()
+                # Reset seafloor_points index so that time index becomes time column
+                seafloor_points = seafloor_points.reset_index()
 
-            # Set bottom points to be pandas datetime
-            bottom_points["time"] = pd.to_datetime(bottom_points["time"])
+            # Set seafloor points to be pandas datetime
+            seafloor_points["time"] = pd.to_datetime(seafloor_points["time"])
 
         else:
             # Set everything to 0
-            bottom_mask_da = xr.zeros_like(da_Sv)
+            seafloor_mask_da = xr.zeros_like(da_Sv)
 
-            # Set bottom points to empty DataFrame with time and depth columns
-            bottom_points = pd.DataFrame(columns=["depth", "time"])
+            # Set seafloor points to empty DataFrame with time and depth columns
+            seafloor_points = pd.DataFrame(columns=["depth", "time"])
 
-        return bottom_mask_da, bottom_points
+        return seafloor_mask_da, seafloor_points
