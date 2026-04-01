@@ -377,7 +377,7 @@ class Regions2D:
                     f"{depth_range[1]}."
                 )
             region = region[
-                region["time"].apply(
+                region["depth"].apply(
                     lambda depth_array: all(
                         depth_range[0] <= float(x) <= depth_range[1] for x in depth_array
                     )
