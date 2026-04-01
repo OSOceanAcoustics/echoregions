@@ -394,7 +394,7 @@ def test_select_region(regions2d_fixture: Regions2D) -> None:
         pd.to_datetime("2019-07-02T19:00:00.000000000"),
         pd.to_datetime("2019-07-02T20:00:00.000000000"),
     ]
-    depth_range = [-10000.0, 10000.0]
+    depth_range = [-9.5, 701]
 
     # Perform selection and receive sampled dataframes
     df_1 = regions2d_fixture.select_region(region_id=region_id)

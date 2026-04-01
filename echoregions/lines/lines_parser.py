@@ -60,7 +60,7 @@ def parse_evl(input_file: str):
     df = pd.DataFrame(data_dict["points"])
     # Save file metadata for each point
     df = df.assign(**data_dict["metadata"])
-    df.loc[:, "time"] = df.loc[:, "time"].apply(parse_time)
+    df["time"] = df["time"].apply(parse_time)
     order = list(data_dict["metadata"].keys()) + list(data_dict["points"][0].keys())
     data = df[order]
 
