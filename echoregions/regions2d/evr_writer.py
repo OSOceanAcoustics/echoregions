@@ -73,8 +73,9 @@ def write_evr(
 
     # Write each region
     for idx, contour in enumerate(contours):
-        depths = mask["depth"][contour.squeeze()[:, 1]]
-        times = mask["ping_time"][contour.squeeze()[:, 0]]
+        # Squeeze `axis=1` to deal with legacy data structure code
+        depths = mask["depth"][contour.squeeze(axis=1)[:, 1]]
+        times = mask["ping_time"][contour.squeeze(axis=1)[:, 0]]
         region_id = idx + 1
 
         _write_region(
