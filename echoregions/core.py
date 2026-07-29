@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Union
 
 import pandas as pd
+import xarray as xr
 
 from .lines.lines import Lines
 from .regions2d.regions2d import Regions2D
@@ -62,6 +63,41 @@ def read_regions_csv(
 
     return Regions2D(
         input_file=input_file, min_depth=min_depth, max_depth=max_depth, input_type="CSV"
+    )
+
+
+def read_mask(
+    mask: xr.DataArray,
+    region_classification: str = "",
+    min_depth: float = 0.0,
+    max_depth: float = 1000.0,
+) -> Regions2D:
+    """Read a binary mask into a Regions2D object.
+
+    Parameters
+    ----------
+    mask : xarray.DataArray
+        A two-dimensional binary mask where valid region cells are marked with
+        non-zero values and empty cells with zero values. The mask must have
+        coordinates named ``depth`` and ``ping_time``.
+    region_classification : str, default ""
+        Classification label to assign to each parsed region.
+    min_depth : float, default 0
+        Depth value in meters to set -9999.99 depth edges to.
+    max_depth : float, default 1000
+        Depth value in meters to set 9999.99 depth edges to.
+
+    Returns
+    -------
+    Regions2D
+        Object containing the parsed mask regions and metadata.
+    """
+    return Regions2D(
+        input_file=mask,
+        min_depth=min_depth,
+        max_depth=max_depth,
+        input_type="MASK",
+        region_classification=region_classification,
     )
 
 
