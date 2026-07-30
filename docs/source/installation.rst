@@ -2,7 +2,7 @@ Installation
 ============
 
 
-Echoregions is available and tested for Python>=3.10. The latest branch can be pip installed via the following:
+Echoregions is available and tested for Python 3.12-3.14. The latest branch can be pip installed via the following:
 
 .. code-block:: console
 
@@ -19,18 +19,20 @@ and create a conda environment using the conda-forge channel via the following s
    $ # Go into the cloned repo folder
    $ cd echoregions
 
-   $ # Add the OSOceanAcoustics repository as upstream
-   $ git remote add upstream https://github.com/OSOceanAcoustics/echoregions.git
+   $ # Add the Echostack repository as upstream
+   $ git remote add upstream https://github.com/echostack-org/echoregions.git
 
-   $ # Create a conda environment using the supplied requirements files
-   $ conda create -c conda-forge -n echoregions --yes python=3.12 --file requirements.txt --file requirements-dev.txt
+   $ # Create a conda environment and install pip
+   $ conda create -c conda-forge -n echoregions-dev --yes python=3.12
 
    $ # Switch to the newly built environment
-   $ conda activate echoregions
+   $ conda activate echoregions-dev
 
-   $ # We recomment to install ipykernel in order to use with JupyterLab and IPython for development
+   $ # Upgrade pip to support dependency groups
+   $ python -m pip install --upgrade pip
+
+   $ # We recommend installing ipykernel in order to use with JupyterLab and IPython for development
    $ conda install -c conda-forge ipykernel
 
-   $ # Install echoregions in editable mode (setuptools "develop mode")
-   $ # the command will install all the dependencies
-   $ pip install -e .
+   $ # Install echopype in editable mode with development dependencies
+   $ python -m pip install -e . --group dev

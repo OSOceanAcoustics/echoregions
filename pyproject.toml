@@ -1,84 +1,155 @@
 [build-system]
-requires = ["uv_build"]
-build-backend = "uv_build"
+requires = [
+    "setuptools >= 68",
+    "setuptools_scm[toml] >= 8.0",
+    "wheel >= 0.29.0",
+]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "echoregions"
-version = "0.2.3"
 description = "Parsers and functions for working with EVR and EVL files"
 readme = "README.md"
-requires-python = ">=3.11,<3.14"
-license = { text = "Apache License, Version 2.0" }
-
+requires-python = ">=3.12,<=3.14"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [
     { name = "Caesar Tuguinay", email = "ctuguina@uw.edu" },
 ]
-
 maintainers = [
     { name = "Caesar Tuguinay", email = "ctuguina@uw.edu" },
 ]
-
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering",
 ]
-
+dynamic = ["version"]
 dependencies = [
-    "numpy>=1.21.0",
-    "pandas",
+    "numpy>=2.2.0",
+    "pandas>=2.2.0",
     "matplotlib",
     "regionmask>=0.8.0",
     "shapely>=2.0.0",
     "zarr>=3",
-    "netcdf4",
-    "scipy",
-    "xarray>=2024.11.0",
-    "dask",
+    "xarray>=2026.01.0",
+    "dask>=2026.1.0",
     "opencv-python",
 ]
 
 [project.urls]
 Homepage = "https://github.com/echostack-org/echoregions"
+Repository = "https://github.com/echostack-org/echoregions"
+Documentation = "https://echoregions.readthedocs.io"
 
-[project.optional-dependencies]
-dev = [
-    "black",
-    "flake8",
-    "isort",
-    "pre-commit",
-    "pytest",
-    "pytest-cov",
-    "build",
+[dependency-groups]
+test = [
+    "moto>=5.0.12",
+    "pooch>=1.9.0",
+    "pytest>=8.3.3",
+    "pytest-cov>=6.0.0",
+    "pytest-mock>=3.14.1",
+    "pytest-xdist>=3.7.0",
+    "matplotlib>=3.10.0",
 ]
 
 docs = [
-    "sphinx_rtd_theme",
-    "sphinx-automodapi",
+    "jupyter-book>=1.0.3,<2.0.0",
+    "linkify-it-py>=2.1.0",
+    "myst-nb>=1.1.2",
+    "numpydoc>=1.8.0",
+    "sphinx>=7.0.0,<8.0.0",
+    "sphinx-automodapi>=0.18.0",
+    "sphinx-book-theme>=1.1.4",
+    "sphinx-comments",
+    "sphinx-copybutton",
+    "sphinx-external-toc>=1.1.0",
+    "sphinx-jupyterbook-latex",
     "sphinx-panels",
-    "jupyter-book<2.0",
-    "numpydoc",
-    "docutils<0.18",
+    "sphinx-thebe",
+    "sphinx-togglebutton>=0.4.4",
+    "sphinxcontrib-bibtex>=2.6.3",
+    "sphinxcontrib-mermaid>=1.0.0",
+    "sphinx-inline-tabs>=2025.12.21.14",
 ]
 
-[tool.uv.build-backend]
-module-name = "echoregions"
-module-root = "."
+dev = [
+    "black>=24.8.0",
+    "check-manifest>=0.50",
+    "codespell>=2.4.0",
+    "ipykernel>=6.30.0",
+    "isort>=6.0.0",
+    "mypy>=1.11.1",
+    "pre-commit>=4.0.0",
+    "pylint>=3.2.7",
+    "ruff>=0.5.6",
+    "setuptools_scm>=8.2.0",
+    "twine>=6.0.0",
+    "wheel>=0.44.0",
+]
+
+[tool.setuptools]
+include-package-data = true
+py-modules = ["_echoregions_version"]
+
+[tool.setuptools.packages.find]
+include = ["echoregions*"]
+
+[tool.setuptools_scm]
+fallback_version = "0.0"
+local_scheme = "node-and-date"
+version_file = "_echoregions_version.py"
+version_file_template = 'version = "{version}"  # noqa'
+
+[tool.pytest.ini_options]
+testpaths = ["echoregions/tests"]
+cache_dir = ".cache"
+filterwarnings = [
+    "ignore:.*There exists a transect that does not contain a single.*:UserWarning",
+]
+markers = [
+    "lines: tests Lines functionality",
+    "regions2d: tests Regions2d functionality",
+    "utils: tests utils functionality",
+]
+
+[tool.uv]
+exclude-newer = "7 days"
+default-groups = ["dev"]
 
 [tool.black]
 line-length = 100
 
 [tool.isort]
-known_first_party = ["echoregions"]
+known_first_party = "echoregions"
+known_third_party = ["_echoregions_version", "setuptools"]
 multi_line_output = 3
 include_trailing_comma = true
 force_grid_wrap = 0
+combine_as_imports = true
 line_length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [
+    "*.ipynb",
+]
+
+[tool.ruff.lint]
+select = ["E", "F"]
+ignore = [
+    "E722",
+    "E203",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["echoregions"]
+combine-as-imports = true

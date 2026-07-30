@@ -146,3 +146,7 @@ __main__.py
 
 # Setup
 _echoregions_version.py
+
+# Docs local test build.
+# TODO Will need to change this when migrating to Jupyter Book 2
+docs/source/api

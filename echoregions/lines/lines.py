@@ -177,7 +177,7 @@ class Lines:
             Use matplotlib `fill_between` to plot the line.
             The area between the EVL points and `max_depth` will be filled in.
         max_depth : float, default 0
-            The `fill_between` function will color in the area betwen the points and
+            The `fill_between` function will color in the area between the points and
             this depth value given in meters.
         alpha : float, default 0.5
             Opacity of the plot
@@ -255,12 +255,13 @@ class Lines:
             extension of the rightmost EVL seafloor point until the right edge of the Echogram.
             4) Point at the seafloor rightmost corner. The depth of this point is the same as 1.
 
-            The points are there to ensure that regionmask captures the appropriate area during masking.
-            The offset in Point 1 and Point 4 is here to make sure that the line connecting the seafloor-most
-            points are clear of any other points. This would be a problem in the case where there is a point
-            in the middle that matches the maximum of the Sv and EVL point depth. This would lead to
-            regionmask creating possibly 2+ regions, which is behavior that could lead to different outputs.
-            The offset ensures that regionmask always creates just 1 region.
+            The points are there to ensure that regionmask captures the appropriate area during
+            masking. The offset in Point 1 and Point 4 is here to make sure that the line
+            connecting the seafloor-most points are clear of any other points. This would be a
+            problem in the case where there is a point in the middle that matches the maximum
+            of the Sv and EVL point depth. This would lead to regionmask creating possibly 2+
+            regions, which is behavior that could lead to different outputs. The offset ensures
+            that regionmask always creates just 1 region.
 
             In the dataframe passed into regionmask, the following points are connected in the
             following order: [1, 2, seafloor points, 3, 4, 1].
@@ -272,6 +273,7 @@ class Lines:
             points found in the lines.data dataframe.
             The nearest interpolation method from Pandas has a problem when points are far
             from each other.
+            Default interpolation method is Pandas implemented linear-interpolation across time.
         """
 
         if not isinstance(da_Sv, DataArray):
@@ -359,7 +361,8 @@ class Lines:
                     seafloor_points_with_int_timestamp["time"]
                 )
 
-                # Convert ping_time to unix_time since the masking does not work on datetime objects.
+                # Convert ping_time to unix_time since the masking does not work on =
+                # datetime objects.
                 da_Sv = da_Sv.assign_coords(
                     unix_time=(
                         "ping_time",
@@ -384,10 +387,9 @@ class Lines:
                         warnings.filterwarnings(
                             "ignore", message="No gridpoint belongs to any region"
                         )
-                        # TODO Write issue in regionmask repo to convince them not to remove method as an argument
                         warnings.filterwarnings(
                             "ignore",
-                            message="The ``method`` argument is internal and  will be removed in the future",
+                            message="The ``method`` argument is internal and  will be removed in the future",  # noqa
                             category=FutureWarning,
                         )
                         mask_block_da = xr.where(
@@ -404,7 +406,8 @@ class Lines:
                         )
                         return mask_block_da
 
-                    # Apply _mask_block over the blocks of the input array to create 0/1 seafloor mask
+                    # Apply _mask_block over the blocks of the input array to create 0/1
+                    # seafloor mask
                     seafloor_mask_da = xr.map_blocks(
                         _seafloor_mask_block,
                         da_Sv,
@@ -432,10 +435,15 @@ class Lines:
                     seafloor_mask_da.coords._names.difference({"depth", "ping_time"})
                 )
             else:
+
+                # Set default interpolation to linear interpolation across time
+                kwargs = kwargs.copy()
+                kwargs.setdefault("method", "time")
+
                 # create joint index
-                joint_index = list(
-                    set(list(pd.DataFrame(echogram_ping_time)[0]) + list(filtered_seafloor.index))
-                )
+                joint_index = filtered_seafloor.index.union(
+                    pd.Index(echogram_ping_time)
+                ).sort_values()
 
                 # Interpolate on the echogram coordinates. Note that some interpolation kwaargs
                 # will result in some interpolation NaN values. The ffill and bfill lines
@@ -452,6 +460,7 @@ class Lines:
                 )
 
                 # convert to data array for seafloor
+                seafloor_points.index.name = "time"
                 seafloor_da = seafloor_points["depth"].to_xarray()
                 seafloor_da = seafloor_da.rename({"time": "ping_time"})
 

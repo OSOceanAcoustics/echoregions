@@ -1,7 +1,8 @@
-exclude: ^(
-    docs/|
-    notebooks/|
+exclude: |
+  (?x)^(
+    echoregions/tests/|
     echoregions/test_data/|
+    docs/source/conf.py
   )
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -15,12 +16,26 @@ repos:
       - id: pretty-format-json
         args: ["--autofix", "--indent=2", "--no-sort-keys"]
 
+  - repo: https://github.com/PyCQA/isort
+    rev: 9.0.0b1
+    hooks:
+      - id: isort
+        args: ["--profile", "black", "--filter-files"]
+
   - repo: https://github.com/psf/black-pre-commit-mirror
     rev: 26.5.1
     hooks:
       - id: black
 
-  - repo: https://github.com/PyCQA/isort
-    rev: 9.0.0b1
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.0
     hooks:
-      - id: isort
+      - id: ruff
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.3
+    hooks:
+      - id: codespell
+        # Checks spelling in `docs/source` and `echopype` dirs ONLY
+        # Ignores `.ipynb` files and `_build` folders
+        args: ["-L", "soop,anc,indx,weill", "--skip=*.ipynb,docs/source/_build,echoregions/test_data,*.lock", "-w", "docs/source"]
