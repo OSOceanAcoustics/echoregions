@@ -15,7 +15,5 @@ python:
   install:
     - method: uv
       command: sync
-      extras:
-        - plot
       groups:
         - docs
