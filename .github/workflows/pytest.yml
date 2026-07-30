@@ -28,8 +28,8 @@ jobs:
         run: |
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
 
-      - name: Install echoregions with development dependencies
-        run: python -m pip install -e . --group dev
+      - name: Install echoregions with development and testing dependencies
+        run: python -m pip install -e . --group dev --group test
 
       - name: Run Coverage Pytest
         run: pytest --cov=./ --cov-report=xml
