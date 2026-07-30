@@ -51,13 +51,8 @@ Documentation = "https://echoregions.readthedocs.io"
 
 [dependency-groups]
 test = [
-    "moto>=5.0.12",
-    "pooch>=1.9.0",
     "pytest>=8.3.3",
     "pytest-cov>=6.0.0",
-    "pytest-mock>=3.14.1",
-    "pytest-xdist>=3.7.0",
-    "matplotlib>=3.10.0",
 ]
 
 docs = [
