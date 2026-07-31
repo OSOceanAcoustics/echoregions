@@ -3,8 +3,9 @@ version: 1
 
 project:
   title: Echoregions
-  name: [Caesar Tuguinay]
   github: https://github.com/echostack-org/echoregions
+  settings:
+    output_matplotlib_strings: remove
   toc:
     - file: README.md
     - title: Getting Started
@@ -18,7 +19,6 @@ project:
     - file: docs/source/api.md
 
 site:
-  template: book-theme
   options:
     navigation:
       style: sidebar

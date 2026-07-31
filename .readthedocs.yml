@@ -5,12 +5,18 @@ build:
   tools:
     python: "3.12"
     nodejs: "22"
+  jobs:
+    build:
+      - uv run jupyter-book build --html
+      - mkdir -p "$READTHEDOCS_OUTPUT/html"
+      - cp -r _build/html/. "$READTHEDOCS_OUTPUT/html/"
 
 formats: []
 
 python:
   install:
     - method: uv
+      command: sync
       path: .
       extra_requirements:
         - docs
