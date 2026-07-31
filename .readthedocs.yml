@@ -7,9 +7,11 @@ build:
     nodejs: "22"
   jobs:
     build:
-      - uv run jupyter-book build --html
-      - mkdir -p "$READTHEDOCS_OUTPUT/html"
-      - cp -r _build/html/. "$READTHEDOCS_OUTPUT/html/"
+      commands:
+        - npm install express
+        - uv run jupyter-book build --html
+        - mkdir -p "$READTHEDOCS_OUTPUT/html"
+        - cp -r _build/html/. "$READTHEDOCS_OUTPUT/html/"
 
 formats: []
 
