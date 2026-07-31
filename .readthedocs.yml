@@ -1,20 +1,24 @@
 version: 2
 
 build:
-  os: ubuntu-22.04
+  os: ubuntu-lts-latest
   tools:
     python: "3.12"
     nodejs: "22"
+
   jobs:
-    pre_build:
-      - "uv run jupyter-book build --html"
+    install:
+      # Install Python dependencies with uv
+      - uv sync --group docs
+
+    build:
+      html:
+        # Build Jupyter Book 2 site
+        - uv run jupyter-book build --html
+
+    post_build:
+      # Copy generated files into Read the Docs directory
+      - mkdir --parents $READTHEDOCS_OUTPUT/html/
+      - cp --recursive _build/html/* $READTHEDOCS_OUTPUT/html/
 
 formats: []
-
-python:
-  install:
-    - method: uv
-      command: sync
-      path: .
-      extra_requirements:
-        - docs
