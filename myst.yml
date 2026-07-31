@@ -9,14 +9,13 @@ project:
     - file: README.md
     - title: Getting Started
       children:
-        - file: docs/source/installation.md
-    - title: User guide
+        - file: docs/source/user_installation.md
+        - file: docs/source/development_setup.md
+    - title: Example notebooks
       children:
         - file: docs/source/Lines_functionality.ipynb
         - file: docs/source/Regions2D_functionality.ipynb
-    - title: Help & reference
-      children:
-        - file: docs/source/api.md
+    - file: docs/source/api.md
 
 site:
   template: book-theme

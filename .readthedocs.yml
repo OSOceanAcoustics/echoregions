@@ -6,14 +6,11 @@ build:
     python: "3.12"
     nodejs: "22"
 
-sphinx:
-  configuration: docs/source/conf.py
-
 formats: []
 
 python:
   install:
     - method: uv
-      command: sync
-      groups:
+      path: .
+      extra_requirements:
         - docs
