@@ -9,6 +9,7 @@ build:
   jobs:
     build:
       html:
+        - uv sync --group docs
         - uv run jupyter-book build --html
 
     post_build:
@@ -21,4 +22,4 @@ python:
   install:
     - method: uv
       path: .
-      command: sync --group docs
+      command: sync
