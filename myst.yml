@@ -1,0 +1,27 @@
+# See docs at: https://mystmd.org/guide/frontmatter
+version: 1
+
+project:
+  title: Echoregions
+  name: [Caesar Tuguinay]
+  github: https://github.com/echostack-org/echoregions
+  toc:
+    - file: README.md
+    - title: Getting Started
+      children:
+        - file: docs/source/installation.md
+    - title: User guide
+      children:
+        - file: docs/source/Lines_functionality.ipynb
+        - file: docs/source/Regions2D_functionality.ipynb
+    - title: Help & reference
+      children:
+        - file: docs/source/api.md
+
+site:
+  template: book-theme
+  options:
+    navigation:
+      style: sidebar
+  #   favicon: favicon.ico
+  #   logo: site_logo.png
