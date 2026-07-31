@@ -6,12 +6,8 @@ build:
     python: "3.12"
     nodejs: "22"
   jobs:
-    build:
-      commands:
-        - npm install express
-        - uv run jupyter-book build --html
-        - mkdir -p "$READTHEDOCS_OUTPUT/html"
-        - cp -r _build/html/. "$READTHEDOCS_OUTPUT/html/"
+    pre_build:
+      - "uv run jupyter-book build --html"
 
 formats: []
 
