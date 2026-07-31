@@ -9,12 +9,16 @@ build:
   jobs:
     build:
       html:
+        # Need to additionally sync group docs
         - uv sync --group docs
         - uv run jupyter-book build --html
 
     post_build:
       - mkdir --parents $READTHEDOCS_OUTPUT/html/
+      # Send html to correct location
       - cp --recursive _build/html/* $READTHEDOCS_OUTPUT/html/
+      # Remove _build/html/ or else RTD CI will error out
+      - rm -rf _build/html
 
 formats: []
 
