@@ -7,18 +7,20 @@ build:
     nodejs: "22"
 
   jobs:
-    install:
-      # Install Python dependencies with uv
-      - uv sync --group docs
-
     build:
       html:
-        # Build Jupyter Book 2 site
         - uv run jupyter-book build --html
 
     post_build:
-      # Copy generated files into Read the Docs directory
       - mkdir --parents $READTHEDOCS_OUTPUT/html/
       - cp --recursive _build/html/* $READTHEDOCS_OUTPUT/html/
 
 formats: []
+
+python:
+  install:
+    - method: uv
+      command: sync
+      path: .
+      extra_requirements:
+        - docs
