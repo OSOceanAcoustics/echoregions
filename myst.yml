@@ -19,8 +19,8 @@ project:
     - file: docs/source/api.md
 
 site:
+  template: book-theme
   options:
     navigation:
       style: sidebar
-  #   favicon: favicon.ico
-  #   logo: site_logo.png
+    style: docs/source/styles.css

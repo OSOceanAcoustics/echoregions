@@ -1,0 +1,24 @@
+/* Wider notebook/document content */
+.bd-main .bd-content .bd-article-container {
+  max-width: 2000px;
+}
+
+/* wider Jupyter notebook cells */
+.jp-Notebook {
+  max-width: 2000px;
+}
+
+/* allow wide outputs */
+.cell_output {
+  max-width: 2000px;
+  overflow-x: auto;
+}
+
+/* give the main content more room */
+:root {
+  --pst-sidebar-width: 220px;
+  --pst-page-width: 2000px;
+}
+.bd-main .bd-content .bd-article-container {
+  max-width: 200px;
+}
