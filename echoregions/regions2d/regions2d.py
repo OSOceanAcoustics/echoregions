@@ -667,9 +667,9 @@ class Regions2D:
             # Check that subset_region_ids and mask_labels are matching
             if len(set(subset_region_ids) - set(mask_labels.keys())) > 0:
                 raise ValueError(
-                    "Each value in subset_region_ids must be a key in 'mask_labels' and vice versa. "
-                    "If you would prefer 0 based indexing as values for mask_labels, leave "
-                    "mask_labels as None."
+                    "Each value in subset_region_ids must be a key in 'mask_labels' "
+                    "and vice versa. If you would prefer 0 based indexing as values "
+                    "for mask_labels, leave mask_labels as None."
                 )
             # Select only important columns
             region_df = region_df[["region_id", "time", "depth"]]
@@ -714,10 +714,9 @@ class Regions2D:
                     # Set the filter to ignore the specific warnings
                     # No grid point warning will show up a lot with smaller chunks and
                     warnings.filterwarnings("ignore", message="No gridpoint belongs to any region")
-                    # TODO Write issue in regionmask repo to convince them not to remove method as an argument
                     warnings.filterwarnings(
                         "ignore",
-                        message="The ``method`` argument is internal and  will be removed in the future",
+                        message="The ``method`` argument is internal and  will be removed in the future",  # noqa
                         category=FutureWarning,
                     )
                     mask_block_da = (
@@ -883,7 +882,8 @@ class Regions2D:
         ].copy()
 
         if not transect_df.empty:
-            # Drop time duplicates, sort the dataframe by datetime, and reset Transect Dataframe Index.
+            # Drop time duplicates, sort the dataframe by datetime, and reset Transect
+            # Dataframe Index.
             transect_df = (
                 transect_df.drop_duplicates(subset=["region_bbox_left"])
                 .sort_values(by="region_bbox_left")

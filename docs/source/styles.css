@@ -1,0 +1,23 @@
+/* Make everything bigger */
+html {
+  font-size: 130%;
+}
+
+/* Make left sidebar smaller */
+.myst-primary-sidebar-nav {
+  width: 80%;
+  font-size: 0.8rem;
+}
+
+/* Make outline list smaller */
+.myst-outline-list {
+  width: 80%;
+  font-size: 0.8rem;
+}
+
+/* Make code blocks bigger */
+code {
+  font-size: 0.9rem;
+}
+
+/* TODO decrease spacing between left and right portions of sidebar */

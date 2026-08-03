@@ -146,3 +146,9 @@ __main__.py
 
 # Setup
 _echoregions_version.py
+
+# Ignore uv.lock unless otherwise specified
+uv.lock
+
+# MyST build outputs
+_build
