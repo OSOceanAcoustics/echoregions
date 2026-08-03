@@ -25,64 +25,40 @@ Echoregions development can be done using either **Conda** or **uv**.
 
 :::{tab-item} Conda
 
-Create and activate a development environment:
-
 ```console
+# Create and activate a development environment:
 conda create -c conda-forge -n echoregions-dev --yes python=3.12
 conda activate echoregions-dev
-```
 
-Upgrade pip:
-
-```console
-python -m pip install --upgrade pip
-```
-
-Install Jupyter/IPython development support:
-
-```console
+# Install Jupyter/IPython development support:
 conda install -c conda-forge ipykernel
-```
 
-Install Echoregions in editable mode with development and testing dependencies:
-
-```console
+# Install Echoregions in editable mode with development and testing dependencies:
 python -m pip install -e . --group dev --group test
 ```
 
-:::
-
-:::{tab-item} UV
-
-Install `uv` by following the
-[uv installation instructions](https://docs.astral.sh/uv/getting-started/installation/).
-
-From the Echoregions repository directory:
-
-```console
-uv sync
-```
-
-This creates a virtual environment and installs Echoregions with the development dependencies.
-
-To activate the environment:
-
-```console
-source .venv/bin/activate
-```
-
-:::
-
-::::
-
-:::{tip}
 If you use Conda and experience slow dependency solving, consider using
 [Mamba](https://mamba.readthedocs.io/en/latest/) as a faster alternative.
 You can install a minimal Conda environment using
 [Miniforge](https://conda-forge.org/download/).
+
 :::
 
-# Testing
+:::{tab-item} uv
+
+Install `uv` by following the
+[uv installation instructions](https://docs.astral.sh/uv/getting-started/installation/).
+
+Install Echoregions from the local repository directory:
+```console
+uv sync
+```
+This creates a virtual environment and installs Echoregions with the development dependencies.
+:::
+
+::::
+
+## Testing
 
 The Echoregions test suite uses `pytest`.
 
@@ -90,82 +66,65 @@ The Echoregions test suite uses `pytest`.
 
 :::{tab-item} Conda
 
-Run:
-
 ```console
-pytest -vv
-```
+# Run `Lines` class tests
+pytest -vv -m mark.lines
 
+# Run `Regions2d` class tests
+pytest -vv -m mark.regions2d
+```
 :::
 
-:::{tab-item} UV
-
-Run:
-
+:::{tab-item} uv
 ```console
-uv run pytest -vv
-```
+# Run `Lines` class tests
+uv run pytest -vv -m mark.lines
 
+# Run `Regions2d` class tests
+uv run pytest -vv -m mark.regions2d
+```
 :::
 
 ::::
 
-To run a specific test file:
 
-```console
-pytest -vv path/to/test_file.py
-```
-
-# Code formatting and pre-commit hooks
+## Code formatting with pre-commit hooks
 
 Echoregions uses
 [pre-commit](https://pre-commit.com/) to run automated checks before commits.
 
-Install the hooks:
-
+Install the hooks and run the checks on all modified files:
 ::::{tab-set}
 
 :::{tab-item} Conda
-
 ```console
+# Install hooks
 pre-commit install
-```
 
+# Stage modified files
+git add .
+
+# Run checks on staged files
+pre-commit run
+```
 :::
 
-:::{tab-item} UV
-
+:::{tab-item} uv
 ```console
+# Install hooks
 uv run pre-commit install
-```
 
+# Stage modified files
+git add .
+
+# Run checks on staged files
+uv run pre-commit run
+```
 :::
 
 ::::
 
-Run all checks manually:
-
-::::{tab-set}
-
-:::{tab-item} Conda
-
-```console
-pre-commit run --all-files
-```
-
-:::
-
-:::{tab-item} UV
-
-```console
-uv run pre-commit run --all-files
-```
-
-:::
-
-::::
-
-# Documentation development
+## Documentation development
 
 Echoregions documentation is built using **Jupyter Book 2** and the MyST Document Engine.
 
@@ -174,41 +133,23 @@ Install documentation dependencies:
 ::::{tab-set}
 
 :::{tab-item} Conda
-
 ```console
+# Install documentation dependencies
 python -m pip install --group docs
-```
 
+# Build and run the documentation locally
+jupyter book
+```
 :::
 
-:::{tab-item} UV
-
+:::{tab-item} uv
 ```console
+# Install documentation dependencies
 uv sync --group docs
+
+# Build and run the documentation locally
+uv run jupyter book
 ```
-
-:::
-
-::::
-
-Build the documentation locally:
-
-::::{tab-set}
-
-:::{tab-item} Conda
-
-```console
-jupyter-book build docs
-```
-
-:::
-
-:::{tab-item} UV
-
-```console
-uv run jupyter-book build docs
-```
-
 :::
 
 ::::
@@ -219,3 +160,4 @@ Documentation layout:
 - MyST configuration: `docs/source/myst.yml`
 - Dependency groups: `pyproject.toml`
 - Sidebar structure: `docs/source/myst.yml`
+- CSS style: `docs/source/styles.css`
