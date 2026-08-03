@@ -1,24 +1,18 @@
-/* Wider notebook/document content */
-.bd-main .bd-content .bd-article-container {
-  max-width: 2000px;
+/* Make everything bigger */
+html {
+  font-size: 140%;
 }
 
-/* wider Jupyter notebook cells */
-.jp-Notebook {
-  max-width: 2000px;
+/* Make left sidebar smaller */
+.myst-primary-sidebar-nav {
+  width: 80%;
+  font-size: 0.8rem;
 }
 
-/* allow wide outputs */
-.cell_output {
-  max-width: 2000px;
-  overflow-x: auto;
+/* Make outline list smaller */
+.myst-outline-list {
+  width: 80%;
+  font-size: 0.8rem;
 }
 
-/* give the main content more room */
-:root {
-  --pst-sidebar-width: 220px;
-  --pst-page-width: 2000px;
-}
-.bd-main .bd-content .bd-article-container {
-  max-width: 200px;
-}
+/* TODO decrease spacing between left and right portions of sidebar */
