@@ -21,7 +21,6 @@ def write_evr(
         Writer mode.
     region_classification : str
         Region classification. Assumes single type of region classification.
-        # TODO alongside with the other arguments, make this something that allows multiple region classifications.
     echoview_version : str, optional
         Version information for Echoview, by default "EVRG 7 12.0.341.42620".
 
@@ -135,7 +134,7 @@ def _write_region(
 
         # Write region metadata
         f.write(
-            f"\n{region_version} {point_count} {region_id} {selected} {region_creation_type} {dummy} {bounding_rectangle_calculated} {bbox}\n"
+            f"\n{region_version} {point_count} {region_id} {selected} {region_creation_type} {dummy} {bounding_rectangle_calculated} {bbox}\n"  # noqa
         )
         f.write(f"{number_of_lines_of_notes}\n")
         f.write(f"{number_of_lines_of_detection_settings}\n")

@@ -1,28 +1,10 @@
 # Echoregions
 
-<div>
-    <a href="https://raw.githubusercontent.com/OSOceanAcoustics/echoregions/master/LICENSE">
-        <img alt="GitHub License" src="https://img.shields.io/github/license/OSOceanAcoustics/echoregions">
-    </a>
-</div>
-
-<div>
-    <a href="https://github.com/OSOceanAcoustics/echoregions/actions/workflows/pytest.yml">
-        <img src="https://github.com/OSOceanAcoustics/echoregions/actions/workflows/pytest.yml/badge.svg" alt="build"/>
-    </a>
-    <a href="https://echoregions.readthedocs.io/en/latest/?badge=latest">
-        <img src="https://readthedocs.org/projects/echoregions/badge/?version=latest"  alt="Readthedocs"/>
-    </a>
-</div>
-
-<div>
-    <a href="https://pypi.org/project/echoregions/">
-        <img src="https://img.shields.io/pypi/v/echoregions.svg" alt="PyPI version"/>
-    </a>
-    <a href="https://anaconda.org/conda-forge/echoregions">
-        <img src="https://img.shields.io/conda/vn/conda-forge/echoregions.svg" alt="Conda version"/>
-    </a>
-</div>
+<a href="https://raw.githubusercontent.com/OSOceanAcoustics/echoregions/master/LICENSE"><img alt="GitHub License" src="https://img.shields.io/github/license/OSOceanAcoustics/echoregions"></a>
+<a href="https://github.com/OSOceanAcoustics/echoregions/actions/workflows/pytest.yml"><img src="https://github.com/OSOceanAcoustics/echoregions/actions/workflows/pytest.yml/badge.svg" alt="build"></a>
+<a href="https://echoregions.readthedocs.io/en/latest/?badge=latest"><img src="https://readthedocs.org/projects/echoregions/badge/?version=latest" alt="Readthedocs"></a>
+<a href="https://pypi.org/project/echoregions/"><img src="https://img.shields.io/pypi/v/echoregions.svg" alt="PyPI version"></a>
+<a href="https://anaconda.org/conda-forge/echoregions"><img src="https://img.shields.io/conda/vn/conda-forge/echoregions.svg" alt="Conda version"></a>
 
 
 Echoregions is a Python Package that interfaces with annotations of water column sonar data for training machine learning models or doing other downstream processing such as biomass estimation.
@@ -49,7 +31,7 @@ See the [API documentation](https://echoregions.readthedocs.io/en/latest/api.htm
 
 ## Contributors
 
-Echoregions development is currently led by Caesar Tuguinay([@ctuguinay](https://github.com/ctuguinay)), with inputs from Wu-Jung Lee ([@leewujung](https://github.com/leewujung)) and Valentina Staneva ([@valentina-s](https://github.com/valentina-s)). Kavin Nguyen ([@ngkavin](https://github.com/ngkavin)) contributed significantly to the initial version.
+Echoregions development is currently led by Caesar Tuguinay ([@ctuguinay](https://github.com/ctuguinay)), with inputs from Wu-Jung Lee ([@leewujung](https://github.com/leewujung)), Valentina Staneva ([@valentina-s](https://github.com/valentina-s)), and Lloyd Izard ([@LOCEANlloydizard](https://github.com/LOCEANlloydizard)). Kavin Nguyen ([@ngkavin](https://github.com/ngkavin)) contributed significantly to the initial version.
 
 ## Acknowledgement
 
@@ -63,4 +45,4 @@ Echoregions is licensed under the open source [Apache 2.0 license](https://opens
 
 ---------------
 
-Copyright (c) 2021-2025, Echoregions Developers.
+Copyright (c) 2021-2026, Echoregions Developers.

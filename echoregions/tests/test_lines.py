@@ -322,10 +322,6 @@ def test_lines_seafloor_mask_operation_above_below(
     seafloor_mask, seafloor_points = lines_fixture.seafloor_mask(
         da_Sv_fixture,
         operation="above_below",
-        method="slinear",
-        limit=5,
-        limit_area=None,
-        limit_direction="both",
     )
 
     # Compute unique values
@@ -357,10 +353,6 @@ def test_lines_seafloor_mask_operation_above_below(
     seafloor_mask_2, seafloor_points_2 = lines_2.seafloor_mask(
         da_Sv_fixture,
         operation="above_below",
-        method="slinear",
-        limit=5,
-        limit_area=None,
-        limit_direction="both",
     )
 
     # Assert that these two masks are equal
