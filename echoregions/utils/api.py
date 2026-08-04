@@ -2,6 +2,7 @@ import warnings
 from typing import List, Union
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 from xarray import Dataset
 
@@ -143,53 +144,69 @@ def convert_mask_3d_to_2d(mask_3d_ds: Dataset) -> Union[Dataset, None]:
         return None
 
 
-def merge(objects: List, reindex_ids: bool = False):  # -> Regions2D:
-    # TODO currently deprecated must be fixed before further tests.
-    """Merge echoregion objects.
-    Currently only supports merging Regions2D objects.
+def merge(objects: List, reindex_ids: bool = True):
+    """Merge a list of echoregion objects.
 
     Parameters
     ----------
     objects : list
-        a list collection of Regions2D objects
+        A list of one or more `Lines` or `Regions2D` objects.
+    reindex_ids : bool, default True
+        Only used for `Regions2D` merges. If `True`, it renumbers `region_id`
+        in the merged result from `0` upward. For `Lines` merges, this flag is
+        ignored.
 
     Returns
     -------
-    combined : Regions2D
-        A Regions2D object with region ids prepended by the EVR original filename.
+    merged_obj : Lines or Regions2D
+        A merged object of the same class as the inputs.
     """
-    """
-    if isinstance(objects, list):
-        if len(objects) == 0:
-            raise ValueError("objects must contain elements. objects sent in is empty.")
-        if not all(isinstance(o, Regions2D) for o in objects):
-            raise TypeError("Invalid elements in objects. Must be of type Regions2D")
-    else:
-        raise TypeError(f"Invalid objects Type: {type(objects)}. Must be of type List[DataFrame]")
+    # Avoid circular imports by importing here instead of at beginning of file
+    from ..lines.lines import Lines
+    from ..regions2d.regions2d import Regions2D
 
-    merged_idx = []
-    merged_data = []
-    for regions in objects:
-        if not regions.data:
-            raise ValueError("EVR file has not been parsed. Call `parse_file` first.")
-        merged_data += regions.data["regions"].values()
-        if reindex_ids:
-            merged_idx += list(range(len(regions.data["regions"])))
-        else:
-            merged_idx += [
-                f"{regions.data['metadata']['file_name']}_{r}"
-                for r in regions.region_id
-            ]
-    # Attach region information to region ids
-    merged = dict(zip(merged_idx, merged_data))
-    # Create new Regions2D object
-    merged_obj = Regions2D()
-    # Populate metadata
-    merged_obj.data["metadata"] = objects[0].data["metadata"]
-    # Combine metadata of all Regions2D objects
-    for field in objects[0].data["metadata"].keys():
-        merged_obj.data["metadata"][field] = [o.data["metadata"][field] for o in objects]
-    # Set region data
-    merged_obj.data["regions"] = merged
+    if not isinstance(objects, list):
+        raise TypeError(
+            f"Invalid objects Type: {type(objects)}. Must be of type List[Lines | Regions2D]"
+        )
+    if len(objects) == 0:
+        raise ValueError("objects must contain elements. objects sent in is empty.")
+
+    if not all(isinstance(obj, (Lines, Regions2D)) for obj in objects):
+        raise TypeError("Invalid elements in objects. Must be of type Lines or Regions2D")
+
+    if not all(isinstance(obj, type(objects[0])) for obj in objects):
+        raise TypeError(
+            "All objects in the list must be the same class: all Lines or all Regions2D"
+        )
+
+    # Concat inner DataFrames and ignore index
+    merged_data = pd.concat([obj.data for obj in objects], ignore_index=True)
+
+    # TODO: consider how to record .input_file for 'mixed' merges. A single
+    # output_file name would be unclear when the inputs come from different
+    # source types like DataFrame and .evr/.evl case. This gets more complicated
+    # if we consider the mask case.
+
+    # Handle Lines merge
+    if isinstance(objects[0], Lines):
+        # Build the merged object directly so we do not run parsing
+        merged_obj = Lines.__new__(Lines)
+        merged_obj.input_file = None
+        merged_obj.data = merged_data
+        merged_obj.output_file = []
+        # Just take first object's nan_depth_value
+        merged_obj._nan_depth_value = objects[0]._nan_depth_value
+        return merged_obj
+
+    # Handle Regions2D merge
+    if reindex_ids:
+        merged_data["region_id"] = range(1, len(merged_data) + 1)
+    # Build the merged object directly so we do not run parsing
+    merged_obj = Regions2D.__new__(Regions2D)
+    merged_obj.input_file = None
+    merged_obj.data = merged_data
+    merged_obj.output_file = []
+    merged_obj.min_depth = min(obj.min_depth for obj in objects)
+    merged_obj.max_depth = max(obj.max_depth for obj in objects)
     return merged_obj
-    """
