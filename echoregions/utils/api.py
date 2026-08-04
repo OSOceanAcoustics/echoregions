@@ -144,17 +144,17 @@ def convert_mask_3d_to_2d(mask_3d_ds: Dataset) -> Union[Dataset, None]:
         return None
 
 
-def merge(objects: List, reindex_ids: bool = False):
+def merge(objects: List, reindex_ids: bool = True):
     """Merge a list of echoregion objects.
 
     Parameters
     ----------
     objects : list
         A list of one or more `Lines` or `Regions2D` objects.
-    reindex_ids : bool, default False
+    reindex_ids : bool, default True
         Only used for `Regions2D` merges. If `True`, it renumbers `region_id`
-        in the merged result from `0` upward. For `Lines` merges, it raises
-        an error.
+        in the merged result from `0` upward. For `Lines` merges, this flag is
+        ignored.
 
     Returns
     -------
@@ -180,33 +180,33 @@ def merge(objects: List, reindex_ids: bool = False):
             "All objects in the list must be the same class: all Lines or all Regions2D"
         )
 
-    # TODO: consider how to record source info for 'mixed' merges. A single
+    # Concat inner DataFrames and ignore index
+    merged_data = pd.concat([obj.data for obj in objects], ignore_index=True)
+
+    # TODO: consider how to record .input_file for 'mixed' merges. A single
     # output_file name would be unclear when the inputs come from different
     # source types like DataFrame and .evr/.evl case. This gets more complicated
     # if we consider the mask case.
 
-    if reindex_ids and not isinstance(objects[0], Regions2D):
-        raise ValueError("reindex_ids=True is only supported for Regions2D merges.")
-
+    # Handle Lines merge
     if isinstance(objects[0], Lines):
-        merged_data = pd.concat([obj.data for obj in objects], ignore_index=True)
         # Build the merged object directly so we do not run parsing
         merged_obj = Lines.__new__(Lines)
-        merged_obj.input_file = objects[0].input_file
+        merged_obj.input_file = None
         merged_obj.data = merged_data
         merged_obj.output_file = []
+        # Just take first object's nan_depth_value
         merged_obj._nan_depth_value = objects[0]._nan_depth_value
         return merged_obj
 
-    merged_data = pd.concat([obj.data for obj in objects], ignore_index=True)
+    # Handle Regions2D merge
     if reindex_ids:
-        merged_data["region_id"] = range(len(merged_data))
-
+        merged_data["region_id"] = range(1, len(merged_data) + 1)
     # Build the merged object directly so we do not run parsing
     merged_obj = Regions2D.__new__(Regions2D)
-    merged_obj.input_file = objects[0].input_file
+    merged_obj.input_file = None
     merged_obj.data = merged_data
     merged_obj.output_file = []
-    merged_obj.min_depth = objects[0].min_depth
-    merged_obj.max_depth = objects[0].max_depth
+    merged_obj.min_depth = min(obj.min_depth for obj in objects)
+    merged_obj.max_depth = max(obj.max_depth for obj in objects)
     return merged_obj

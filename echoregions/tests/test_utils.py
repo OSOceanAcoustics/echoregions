@@ -75,23 +75,25 @@ def test_merge_lines_objects() -> None:
     first_line = er.read_evl(EVL_DIR / "transect_first_seafloor_point.evl")
     second_line = er.read_evl(EVL_DIR / "transect_second_seafloor_point.evl")
 
-    merged = merge([first_line, second_line])
+    merged_true = merge([first_line, second_line])
+    merged_false = merge([first_line, second_line], reindex_ids=False)
+    merged_true_again = merge([first_line, second_line], reindex_ids=True)
 
-    assert isinstance(merged, Lines)
-    assert merged.data.shape == (2, 7)
-    assert merged.data["file_name"].tolist() == [
+    assert isinstance(merged_true, Lines)
+    assert merged_true.data.shape == (2, 7)
+    assert merged_true.data["file_name"].tolist() == [
         "transect_first_seafloor_point.evl",
         "transect_second_seafloor_point.evl",
     ]
-    assert merged.data.iloc[0]["time"] == pd.to_datetime("2019-07-02 18:39:41.321000")
-    assert merged.data.iloc[0]["depth"] == pytest.approx(442.996834)
-    assert merged.data.iloc[0]["status"] == "3"
-    assert merged.data.iloc[1]["time"] == pd.to_datetime("2019-07-02 18:39:42.679000")
-    assert merged.data.iloc[1]["depth"] == pytest.approx(437.818405)
-    assert merged.data.iloc[1]["status"] == "3"
+    assert merged_true.data.iloc[0]["time"] == pd.to_datetime("2019-07-02 18:39:41.321000")
+    assert merged_true.data.iloc[0]["depth"] == pytest.approx(442.996834)
+    assert merged_true.data.iloc[0]["status"] == "3"
+    assert merged_true.data.iloc[1]["time"] == pd.to_datetime("2019-07-02 18:39:42.679000")
+    assert merged_true.data.iloc[1]["depth"] == pytest.approx(437.818405)
+    assert merged_true.data.iloc[1]["status"] == "3"
 
-    with pytest.raises(ValueError):
-        merge([first_line, second_line], reindex_ids=True)
+    assert merged_false.data.equals(merged_true.data)
+    assert merged_true_again.data.equals(merged_true.data)
 
 
 @pytest.mark.utils
@@ -105,27 +107,27 @@ def test_merge_lines_invalid_input_raises() -> None:
     with pytest.raises(TypeError):
         merge([first_line, second_line, 123])
 
-
+@pytest.mark.test1
 @pytest.mark.utils
 def test_merge_regions2d_objects() -> None:
     """Test that merge keeps the expected row values for a Regions2D-only merge."""
     first_region = er.read_evr(EVR_DIR / "transect_first_region.evr")
     second_region = er.read_evr(EVR_DIR / "transect_second_subset.evr")
 
-    merged = merge([first_region, second_region])
+    merged_true = merge([second_region, first_region])
+    merged_false = merge([second_region, first_region], reindex_ids=False)
 
-    assert isinstance(merged, Regions2D)
-    assert merged.data.shape == (2, 22)
-    assert merged.data["file_name"].tolist() == [
-        "transect_first_region.evr",
+    assert isinstance(merged_true, Regions2D)
+    assert merged_true.data.shape == (2, 22)
+    assert merged_true.data["file_name"].tolist() == [
         "transect_second_subset.evr",
+        "transect_first_region.evr",
     ]
-    assert merged.data["region_id"].tolist() == [1, 2]
-    assert merged.data["region_name"].tolist() == ["COM", "Com"]
+    assert merged_true.data["region_id"].tolist() == [1, 2]
+    assert merged_true.data["region_name"].tolist() == ["Com", "COM"]
 
-    reindexed = merge([first_region, second_region], reindex_ids=True)
-    assert reindexed.data["region_id"].tolist() == [0, 1]
-    assert reindexed.data["region_name"].tolist() == ["COM", "Com"]
+    assert merged_false.data["region_id"].tolist() == [2, 1]
+    assert merged_false.data["region_name"].tolist() == ["Com", "COM"]
 
 
 @pytest.mark.utils
