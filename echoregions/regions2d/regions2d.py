@@ -407,8 +407,12 @@ class Regions2D:
             Returns a new DataFrame with closed regions
         """
         region = self.select_region(region_id, region_class, copy=True)
-        region["time"] = region.apply(lambda row: np.append(row["time"], row["time"][0]), axis=1)
-        region["depth"] = region.apply(lambda row: np.append(row["depth"], row["depth"][0]), axis=1)
+        region.loc[:, "time"] = region.apply(
+            lambda row: np.append(row["time"], row["time"][0]), axis=1
+        )
+        region.loc[:, "depth"] = region.apply(
+            lambda row: np.append(row["depth"], row["depth"][0]), axis=1
+        )
         return region
 
     def select_sonar_file(
