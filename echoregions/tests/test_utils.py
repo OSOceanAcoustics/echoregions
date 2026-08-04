@@ -107,7 +107,7 @@ def test_merge_lines_invalid_input_raises() -> None:
     with pytest.raises(TypeError):
         merge([first_line, second_line, 123])
 
-@pytest.mark.test1
+
 @pytest.mark.utils
 def test_merge_regions2d_objects() -> None:
     """Test that merge keeps the expected row values for a Regions2D-only merge."""
