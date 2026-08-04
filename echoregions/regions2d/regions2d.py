@@ -838,8 +838,8 @@ class Regions2D:
         Returns
         -------
         M : Data Array
-            A binary DataArray with dimensions (ping_time, depth) where 1s are within transect
-            and 0s are outside transect.
+            A boolean DataArray with dimensions (ping_time, depth) where True values are
+            within transect and False values are outside transect.
         """
 
         # Get transect strings
@@ -954,14 +954,14 @@ class Regions2D:
             # Create empty within transect df
             within_transect_df = pd.DataFrame()
 
-        # Create within transect mask
-        M = xr.zeros_like(da_Sv)
+        # Create within transect mask as a boolean array.
+        M = xr.zeros_like(da_Sv, dtype=bool)
         for _, row in within_transect_df.iterrows():
-            M = M + xr.where(
+            M = M | xr.where(
                 (M.ping_time > row["region_bbox_left"])
                 & (M.ping_time < row["region_bbox_left_next"]),
-                1,
-                0,
+                True,
+                False,
             )
 
         # If M contains channel dimension, then drop it.
@@ -970,7 +970,7 @@ class Regions2D:
 
         # Set attributes
         M.attrs = {
-            "long_name": "Transect Mask (1=within-transect;0=outside-transect)",
+            "long_name": "Transect Mask (True=within-transect;False=outside-transect)",
             "usage": "Used to subset backscatter or other data within transect boundaries.",
         }
 
