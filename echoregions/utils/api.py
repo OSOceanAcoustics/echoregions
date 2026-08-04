@@ -161,6 +161,7 @@ def merge(objects: List, reindex_ids: bool = False):
     merged_obj : Lines or Regions2D
         A merged object of the same class as the inputs.
     """
+    # Avoid circular imports by importing here instead of at beginning of file
     from ..lines.lines import Lines
     from ..regions2d.regions2d import Regions2D
 
@@ -189,7 +190,7 @@ def merge(objects: List, reindex_ids: bool = False):
 
     if isinstance(objects[0], Lines):
         merged_data = pd.concat([obj.data for obj in objects], ignore_index=True)
-        # Build the merged object directly so we do not re-run parsing.
+        # Build the merged object directly so we do not run parsing
         merged_obj = Lines.__new__(Lines)
         merged_obj.input_file = objects[0].input_file
         merged_obj.data = merged_data
@@ -201,7 +202,7 @@ def merge(objects: List, reindex_ids: bool = False):
     if reindex_ids:
         merged_data["region_id"] = range(len(merged_data))
 
-    # Build the merged object directly so we do not re-run parsing.
+    # Build the merged object directly so we do not run parsing
     merged_obj = Regions2D.__new__(Regions2D)
     merged_obj.input_file = objects[0].input_file
     merged_obj.data = merged_data
