@@ -50,7 +50,7 @@ def da_Sv_fixture() -> DataArray:
 
 
 @pytest.mark.regions2d
-def test_read_regions_csv(regions2d_fixture: Regions2D) -> None:
+def test_read_regions_csv(regions2d_fixture: Regions2D, tmp_path) -> None:
     """
     Ensures that read_region_csv provides the same Regions2D object
     as read_evr.
@@ -66,7 +66,7 @@ def test_read_regions_csv(regions2d_fixture: Regions2D) -> None:
     r2d_1_df = r2d_1.data
 
     # Send to CSV
-    csv_file_path = DATA_DIR / "r2d_to_csv_file.csv"
+    csv_file_path = tmp_path / "r2d_to_csv_file.csv"
     r2d_1.to_csv(csv_file_path)
 
     # Read Regions CSV and extract DataFrame
@@ -94,12 +94,28 @@ def test_read_regions_csv(regions2d_fixture: Regions2D) -> None:
         ]
     )
 
-    # Delete the file
-    csv_file_path.unlink()
+
+@pytest.mark.regions2d
+def test_read_regions_csv_preserves_non_int_region_ids(tmp_path) -> None:
+    """
+    Ensures that read_regions_csv preserves non-int `region_id` values
+    instead of attempting to cast them to integers.
+    """
+    r2d = er.read_evr(EVR_PATH)
+    region_ids = [f"region_{region_id}" for region_id in r2d.data["region_id"].tolist()]
+    r2d.data["region_id"] = region_ids
+    # files saved in `tmp_path` will be automatically cleaned up after the test suite has run
+    csv_file_path = tmp_path / "r2d_string_region_ids.csv"
+    r2d.to_csv(csv_file_path)
+
+    r2d_roundtrip = er.read_regions_csv(csv_file_path)
+
+    assert r2d_roundtrip.data["region_id"].tolist() == region_ids
+    assert all(isinstance(region_id, str) for region_id in r2d_roundtrip.data["region_id"])
 
 
 @pytest.mark.regions2d
-def test_to_evr() -> None:
+def test_to_evr(tmp_path) -> None:
     """
     Tests that when we save a `Regions2D` object to `.evr` and read
     back that `.evr` file, we end up with the same inner dataframe.
@@ -109,7 +125,7 @@ def test_to_evr() -> None:
     r2d_1_df = r2d_1.data
 
     # Send to `.evr` file
-    evr_file_path = DATA_DIR / "r2d_to_evr_file.evr"
+    evr_file_path = tmp_path / "r2d_to_evr_file.evr"
     r2d_1.to_evr(evr_file_path)
 
     # Read back `.evr` file and extract DataFrame
@@ -118,9 +134,6 @@ def test_to_evr() -> None:
 
     # Check that the dataframes are equal everywhere (not including the file name)
     assert r2d_1_df.drop("file_name", axis=1).equals(r2d_2_df.drop("file_name", axis=1))
-
-    # Delete the file
-    evr_file_path.unlink()
 
 
 @pytest.mark.regions2d
@@ -239,7 +252,7 @@ def test_regions2d_parsing(regions2d_fixture: Regions2D) -> None:
 
 
 @pytest.mark.regions2d
-def test_evr_to_file(regions2d_fixture: Regions2D) -> None:
+def test_evr_to_file(regions2d_fixture: Regions2D, tmp_path) -> None:
     """
     Test converting an Echoview 2D Regions files (.EVR).
 
@@ -250,17 +263,13 @@ def test_evr_to_file(regions2d_fixture: Regions2D) -> None:
     """
 
     # Get output path
-    output_csv = DATA_DIR / "output_CSV/"
+    output_csv = tmp_path / "output_CSV"
 
     # Create CSV
     regions2d_fixture.to_csv(output_csv)
 
     # Remove files
     assert os.path.exists(regions2d_fixture.output_file[0])
-    os.remove(regions2d_fixture.output_file[0])
-
-    # Remove directories
-    os.rmdir(output_csv)
 
 
 @pytest.mark.regions2d

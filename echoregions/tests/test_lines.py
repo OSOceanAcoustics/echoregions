@@ -49,7 +49,7 @@ def da_Sv_fixture() -> DataArray:
 
 
 @pytest.mark.lines
-def test_lines_csv(lines_fixture: Lines) -> None:
+def test_lines_csv(lines_fixture: Lines, tmp_path) -> None:
     """
     Ensures that read_lines_csv provides the same Lines object
     as read_evl.
@@ -65,7 +65,7 @@ def test_lines_csv(lines_fixture: Lines) -> None:
     lines_1_df = lines_1.data
 
     # Send to CSV
-    csv_file_path = DATA_DIR / "lines_to_csv_file.csv"
+    csv_file_path = tmp_path / "lines_to_csv_file.csv"
     lines_1.to_csv(csv_file_path)
 
     # Read Lines CSV and extract DataFrame
@@ -78,12 +78,9 @@ def test_lines_csv(lines_fixture: Lines) -> None:
     # Check equality between the elements in both time columns
     assert np.all([t_1 == t_2 for t_1, t_2 in zip(lines_1_df["time"], lines_2_df["time"])])
 
-    # Delete the file
-    csv_file_path.unlink()
-
 
 @pytest.mark.lines
-def test_to_evl() -> None:
+def test_to_evl(tmp_path) -> None:
     """
     Tests that when we save a `Lines` object to `.evl` and read
     back that `.evl` file, we end up with the same inner dataframe.
@@ -93,7 +90,7 @@ def test_to_evl() -> None:
     lines_1_df = lines_1.data
 
     # Send to `.evl` file
-    evl_file_path = DATA_DIR / "lines_to_evl_file.evl"
+    evl_file_path = tmp_path / "lines_to_evl_file.evl"
     lines_1.to_evl(evl_file_path)
 
     # Read back `.lines` file and extract DataFrame
@@ -102,9 +99,6 @@ def test_to_evl() -> None:
 
     # Check that the dataframes are equal everywhere (not including the file name)
     assert lines_1_df.drop("file_name", axis=1).equals(lines_2_df.drop("file_name", axis=1))
-
-    # Delete the file
-    evl_file_path.unlink()
 
 
 @pytest.mark.lines
@@ -135,7 +129,7 @@ def test_lines_parsing(lines_fixture: Lines) -> None:
 
 
 @pytest.mark.lines
-def test_evl_to_file(lines_fixture: Lines) -> None:
+def test_evl_to_file(lines_fixture: Lines, tmp_path) -> None:
     """
     Test EVL to csv and to json; Creates and removes EVL .csv and .json objects.
 
@@ -146,8 +140,8 @@ def test_evl_to_file(lines_fixture: Lines) -> None:
     """
 
     # Get output paths
-    output_csv = DATA_DIR / "output_CSV/"
-    output_json = DATA_DIR / "output_JSON/"
+    output_csv = tmp_path / "output_CSV"
+    output_json = tmp_path / "output_JSON"
 
     # Create CSV and JSON files
     lines_fixture.to_csv(output_csv)
@@ -156,11 +150,6 @@ def test_evl_to_file(lines_fixture: Lines) -> None:
     # Remove files
     for path in lines_fixture.output_file:
         assert os.path.exists(path)
-        os.remove(path)
-
-    # Remove directories
-    os.rmdir(output_csv)
-    os.rmdir(output_json)
 
 
 @pytest.mark.lines

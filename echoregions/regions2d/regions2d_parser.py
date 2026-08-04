@@ -209,7 +209,8 @@ def parse_regions_df(input_file: Union[str, pd.DataFrame]) -> pd.DataFrame:
             )
         )
 
-    # Set region_id values to integers
-    data["region_id"] = data["region_id"].apply(lambda x: int(x))
-
+    # Preserve the original region_id dtype from CSV/DF input.
+    # Int coercion is intentionally omitted here so string or other custom labels
+    # survive a CSV round-trip.
+    # data["region_id"] = data["region_id"].apply(lambda x: int(x))
     return data
