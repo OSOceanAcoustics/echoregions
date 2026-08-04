@@ -11,10 +11,12 @@ from xarray import DataArray, Dataset
 import echoregions as er
 from echoregions import read_mask
 from echoregions.regions2d.regions2d import Regions2D
+from echoregions.utils.api import merge
 from echoregions.regions2d.regions2d_parser import parse_mask
 
 DATA_DIR = Path("./echoregions/test_data/")
-EVR_PATH = DATA_DIR / "transect_multi_mask.evr"
+EVR_DIR = DATA_DIR / "evr"
+EVR_PATH = EVR_DIR / "transect_multi_mask.evr"
 ZARR_PATH = DATA_DIR / "transect.zarr"
 
 
@@ -104,7 +106,7 @@ def test_to_evr() -> None:
     back that `.evr` file, we end up with the same inner dataframe.
     """
     # Get Regions2D object and DataFrame
-    r2d_1 = er.read_evr(DATA_DIR / "transect.evr")
+    r2d_1 = er.read_evr(EVR_DIR / "transect.evr")
     r2d_1_df = r2d_1.data
 
     # Send to `.evr` file
@@ -129,7 +131,7 @@ def test_empty_regions2d_parsing() -> None:
     """
 
     # Read evr into regions2d
-    r2d = er.read_evr(DATA_DIR / "transect_empty.evr")
+    r2d = er.read_evr(EVR_DIR / "transect_empty.evr")
 
     # Check shapes
     assert r2d.data.shape == (0, 22)
@@ -143,7 +145,7 @@ def test_missing_bbox_regions2d_parsing() -> None:
     """
 
     # Read evr into regions2d
-    r2d = er.read_evr(DATA_DIR / "transect_missing_bbox.evr")
+    r2d = er.read_evr(EVR_DIR / "transect_missing_bbox.evr")
 
     # Test shape
     assert r2d.data.shape == (2, 22)
@@ -967,7 +969,7 @@ def test_within_transect_bad_dict(da_Sv_fixture: DataArray) -> None:
     """
 
     # Get Regions2D Object
-    evr_path = DATA_DIR / "transect.evr"
+    evr_path = EVR_DIR / "transect.evr"
     r2d = er.read_evr(evr_path)
 
     # Create dictionary with duplicates
@@ -1006,7 +1008,7 @@ def test_within_transect_invalid_next(da_Sv_fixture: DataArray) -> None:
 
     # Should raise Exception if ST is followed by ST
     with pytest.raises(Exception):
-        evr_path = DATA_DIR / "x1_ST_ST.evr"
+        evr_path = EVR_DIR / "x1_ST_ST.evr"
         r2d = er.read_evr(evr_path)
         _ = r2d.transect_mask(
             da_Sv=da_Sv_fixture,
@@ -1016,7 +1018,7 @@ def test_within_transect_invalid_next(da_Sv_fixture: DataArray) -> None:
 
     # Should raise Exception if RT is followed by RT
     with pytest.raises(Exception):
-        evr_path = DATA_DIR / "transect_RT_RT.evr"
+        evr_path = EVR_DIR / "transect_RT_RT.evr"
         r2d = er.read_evr(evr_path)
         _ = r2d.transect_mask(
             da_Sv=da_Sv_fixture,
@@ -1026,7 +1028,7 @@ def test_within_transect_invalid_next(da_Sv_fixture: DataArray) -> None:
 
     # Should raise value Exception if BT is followed by ET
     with pytest.raises(Exception):
-        evr_path = DATA_DIR / "transect_BT_ET.evr"
+        evr_path = EVR_DIR / "transect_BT_ET.evr"
         r2d = er.read_evr(evr_path)
         _ = r2d.transect_mask(
             da_Sv=da_Sv_fixture,
@@ -1036,7 +1038,7 @@ def test_within_transect_invalid_next(da_Sv_fixture: DataArray) -> None:
 
     # Should raises Exception if ET is followed by RT
     with pytest.raises(Exception):
-        evr_path = DATA_DIR / "transect_ET_RT.evr"
+        evr_path = EVR_DIR / "transect_ET_RT.evr"
         r2d = er.read_evr(evr_path)
         _ = r2d.transect_mask(
             da_Sv=da_Sv_fixture,
@@ -1057,7 +1059,7 @@ def test_within_transect_small_bbox_distance_threshold(da_Sv_fixture: DataArray)
     """
 
     # Get Regions2D Object
-    evr_path = DATA_DIR / "transect.evr"
+    evr_path = EVR_DIR / "transect.evr"
     r2d = er.read_evr(evr_path)
 
     with pytest.raises(Exception):

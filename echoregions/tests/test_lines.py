@@ -9,9 +9,12 @@ from xarray import DataArray
 
 import echoregions as er
 from echoregions.lines.lines import Lines
+from echoregions.utils.api import merge
 
 DATA_DIR = Path("./echoregions/test_data/")
-EVL_PATH = DATA_DIR / "transect.evl"
+EVL_DIR = DATA_DIR / "evl"
+EVR_DIR = DATA_DIR / "evr"
+EVL_PATH = EVL_DIR / "transect.evl"
 ZARR_PATH = DATA_DIR / "transect.zarr"
 
 
@@ -86,7 +89,7 @@ def test_to_evl() -> None:
     back that `.evl` file, we end up with the same inner dataframe.
     """
     # Get Lines object and DataFrame
-    lines_1 = er.read_evl(DATA_DIR / "transect.evl")
+    lines_1 = er.read_evl(EVL_DIR / "transect.evl")
     lines_1_df = lines_1.data
 
     # Send to `.evl` file
