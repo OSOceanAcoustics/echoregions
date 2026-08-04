@@ -893,10 +893,10 @@ def test_within_transect(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray)
     assert M.shape == (841, 152)
 
     # Check values
-    assert len(list(np.unique(M.data))) == 2
-
-    # Test number of 1 values
-    assert np.unique(M.data, return_counts=True)[1][0] == 109440
+    assert M.dtype == bool
+    values, counts = np.unique(M.data, return_counts=True)
+    assert values.tolist() == [False, True]
+    assert counts[values.tolist().index(True)] == 18392
 
 
 @pytest.mark.regions2d
@@ -922,13 +922,12 @@ def test_within_transect_all(regions2d_fixture: Regions2D, da_Sv_fixture: DataAr
     assert M.shape == (841, 152)
 
     # This entire .zarr file should be covered by the single start and end transect period
-    # found in the EVR file, so the only values listed should be 1, implying everything is
+    # found in the EVR file, so the only values listed should be True, implying everything is
     # within-transect.
-    assert len(list(np.unique(M.data))) == 1
-    assert list(np.unique(M.data))[0] == 1
-
-    # Test number of 1 values
-    assert np.unique(M.data, return_counts=True)[1][0] == 127832
+    assert M.dtype == bool
+    values, counts = np.unique(M.data, return_counts=True)
+    assert values.tolist() == [True]
+    assert counts[0] == 127832
 
 
 @pytest.mark.regions2d
@@ -952,8 +951,10 @@ def test_within_transect_no_regions(regions2d_fixture: Regions2D, da_Sv_fixture:
     assert M.shape == (841, 152)
 
     # This entire output should be empty.
-    assert len(list(np.unique(M.data))) == 1
-    assert list(np.unique(M.data))[0] == 0
+    assert M.dtype == bool
+    values, counts = np.unique(M.data, return_counts=True)
+    assert values.tolist() == [False]
+    assert counts[0] == 841 * 152
 
 
 @pytest.mark.regions2d
