@@ -386,12 +386,23 @@ class Regions2D:
 
         return region
 
+    def _close_regions_dataframe(self, region: DataFrame) -> DataFrame:
+        """Return a copy of a region-selection dataframe with its polygon closed."""
+        closed_region = region.copy()
+        closed_region.loc[:, "time"] = closed_region.apply(
+            lambda row: np.append(row["time"], row["time"][0]), axis=1
+        )
+        closed_region.loc[:, "depth"] = closed_region.apply(
+            lambda row: np.append(row["depth"], row["depth"][0]), axis=1
+        )
+        return closed_region
+
     def close_region(
         self,
         region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
         region_class: Union[str, List[str]] = None,
-    ) -> DataFrame:
-        """Close a region by appending the first point to end of the list of points.
+    ) -> None:
+        """Close region(s) in the stored dataframe by appending the first point to the end.
 
         Parameters
         ----------
@@ -400,20 +411,14 @@ class Regions2D:
             If ``None``, select all regions. Defaults to ``None``
         region_class : Union[str, List[str]], ``None``
             A region class or a list of region classes.
-
-        Returns
-        -------
-        DataFrame
-            Returns a new DataFrame with closed regions
         """
         region = self.select_region(region_id, region_class, copy=True)
-        region.loc[:, "time"] = region.apply(
-            lambda row: np.append(row["time"], row["time"][0]), axis=1
-        )
-        region.loc[:, "depth"] = region.apply(
-            lambda row: np.append(row["depth"], row["depth"][0]), axis=1
-        )
-        return region
+        closed_region = self._close_regions_dataframe(region)
+        for idx in closed_region.index:
+            # use .at to change the values in the internal dataframe
+            # that contains the same indices as the closed region dataframe
+            self.data.at[idx, "time"] = closed_region.at[idx, "time"]
+            self.data.at[idx, "depth"] = closed_region.at[idx, "depth"]
 
     def select_sonar_file(
         self,
@@ -545,7 +550,8 @@ class Regions2D:
 
         # Select Region(s)
         if close_regions:
-            region = self.close_region(region_id, region_class)
+            region = self.select_region(region_id, region_class, copy=True)
+            region = self._close_regions_dataframe(region)
         else:
             region = self.select_region(region_id, region_class)
         for _, row in region.iterrows():

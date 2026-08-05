@@ -273,6 +273,36 @@ def test_evr_to_file(regions2d_fixture: Regions2D, tmp_path) -> None:
 
 
 @pytest.mark.regions2d
+def test_close_region_modifies_internal_dataframe(regions2d_fixture: Regions2D) -> None:
+    """Test that close_region modifies the internal Regions2D dataframe in place and returns None."""
+    regions2d_fixture.data = regions2d_fixture.data.copy()
+    region_before = regions2d_fixture.select_region([11], copy=False)
+    original_time = region_before.iloc[0]["time"]
+    original_depth = region_before.iloc[0]["depth"]
+    result = regions2d_fixture.close_region([11])
+    assert result is None
+    region_after = regions2d_fixture.select_region([11], copy=False)
+    assert len(region_after.iloc[0]["time"]) == len(original_time) + 1
+    assert len(region_after.iloc[0]["depth"]) == len(original_depth) + 1
+    assert region_after.iloc[0]["time"][0] == original_time[0]
+    assert region_after.iloc[0]["time"][-1] == original_time[0]
+    assert region_after.iloc[0]["depth"][0] == original_depth[0]
+    assert region_after.iloc[0]["depth"][-1] == original_depth[0]
+
+
+@pytest.mark.regions2d
+def test_plot_close_regions_does_not_modify_internal_dataframe(
+    regions2d_fixture: Regions2D,
+) -> None:
+    """Test that plotting with close_regions=True does not modify the internal dataframe."""
+    data_before = regions2d_fixture.data.copy(deep=True)
+
+    regions2d_fixture.plot([11], close_regions=True, color="k")
+
+    assert regions2d_fixture.data.equals(data_before)
+
+
+@pytest.mark.regions2d
 def test_plot(regions2d_fixture: Regions2D) -> None:
     """
     Test plotting Regions2D object without errors.
