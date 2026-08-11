@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple, Union
 import numpy as np
 import pandas as pd
 from numpy import ndarray
+from xarray import DataArray
 
 from ..utils.io import check_file
 from ..utils.time import parse_time
@@ -145,6 +146,94 @@ def parse_evr(input_file: str):
         df = pd.concat(rows, ignore_index=True)
         data = df[rows[0].keys()].convert_dtypes()
     return data
+
+
+def parse_mask(
+    mask: DataArray,
+    region_classification: str = "",
+) -> pd.DataFrame:
+    """Parse a binary mask into a Regions2D dataframe."""
+    try:
+        import cv2
+    except ImportError as exc:
+        raise ImportError(
+            "The mask parsing functionality requires that 'opencv-python' package is installed. "
+            "Please install it using 'pip install opencv-python' and try again."
+        ) from exc
+
+    if mask is None:
+        raise TypeError("The 'mask' parameter must be an xarray.DataArray.")
+    if not isinstance(mask, DataArray):
+        raise TypeError("The 'mask' parameter must be an xarray.DataArray.")
+
+    expected_coords = {"ping_time", "depth"}
+    if set(mask.dims) != expected_coords:
+        raise ValueError(
+            "The 'mask' must have only 'ping_time' and 'depth' as coordinates, "
+            f"but found {sorted(set(mask.dims))}."
+        )
+    if mask.isnull().any():
+        raise ValueError(
+            "The 'mask' contains NaN values. Please remove or fill them before proceeding."
+        )
+
+    mask_uint8 = mask.astype(np.uint8)
+    unique_values = np.unique(mask_uint8)
+    if (
+        not np.array_equal(unique_values, [0])
+        and not np.array_equal(unique_values, [1])
+        and not np.array_equal(unique_values, [0, 1])
+    ):
+        raise ValueError("The 'mask' must be binary, containing only 0s and 1s.")
+
+    binary_image = mask_uint8.transpose("depth", "ping_time").data
+    contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    file_name = ""
+    file_type = ""
+    evr_file_format_number = ""
+    echoview_version_value = ""
+
+    rows = []
+    for idx, contour in enumerate(contours):
+        contour_points = contour.squeeze(axis=1)
+        depths = mask["depth"][contour_points[:, 1]]
+        times = mask["ping_time"][contour_points[:, 0]]
+        region_id = idx + 1
+        datetimes = np.asarray(times, dtype="datetime64[ns]")
+        depth_values = np.asarray(depths, dtype=float)
+
+        rows.append(
+            {
+                "file_name": file_name,
+                "file_type": file_type,
+                "evr_file_format_number": evr_file_format_number,
+                "echoview_version": echoview_version_value,
+                "region_id": region_id,
+                "region_structure_version": "13",
+                "region_point_count": str(len(datetimes)),
+                "region_selected": "0",
+                "region_creation_type": "2",
+                "dummy": "-1",
+                "region_bbox_calculated": 1,
+                "region_bbox_left": np.min(datetimes),
+                "region_bbox_right": np.max(datetimes),
+                "region_bbox_top": np.max(depth_values),
+                "region_bbox_bottom": np.min(depth_values),
+                "region_class": region_classification,
+                "region_type": "1",
+                "region_name": f"{region_classification}{region_id}",
+                "time": datetimes,
+                "depth": depth_values,
+                "region_notes": [],
+                "region_detection_settings": [],
+            }
+        )
+
+    if len(rows) > 0:
+        return pd.DataFrame(rows, columns=COLUMNS)
+
+    return pd.DataFrame(columns=COLUMNS)
 
 
 def parse_regions_df(input_file: Union[str, pd.DataFrame]) -> pd.DataFrame:

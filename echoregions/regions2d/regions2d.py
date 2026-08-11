@@ -13,7 +13,7 @@ from xarray import DataArray, Dataset
 
 from ..utils.api import convert_mask_3d_to_2d
 from ..utils.io import validate_path
-from .regions2d_parser import parse_evr, parse_regions_df
+from .regions2d_parser import parse_evr, parse_mask, parse_regions_df
 
 
 def _check_transect_sequences(
@@ -89,18 +89,30 @@ class Regions2D:
 
     def __init__(
         self,
-        input_file: str,
+        input_file: Union[str, pd.DataFrame, DataArray],
         min_depth: Union[int, float] = None,
         max_depth: Union[int, float] = None,
         input_type: str = "EVR",
+        region_classification: str = "",
+        echoview_version: str = "EVRG 7 12.0.341.42620",
     ):
-        self.input_file = input_file
-        if input_type == "EVR":
+        if input_type not in {"EVR", "CSV", "MASK"}:
+            raise ValueError(
+                f"Regions2D input_type must be EVR, CSV, or MASK. Got {input_type} instead."
+            )
+        if input_type == "MASK":
+            if not isinstance(input_file, DataArray):
+                raise TypeError("The 'mask' parameter must be an xarray.DataArray.")
+            self.data = parse_mask(
+                input_file,
+                region_classification=region_classification,
+            )
+            self.input_file = None
+        elif input_type == "EVR":
             self.data = parse_evr(input_file)
+            self.input_file = input_file
         elif input_type == "CSV":
             self.data = parse_regions_df(input_file)
-        else:
-            raise ValueError(f"Regions2D input_type must be EVR or CSV. Got {input_type} instead.")
         self.output_file = []
 
         self.min_depth = min_depth
@@ -219,11 +231,13 @@ class Regions2D:
         save_path = validate_path(save_path=save_path, input_file=self.input_file, ext=".evr")
 
         # Grab header information
-        echoview_version = (
-            f"EVRG 7 {self.data.iloc[0]['echoview_version']}"
-            if len(self.data) > 0
-            else "EVRG 7 12.0.341.42620"
+        first_row = self.data.iloc[0] if len(self.data) > 0 else None
+        echoview_version_value = (
+            first_row.get("echoview_version", "") if first_row is not None else ""
         )
+        if not echoview_version_value:
+            echoview_version_value = "12.0.341.42620"
+        echoview_version = f"EVRG 7 {echoview_version_value}"
         number_of_regions = str(len(self.data))
 
         # Write header to `.evr`

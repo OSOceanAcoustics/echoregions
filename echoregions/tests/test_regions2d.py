@@ -9,9 +9,10 @@ import xarray as xr
 from xarray import DataArray, Dataset
 
 import echoregions as er
-from echoregions import write_evr
+from echoregions import read_mask
 from echoregions.regions2d.regions2d import Regions2D
 from echoregions.utils.api import merge
+from echoregions.regions2d.regions2d_parser import parse_mask
 
 DATA_DIR = Path("./echoregions/test_data/")
 EVR_DIR = DATA_DIR / "evr"
@@ -1131,12 +1132,18 @@ def test_evr_write(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> No
     # Output file path
     evr_path = "test.evr"
 
-    # Write to EVR file
-    write_evr(
-        evr_path=str(evr_path),
+    # Build Regions2D from the mask
+    regions2d = read_mask(
         mask=mask,
         region_classification="test_region_classification",
     )
+
+    assert isinstance(regions2d, Regions2D)
+    assert regions2d.data.shape[0] == 2
+    assert regions2d.data.iloc[0]["region_id"] == 1
+
+    # Write the Regions2D object to disk via Regions2D.to_evr()
+    regions2d.to_evr(evr_path)
 
     # Read the EVR file
     evr_data = er.read_evr(str(evr_path)).data
@@ -1170,9 +1177,79 @@ def test_evr_write(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> No
 
 
 @pytest.mark.regions2d
-def test_evr_write_exceptions(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+def test_parse_mask_in_regions2d_parser_applies_region_classification(
+    regions2d_fixture: Regions2D, da_Sv_fixture: DataArray
+) -> None:
+    """Tests that parse_mask in regions2d_parser.py parses a mask and applies the classification string."""
+    region_id = regions2d_fixture.data.region_id.astype(int).to_list()
+    mask_labels = {key: idx for idx, key in enumerate(region_id)}
+    mask_labels[13] = "Mask1"
+    mask_2d_ds, _ = regions2d_fixture.region_mask(
+        da_Sv_fixture, mask_labels=mask_labels, collapse_to_2d=True
+    )
+    mask = xr.where(mask_2d_ds["mask_2d"].fillna(0) != 0, 1, 0)
+
+    parsed = parse_mask(mask=mask, region_classification="test_class")
+
+    assert isinstance(parsed, pd.DataFrame)
+    assert parsed["region_class"].tolist() == ["test_class", "test_class"]
+
+
+@pytest.mark.regions2d
+def test_read_mask_returns_regions2d() -> None:
     """
-    Tests evr_write exceptions for incorrect mask input.
+    Tests that read_mask builds a Regions2D object from an explicitly defined box mask.
+    """
+    mask = xr.DataArray(
+        np.array([[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]]),
+        dims=("depth", "ping_time"),
+        coords={
+            "depth": [10.0, 20.0, 30.0, 40.0],
+            "ping_time": pd.to_datetime(
+                [
+                    "2026-01-01T00:00:00",
+                    "2026-01-01T00:00:10",
+                    "2026-01-01T00:00:20",
+                    "2026-01-01T00:00:30",
+                ]
+            ),
+        },
+    )
+
+    regions2d = er.read_mask(mask=mask, region_classification="test_class")
+
+    assert isinstance(regions2d, Regions2D)
+    assert regions2d.data.shape[0] == 1
+    assert regions2d.data.iloc[0]["region_id"] == 1
+    assert regions2d.data.iloc[0]["region_class"] == "test_class"
+    assert regions2d.data.iloc[0]["region_name"] == "test_class1"
+    assert regions2d.data.iloc[0]["region_point_count"] == "4"
+    assert regions2d.data.iloc[0]["region_bbox_left"] == pd.Timestamp("2026-01-01 00:00:10")
+    assert regions2d.data.iloc[0]["region_bbox_right"] == pd.Timestamp("2026-01-01 00:00:20")
+    assert regions2d.data.iloc[0]["region_bbox_top"] == 30.0
+    assert regions2d.data.iloc[0]["region_bbox_bottom"] == 20.0
+    assert np.array_equal(
+        regions2d.data.iloc[0]["time"],
+        np.array(
+            [
+                np.datetime64("2026-01-01T00:00:10"),
+                np.datetime64("2026-01-01T00:00:10"),
+                np.datetime64("2026-01-01T00:00:20"),
+                np.datetime64("2026-01-01T00:00:20"),
+            ],
+            dtype="datetime64[ns]",
+        ),
+    )
+    assert np.array_equal(
+        regions2d.data.iloc[0]["depth"],
+        np.array([20.0, 30.0, 30.0, 20.0], dtype=float),
+    )
+
+
+@pytest.mark.regions2d
+def test_read_mask_exceptions(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
+    """
+    Tests read_mask exceptions for incorrect mask input.
 
     Parameters
     ----------
@@ -1195,8 +1272,7 @@ def test_evr_write_exceptions(regions2d_fixture: Regions2D, da_Sv_fixture: DataA
     # Test bad input cases
     with pytest.raises(TypeError, match="The 'mask' parameter must be an xarray.DataArray."):
         mask = mask_2d_ds["mask_2d"].data  # numpy array
-        write_evr(
-            evr_path=str(evr_path),
+        read_mask(
             mask=mask,
             region_classification="test_region_classification",
         )
@@ -1207,8 +1283,7 @@ def test_evr_write_exceptions(regions2d_fixture: Regions2D, da_Sv_fixture: DataA
         ),
     ):
         mask = xr.where(mask_2d_ds["mask_2d"].fillna(0) != 0, 1, 0).expand_dims({"region_id": [1]})
-        write_evr(
-            evr_path=str(evr_path),
+        read_mask(
             mask=mask,
             region_classification="test_region_classification",
         )
@@ -1217,11 +1292,85 @@ def test_evr_write_exceptions(regions2d_fixture: Regions2D, da_Sv_fixture: DataA
         match="The 'mask' contains NaN values. Please remove or fill them before proceeding.",
     ):
         mask = mask_2d_ds["mask_2d"]
-        write_evr(
-            evr_path=str(evr_path),
+        read_mask(
             mask=mask,
             region_classification="test_region_classification",
         )
+
+
+@pytest.mark.regions2d
+def test_invalid_input_type_raises_value_error() -> None:
+    """Tests that Regions2D rejects unsupported input_type values."""
+    with pytest.raises(
+        ValueError,
+        match="Regions2D input_type must be EVR, CSV, or MASK. Got INVALID instead.",
+    ):
+        Regions2D(input_file="dummy", input_type="INVALID")
+
+
+@pytest.mark.regions2d
+def test_parse_mask_uses_empty_metadata_fill_values() -> None:
+    """Tests that parse_mask fills non-Echoview metadata values with empty strings."""
+    mask = xr.DataArray(
+        np.array([[1, 0], [0, 1]], dtype=np.uint8),
+        dims=("depth", "ping_time"),
+        coords={
+            "depth": [0.0, 10.0],
+            "ping_time": pd.to_datetime(["2020-01-01T00:00:00", "2020-01-01T00:00:10"]),
+        },
+    )
+
+    regions2d = parse_mask(mask=mask, region_classification="test_region")
+
+    assert len(regions2d) >= 1
+    assert regions2d.iloc[0]["echoview_version"] == ""
+    assert regions2d.iloc[0]["file_name"] == ""
+    assert regions2d.iloc[0]["file_type"] == ""
+    assert regions2d.iloc[0]["evr_file_format_number"] == ""
+    assert regions2d.iloc[0]["region_class"] == "test_region"
+
+
+@pytest.mark.regions2d
+def test_parse_mask_errors() -> None:
+    """Tests the parse_mask validation errors for invalid inputs."""
+    with pytest.raises(TypeError, match="The 'mask' parameter must be an xarray.DataArray."):
+        parse_mask(mask=None)
+
+    with pytest.raises(TypeError, match="The 'mask' parameter must be an xarray.DataArray."):
+        parse_mask(mask=np.array([[1, 0], [0, 1]]))
+
+    bad_dims = xr.DataArray(
+        np.array([[1, 0], [0, 1]], dtype=np.uint8),
+        dims=("depth", "channel"),
+        coords={"depth": [0.0, 10.0], "channel": [0, 1]},
+    )
+    with pytest.raises(
+        ValueError,
+        match="The 'mask' must have only 'ping_time' and 'depth' as coordinates",
+    ):
+        parse_mask(mask=bad_dims)
+
+    bad_nan = xr.DataArray(
+        np.array([[1, np.nan], [0, 1]], dtype=float),
+        dims=("depth", "ping_time"),
+        coords={
+            "depth": [0.0, 10.0],
+            "ping_time": pd.to_datetime(["2020-01-01T00:00:00", "2020-01-01T00:00:10"]),
+        },
+    )
+    with pytest.raises(ValueError, match="The 'mask' contains NaN values"):
+        parse_mask(mask=bad_nan)
+
+    bad_binary = xr.DataArray(
+        np.array([[2, 0], [0, 1]], dtype=np.uint8),
+        dims=("depth", "ping_time"),
+        coords={
+            "depth": [0.0, 10.0],
+            "ping_time": pd.to_datetime(["2020-01-01T00:00:00", "2020-01-01T00:00:10"]),
+        },
+    )
+    with pytest.raises(ValueError, match="The 'mask' must be binary, containing only 0s and 1s"):
+        parse_mask(mask=bad_binary)
 
 
 @pytest.mark.regions2d
