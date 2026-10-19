@@ -735,8 +735,7 @@ def test_mask_region_points(regions2d_fixture: Regions2D, da_Sv_fixture: DataArr
 
 
 @pytest.mark.regions2d
-@pytest.mark.test1
-def test_region_mask_filters_by_time(
+def test_region_mask_filters_by_time_overlap(
     regions2d_fixture: Regions2D,
     da_Sv_fixture: DataArray,
 ) -> None:
