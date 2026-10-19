@@ -26,8 +26,8 @@ Echoregions development can be done using either **Conda** or **uv**.
 :::{tab-item} Conda
 
 ```console
-# Create and activate a development environment:
-conda create -c conda-forge -n echoregions-dev --yes python=3.12
+# Create and activate a Python 3.13 or 3.14 development environment:
+conda create -c conda-forge -n echoregions-dev --yes python=3.13
 conda activate echoregions-dev
 
 # Install Jupyter/IPython development support:
