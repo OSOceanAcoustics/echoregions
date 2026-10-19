@@ -505,41 +505,6 @@ class Regions2D:
 
         return selected_Sv
 
-    def replace_nan_depth(self, inplace: bool = False) -> DataFrame:
-        """Replace 9999.99 or -9999.99 depth values with user-specified min_depth and max_depth
-
-        Parameters
-        ----------
-        inplace : bool
-            Modify the current `data` inplace
-
-        Returns
-        -------
-        DataFrame with depth edges replaced by Regions2D.min_depth and Regions2D.max_depth
-        """
-
-        def replace_depth(row: Series) -> Series:
-            def swap_val(val: Union[int, float]) -> Union[int, float]:
-                if val == 9999.99:
-                    return self.max_depth
-                elif val == -9999.99:
-                    return self.min_depth
-                else:
-                    return val
-
-            row.at["region_bbox_top"] = swap_val(row["region_bbox_top"])
-            row.at["region_bbox_bottom"] = swap_val(row["region_bbox_bottom"])
-            for idx, val in enumerate(row["depth"]):
-                row["depth"][idx] = swap_val(val)
-            return row
-
-        if self.min_depth is None and self.max_depth is None:
-            return
-
-        regions = self.data if inplace else self.data.copy()
-        regions.loc[:] = regions.apply(replace_depth, axis=1)
-        return regions
-
     def plot(
         self,
         region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
