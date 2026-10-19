@@ -735,6 +735,65 @@ def test_mask_region_points(regions2d_fixture: Regions2D, da_Sv_fixture: DataArr
 
 
 @pytest.mark.regions2d
+@pytest.mark.test1
+def test_region_mask_filters_by_time(
+    regions2d_fixture: Regions2D,
+    da_Sv_fixture: DataArray,
+) -> None:
+    """Test filtering regions by time overlap logic."""
+
+    da_Sv = da_Sv_fixture.isel(channel=0)
+
+    min_time = da_Sv["ping_time"].min().values
+    max_time = da_Sv["ping_time"].max().values
+
+    min_depth = da_Sv["depth"].min().values
+    max_depth = da_Sv["depth"].max().values
+
+    region_df = regions2d_fixture.data.iloc[:4].copy()
+    region_df["region_id"] = [1, 2, 3, 4]
+
+    region_df["time"] = [
+        # fully inside
+        [min_time, max_time, max_time, min_time],
+        # overlaps start
+        [
+            min_time - pd.Timedelta(seconds=10),
+            min_time + pd.Timedelta(seconds=10),
+            min_time + pd.Timedelta(seconds=10),
+            min_time - pd.Timedelta(seconds=10),
+        ],
+        # overlaps end
+        [
+            max_time - pd.Timedelta(seconds=10),
+            max_time + pd.Timedelta(seconds=10),
+            max_time + pd.Timedelta(seconds=10),
+            max_time - pd.Timedelta(seconds=10),
+        ],
+        # outside time range
+        [
+            max_time + pd.Timedelta(seconds=10),
+            max_time + pd.Timedelta(seconds=20),
+            max_time + pd.Timedelta(seconds=20),
+            max_time + pd.Timedelta(seconds=10),
+        ],
+    ]
+
+    valid_depth_array = [min_depth + 1, min_depth + 1, max_depth - 1, max_depth - 1]
+    region_df["depth"] = [valid_depth_array] * 4
+
+    # check that only 4 was filtered out
+    regions2d = Regions2D(
+        region_df,
+        min_depth=min_depth,
+        max_depth=max_depth,
+        input_type="CSV",
+    )
+    _, region_points = regions2d.region_mask(da_Sv)
+    assert region_points["region_id"].tolist() == [1, 2, 3]
+
+
+@pytest.mark.regions2d
 def test_mask_3d_2d_3d_2d(regions2d_fixture: Regions2D, da_Sv_fixture: DataArray) -> None:
     """
     Testing if converting 3d-2d-3d-2d masks works.
