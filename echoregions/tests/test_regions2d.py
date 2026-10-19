@@ -611,7 +611,7 @@ def test_mask_empty_no_overlap(regions2d_fixture: Regions2D, da_Sv_fixture: Data
     assert region_points_2.empty
 
     # Use region points to create Regions2D object
-    r2d_2 = Regions2D(region_points_2, min_depth=0, max_depth=1000, input_type="CSV")
+    r2d_2 = Regions2D(region_points_2, input_type="CSV")
 
     # Run Regions2d masking to check if masking runs
     mask_output_3, region_points_3 = r2d_2.region_mask(da_Sv_fixture.isel(channel=0))
@@ -725,7 +725,7 @@ def test_mask_region_points(regions2d_fixture: Regions2D, da_Sv_fixture: DataArr
     _, region_points_1 = regions2d_fixture.region_mask(da_Sv_fixture.isel(channel=0))
 
     # Use region points to create Regions2D object
-    r2d_2 = Regions2D(region_points_1, min_depth=0, max_depth=1000, input_type="CSV")
+    r2d_2 = Regions2D(region_points_1, input_type="CSV")
 
     # Run Regions2D masking to check if masking runs
     _, region_points_2 = r2d_2.region_mask(da_Sv_fixture.isel(channel=0))
@@ -784,11 +784,50 @@ def test_region_mask_filters_by_time_overlap(
     # check that only 4 was filtered out
     regions2d = Regions2D(
         region_df,
-        min_depth=min_depth,
-        max_depth=max_depth,
         input_type="CSV",
     )
     _, region_points = regions2d.region_mask(da_Sv)
+    assert region_points["region_id"].tolist() == [1, 2, 3]
+
+
+@pytest.mark.regions2d
+def test_region_mask_filters_by_depth_overlap(
+    regions2d_fixture: Regions2D,
+    da_Sv_fixture: DataArray,
+) -> None:
+    """Test filtering regions by depth overlap logic."""
+
+    da_Sv = da_Sv_fixture.isel(channel=0)
+
+    min_time = da_Sv["ping_time"].min().values
+    max_time = da_Sv["ping_time"].max().values
+
+    min_depth = da_Sv["depth"].min().values
+    max_depth = da_Sv["depth"].max().values
+
+    region_df = regions2d_fixture.data.iloc[:4].copy()
+    region_df["region_id"] = [1, 2, 3, 4]
+
+    valid_time_array = [min_time, max_time, max_time, min_time]
+    region_df["time"] = [valid_time_array] * 4
+
+    region_df["depth"] = [
+        # fully inside
+        [min_depth + 1, min_depth + 1, max_depth - 1, max_depth - 1],
+        # overlaps shallow boundary
+        [min_depth - 10, min_depth + 10, max_depth - 1, max_depth - 1],
+        # overlaps deep boundary
+        [min_depth + 1, min_depth + 1, max_depth + 10, max_depth - 10],
+        # outside depth range
+        [max_depth + 10, max_depth + 10, max_depth + 20, max_depth + 20],
+    ]
+
+    regions2d = Regions2D(
+        region_df,
+        input_type="CSV",
+    )
+    _, region_points = regions2d.region_mask(da_Sv)
+
     assert region_points["region_id"].tolist() == [1, 2, 3]
 
 

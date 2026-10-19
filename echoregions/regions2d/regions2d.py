@@ -90,8 +90,8 @@ class Regions2D:
     def __init__(
         self,
         input_file: Union[str, pd.DataFrame, DataArray],
-        min_depth: Union[int, float] = None,
-        max_depth: Union[int, float] = None,
+        min_depth: Union[int, float] = 0,
+        max_depth: Union[int, float] = 1000,
         input_type: str = "EVR",
         region_classification: str = "",
     ):
@@ -630,23 +630,18 @@ class Regions2D:
             da_Sv = da_Sv.isel(channel=0).drop_vars("channel")
 
         # Compute valid boundaries
-        min_depth_valid = float(da_Sv["depth"].min())
-        max_depth_valid = float(da_Sv["depth"].max())
-        region_depth_lower = max(0, int(self.min_depth))
-        region_depth_upper = int(self.max_depth)
+        min_depth_Sv = min(float(da_Sv["depth"].min()), self.min_depth)
+        max_depth_Sv = max(float(da_Sv["depth"].max()), self.max_depth)
         min_time_Sv = da_Sv["ping_time"].min()
         max_time_Sv = da_Sv["ping_time"].max()
 
         # Apply filters using inline lambdas
         region_df = region_df[
             region_df["depth"].apply(
-                lambda depths: any(min_depth_valid <= d <= max_depth_valid for d in depths)
+                lambda depth: min(depth) <= max_depth_Sv and max(depth) >= min_depth_Sv
             )
             & region_df["time"].apply(
                 lambda times: min(times) <= max_time_Sv and max(times) >= min_time_Sv
-            )
-            & region_df["depth"].apply(
-                lambda depths: all(region_depth_lower <= d <= region_depth_upper for d in depths)
             )
         ]
 
