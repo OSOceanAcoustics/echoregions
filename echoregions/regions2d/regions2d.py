@@ -94,7 +94,6 @@ class Regions2D:
         max_depth: Union[int, float] = None,
         input_type: str = "EVR",
         region_classification: str = "",
-        echoview_version: str = "EVRG 7 12.0.341.42620",
     ):
         if input_type not in {"EVR", "CSV", "MASK"}:
             raise ValueError(
