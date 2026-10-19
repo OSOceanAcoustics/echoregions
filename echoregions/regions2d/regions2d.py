@@ -633,10 +633,10 @@ class Regions2D:
         # Compute valid boundaries
         min_depth_valid = float(da_Sv["depth"].min())
         max_depth_valid = float(da_Sv["depth"].max())
-        min_time_valid = da_Sv["ping_time"].min()
-        max_time_valid = da_Sv["ping_time"].max()
         region_depth_lower = max(0, int(self.min_depth))
         region_depth_upper = int(self.max_depth)
+        min_time_Sv = da_Sv["ping_time"].min()
+        max_time_Sv = da_Sv["ping_time"].max()
 
         # Apply filters using inline lambdas
         region_df = region_df[
@@ -644,7 +644,7 @@ class Regions2D:
                 lambda depths: any(min_depth_valid <= d <= max_depth_valid for d in depths)
             )
             & region_df["time"].apply(
-                lambda times: any(min_time_valid <= t <= max_time_valid for t in times)
+                lambda times: min(times) <= max_time_Sv and max(times) >= min_time_Sv
             )
             & region_df["depth"].apply(
                 lambda depths: all(region_depth_lower <= d <= region_depth_upper for d in depths)
@@ -653,8 +653,7 @@ class Regions2D:
 
         if region_df.empty:
             warnings.warn(
-                "All rows in Regions DataFrame have NaN Depth values after filtering depth "
-                "between min_depth and max_depth.",
+                "The `Sv` coordinate grid does not contain any regions. Returning empty mask.",
                 UserWarning,
                 stacklevel=2,
             )
