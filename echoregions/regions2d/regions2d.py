@@ -90,11 +90,10 @@ class Regions2D:
     def __init__(
         self,
         input_file: Union[str, pd.DataFrame, DataArray],
-        min_depth: Union[int, float] = None,
-        max_depth: Union[int, float] = None,
+        min_depth: Union[int, float] = 0,
+        max_depth: Union[int, float] = 1000,
         input_type: str = "EVR",
         region_classification: str = "",
-        echoview_version: str = "EVRG 7 12.0.341.42620",
     ):
         if input_type not in {"EVR", "CSV", "MASK"}:
             raise ValueError(
@@ -506,41 +505,6 @@ class Regions2D:
 
         return selected_Sv
 
-    def replace_nan_depth(self, inplace: bool = False) -> DataFrame:
-        """Replace 9999.99 or -9999.99 depth values with user-specified min_depth and max_depth
-
-        Parameters
-        ----------
-        inplace : bool
-            Modify the current `data` inplace
-
-        Returns
-        -------
-        DataFrame with depth edges replaced by Regions2D.min_depth and Regions2D.max_depth
-        """
-
-        def replace_depth(row: Series) -> Series:
-            def swap_val(val: Union[int, float]) -> Union[int, float]:
-                if val == 9999.99:
-                    return self.max_depth
-                elif val == -9999.99:
-                    return self.min_depth
-                else:
-                    return val
-
-            row.at["region_bbox_top"] = swap_val(row["region_bbox_top"])
-            row.at["region_bbox_bottom"] = swap_val(row["region_bbox_bottom"])
-            for idx, val in enumerate(row["depth"]):
-                row["depth"][idx] = swap_val(val)
-            return row
-
-        if self.min_depth is None and self.max_depth is None:
-            return
-
-        regions = self.data if inplace else self.data.copy()
-        regions.loc[:] = regions.apply(replace_depth, axis=1)
-        return regions
-
     def plot(
         self,
         region_id: Union[float, int, str, List[Union[float, int, str]]] = None,
@@ -630,31 +594,28 @@ class Regions2D:
         if "channel" in da_Sv.dims:
             da_Sv = da_Sv.isel(channel=0).drop_vars("channel")
 
-        # Compute valid boundaries
-        min_depth_valid = float(da_Sv["depth"].min())
-        max_depth_valid = float(da_Sv["depth"].max())
-        min_time_valid = da_Sv["ping_time"].min()
-        max_time_valid = da_Sv["ping_time"].max()
-        region_depth_lower = max(0, int(self.min_depth))
-        region_depth_upper = int(self.max_depth)
+        # Compute boundaries
+        min_depth_Sv = min(da_Sv["depth"].min(), self.min_depth)
+        max_depth_Sv = max(da_Sv["depth"].max(), self.max_depth)
+        min_time_Sv = da_Sv["ping_time"].min()
+        max_time_Sv = da_Sv["ping_time"].max()
 
         # Apply filters using inline lambdas
         region_df = region_df[
             region_df["depth"].apply(
-                lambda depths: any(min_depth_valid <= d <= max_depth_valid for d in depths)
+                lambda depth: min(depth) <= max_depth_Sv and max(depth) >= min_depth_Sv
             )
             & region_df["time"].apply(
-                lambda times: any(min_time_valid <= t <= max_time_valid for t in times)
+                lambda times: min(times) <= max_time_Sv and max(times) >= min_time_Sv
             )
             & region_df["depth"].apply(
-                lambda depths: all(region_depth_lower <= d <= region_depth_upper for d in depths)
+                lambda depth: self.min_depth <= min(depth) and max(depth) <= self.max_depth
             )
         ]
 
         if region_df.empty:
             warnings.warn(
-                "All rows in Regions DataFrame have NaN Depth values after filtering depth "
-                "between min_depth and max_depth.",
+                "The `Sv` coordinate grid does not contain any regions. Returning empty mask.",
                 UserWarning,
                 stacklevel=2,
             )
