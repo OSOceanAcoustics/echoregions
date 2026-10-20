@@ -797,7 +797,7 @@ def test_region_mask_filters_by_depth_overlap(
 ) -> None:
     """Test filtering regions by depth overlap logic."""
 
-    da_Sv = da_Sv_fixture.isel(channel=0)
+    da_Sv = da_Sv_fixture.sel(depth=slice(15, 590)).isel(channel=0)
 
     min_time = da_Sv["ping_time"].min().values
     max_time = da_Sv["ping_time"].max().values
