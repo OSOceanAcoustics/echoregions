@@ -594,9 +594,9 @@ class Regions2D:
         if "channel" in da_Sv.dims:
             da_Sv = da_Sv.isel(channel=0).drop_vars("channel")
 
-        # Compute valid boundaries
-        min_depth_Sv = min(float(da_Sv["depth"].min()), self.min_depth)
-        max_depth_Sv = max(float(da_Sv["depth"].max()), self.max_depth)
+        # Compute boundaries
+        min_depth_Sv = min(da_Sv["depth"].min(), self.min_depth)
+        max_depth_Sv = max(da_Sv["depth"].max(), self.max_depth)
         min_time_Sv = da_Sv["ping_time"].min()
         max_time_Sv = da_Sv["ping_time"].max()
 
@@ -607,6 +607,9 @@ class Regions2D:
             )
             & region_df["time"].apply(
                 lambda times: min(times) <= max_time_Sv and max(times) >= min_time_Sv
+            )
+            & region_df["depth"].apply(
+                lambda depth: self.min_depth <= min(depth) and max(depth) <= self.max_depth
             )
         ]
 
